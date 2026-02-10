@@ -240,6 +240,16 @@ export default function Home() {
             ))}
           </div>
 
+          {/* Real Meta Ads screenshot */}
+          <div className="mb-10 rounded-2xl border border-white/10 overflow-hidden shadow-[0_0_40px_rgba(239,68,68,0.08)]">
+            <img
+              src="/SA_M1.png"
+              alt="Meta Ads Manager showing 2,344 website purchases from a single sim racing campaign"
+              className="w-full h-auto"
+              loading="lazy"
+            />
+          </div>
+
           {/* Campaign performance breakdown */}
           <div className="grid sm:grid-cols-2 gap-6">
             <div className="p-6 rounded-2xl border border-white/5 bg-white/[0.02]">

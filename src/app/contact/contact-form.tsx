@@ -122,7 +122,9 @@ export default function ContactForm() {
             className="mt-1 w-4 h-4 rounded border-white/20 bg-white/5 text-red-500 focus:ring-red-500/50 accent-red-600 cursor-pointer shrink-0"
           />
           <label htmlFor="sms-consent" className="text-xs text-white/40 leading-relaxed cursor-pointer">
-            By checking this box, you agree to receive SMS messages from Karbon Agency, including appointment confirmations, reminders, and follow-ups. Message & data rates may apply. Reply STOP to opt out at any time.
+            By checking this box, you agree to receive SMS messages from Karbon Agency, including appointment confirmations, reminders, and follow-ups. Message frequency varies (approx. 2-5 msgs/month). Message & data rates may apply. Reply STOP to opt out at any time. Reply HELP for help. Consent is not a condition of purchase. View our{" "}
+            <a href="/terms" className="text-red-400 hover:text-red-300 transition-colors underline">Terms of Service</a>{" "}and{" "}
+            <a href="/privacy" className="text-red-400 hover:text-red-300 transition-colors underline">Privacy Policy</a>.
           </label>
         </div>
 
@@ -153,7 +155,8 @@ export default function ContactForm() {
 
         <p className="text-center text-xs text-white/20">
           No spam. No obligations. Just a conversation about growing your business. View our{" "}
-          <a href="/privacy" className="underline hover:text-white/40 transition-colors">Privacy Policy</a>.
+          <a href="/privacy" className="underline hover:text-white/40 transition-colors">Privacy Policy</a>{" "}and{" "}
+          <a href="/terms" className="underline hover:text-white/40 transition-colors">Terms of Service</a>.
         </p>
       </form>
     </div>

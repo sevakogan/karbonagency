@@ -28,7 +28,7 @@ export default function PrivacyPage() {
         </div>
 
         <h1 className="text-3xl font-black mb-2">Privacy Policy</h1>
-        <p className="text-sm text-white/40 mb-8">Last updated: February 2025</p>
+        <p className="text-sm text-white/40 mb-8">Last updated: February 2026</p>
 
         <div className="space-y-8 text-sm text-white/60 leading-relaxed">
           <section>
@@ -108,13 +108,24 @@ export default function PrivacyPage() {
             <h2 className="text-lg font-bold text-white mb-2">Contact Us</h2>
             <p>
               If you have questions about this Privacy Policy, contact us at{" "}
-              <a href="tel:+18669963824" className="text-red-400 hover:text-red-300 transition-colors">
-                (866) 996-3824
-              </a>{" "}
+              <a href="tel:+18669966382" className="text-red-400 hover:text-red-300 transition-colors">
+                (866) 996-6382
+              </a>,{" "}
+              email{" "}
+              <a href="mailto:support@karbonagency.com" className="text-red-400 hover:text-red-300 transition-colors">
+                support@karbonagency.com
+              </a>,{" "}
               or visit our{" "}
               <Link href="/contact" className="text-red-400 hover:text-red-300 transition-colors">
                 contact page
               </Link>.
+            </p>
+            <p className="mt-3">
+              For our full Terms of Service including SMS messaging terms, please visit our{" "}
+              <Link href="/terms" className="text-red-400 hover:text-red-300 transition-colors">
+                Terms of Service
+              </Link>{" "}
+              page.
             </p>
           </section>
         </div>

@@ -40,69 +40,90 @@ export default function ContactForm() {
     }
   }, []);
 
+  const inputClass = "w-full px-4 py-3 rounded-xl border border-white/10 bg-white/5 text-white text-sm placeholder-white/25 focus:outline-none focus:ring-2 focus:ring-red-500/50 focus:border-transparent";
+
   return (
     <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-6 sm:p-8">
       <h2 className="text-xl font-bold mb-1">Tell Us About Your Venue</h2>
       <p className="text-sm text-white/40 mb-6">Fill out the form and we&apos;ll reach out to schedule your free strategy call.</p>
 
       <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label htmlFor="name" className="block text-xs font-semibold text-white/60 mb-1">Name</label>
-          <input
-            id="name"
-            name="name"
-            type="text"
-            required
-            className="w-full px-4 py-3 rounded-xl border border-white/10 bg-white/5 text-white text-sm placeholder-white/25 focus:outline-none focus:ring-2 focus:ring-red-500/50 focus:border-transparent"
-            placeholder="Your name"
-          />
+        {/* Row 1: Name | Company Name */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label htmlFor="name" className="block text-xs font-semibold text-white/60 mb-1">Name</label>
+            <input
+              id="name"
+              name="name"
+              type="text"
+              required
+              className={inputClass}
+              placeholder="Your name"
+            />
+          </div>
+          <div>
+            <label htmlFor="company" className="block text-xs font-semibold text-white/60 mb-1">Company / Venue Name</label>
+            <input
+              id="company"
+              name="company"
+              type="text"
+              className={inputClass}
+              placeholder="Your business name"
+            />
+          </div>
         </div>
 
-        <div>
-          <label htmlFor="email" className="block text-xs font-semibold text-white/60 mb-1">Email</label>
-          <input
-            id="email"
-            name="email"
-            type="email"
-            required
-            className="w-full px-4 py-3 rounded-xl border border-white/10 bg-white/5 text-white text-sm placeholder-white/25 focus:outline-none focus:ring-2 focus:ring-red-500/50 focus:border-transparent"
-            placeholder="your@email.com"
-          />
+        {/* Row 2: Phone | Email */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label htmlFor="phone" className="block text-xs font-semibold text-white/60 mb-1">Phone <span className="text-red-400">*</span></label>
+            <input
+              id="phone"
+              name="phone"
+              type="tel"
+              required
+              className={inputClass}
+              placeholder="(555) 123-4567"
+            />
+          </div>
+          <div>
+            <label htmlFor="email" className="block text-xs font-semibold text-white/60 mb-1">Email</label>
+            <input
+              id="email"
+              name="email"
+              type="email"
+              required
+              className={inputClass}
+              placeholder="your@email.com"
+            />
+          </div>
         </div>
 
-        <div>
-          <label htmlFor="phone" className="block text-xs font-semibold text-white/60 mb-1">Phone <span className="text-red-400">*</span></label>
-          <input
-            id="phone"
-            name="phone"
-            type="tel"
-            required
-            className="w-full px-4 py-3 rounded-xl border border-white/10 bg-white/5 text-white text-sm placeholder-white/25 focus:outline-none focus:ring-2 focus:ring-red-500/50 focus:border-transparent"
-            placeholder="(555) 123-4567"
-          />
-        </div>
-
-        <div>
-          <label htmlFor="company" className="block text-xs font-semibold text-white/60 mb-1">Company / Venue Name</label>
-          <input
-            id="company"
-            name="company"
-            type="text"
-            className="w-full px-4 py-3 rounded-xl border border-white/10 bg-white/5 text-white text-sm placeholder-white/25 focus:outline-none focus:ring-2 focus:ring-red-500/50 focus:border-transparent"
-            placeholder="Your business name"
-          />
-        </div>
-
+        {/* Row 3: Message */}
         <div>
           <label htmlFor="message" className="block text-xs font-semibold text-white/60 mb-1">Message</label>
           <textarea
             id="message"
             name="message"
-            rows={4}
+            rows={3}
             required
-            className="w-full px-4 py-3 rounded-xl border border-white/10 bg-white/5 text-white text-sm placeholder-white/25 focus:outline-none focus:ring-2 focus:ring-red-500/50 focus:border-transparent resize-none"
+            className={`${inputClass} resize-none`}
             placeholder="Tell us about your sim racing business — how many rigs, current marketing, goals..."
           />
+        </div>
+
+        {/* SMS Consent */}
+        <div className="flex items-start gap-3">
+          <input
+            id="sms-consent"
+            name="smsConsent"
+            type="checkbox"
+            required
+            className="mt-1 w-4 h-4 rounded border-white/20 bg-white/5 text-red-500 focus:ring-red-500/50 accent-red-600 cursor-pointer shrink-0"
+          />
+          <label htmlFor="sms-consent" className="text-xs text-white/40 leading-relaxed cursor-pointer">
+            By checking this box, you agree to receive SMS messages from Karbon Agency, including appointment confirmations, reminders, and follow-ups. Message & data rates may apply. Reply STOP to opt out at any time.
+          </label>
         </div>
 
         {status === "success" && (
@@ -131,7 +152,8 @@ export default function ContactForm() {
         </button>
 
         <p className="text-center text-xs text-white/20">
-          No spam. No obligations. Just a conversation about growing your business.
+          No spam. No obligations. Just a conversation about growing your business. View our{" "}
+          <a href="/privacy" className="underline hover:text-white/40 transition-colors">Privacy Policy</a>.
         </p>
       </form>
     </div>

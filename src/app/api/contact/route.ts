@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createContactSubmission } from "@/lib/db";
+import { createGHLContact } from "@/lib/ghl";
 
 export async function POST(request: NextRequest) {
   try {
@@ -10,12 +11,21 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, message: "Name, email, and message are required" }, { status: 400 });
     }
 
-    const id = await createContactSubmission({
-      name,
-      email,
-      phone: phone || "",
-      message,
-    });
+    // Save to Supabase and push to GoHighLevel in parallel
+    const [id] = await Promise.all([
+      createContactSubmission({
+        name,
+        email,
+        phone: phone || "",
+        message,
+      }),
+      createGHLContact({
+        name,
+        email,
+        phone: phone || undefined,
+        message,
+      }),
+    ]);
 
     return NextResponse.json({ success: true, id });
   } catch {

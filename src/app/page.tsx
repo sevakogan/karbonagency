@@ -2,10 +2,26 @@
 
 import Link from "next/link";
 import ParallaxSection from "@/components/parallax-section";
+import Logo from "@/components/logo";
 
 export default function Home() {
   return (
     <div className="bg-black text-white">
+
+      {/* ============ NAVBAR ============ */}
+      <nav className="fixed top-0 left-0 right-0 z-50 px-4 py-4">
+        <div className="max-w-5xl mx-auto flex items-center justify-between">
+          <Link href="/">
+            <Logo size="sm" />
+          </Link>
+          <Link
+            href="/contact"
+            className="px-5 py-2 rounded-lg bg-red-600 text-white text-sm font-semibold hover:bg-red-700 transition-colors"
+          >
+            Get Started
+          </Link>
+        </div>
+      </nav>
 
       {/* ============ HERO ============ */}
       <section className="hero-bg relative min-h-screen flex items-center justify-center px-4 overflow-hidden">
@@ -350,15 +366,21 @@ export default function Home() {
       </section>
 
       {/* ============ FOOTER ============ */}
-      <footer className="py-8 px-4 border-t border-white/5">
-        <div className="max-w-4xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="text-white/30 text-xs">
-            Karbon Agency &mdash; Meta & Instagram Ads for Sim Racing
+      <footer className="py-10 px-4 border-t border-white/5">
+        <div className="max-w-4xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-6">
+          <div className="flex flex-col items-center sm:items-start gap-2">
+            <Logo size="sm" />
+            <p className="text-white/20 text-xs">
+              Meta & Instagram Ads for Sim Racing
+            </p>
           </div>
           <div className="flex items-center gap-6">
             <Link href="/contact" className="text-white/30 text-xs hover:text-white/60 transition-colors">
               Contact
             </Link>
+            <span className="text-white/10 text-xs">
+              &copy; {new Date().getFullYear()} Karbon Agency
+            </span>
           </div>
         </div>
       </footer>

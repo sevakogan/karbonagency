@@ -223,7 +223,7 @@ export default function Home() {
           {/* Big stat highlights */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-10">
             {[
-              { value: "$6.94", label: "Avg. Cost per Booking" },
+              { value: "$7.14", label: "Avg. Cost per Booking" },
               { value: "6.4M+", label: "Impressions Delivered" },
               { value: "8,800+", label: "Bookings Generated" },
               { value: "$85K+", label: "Ad Spend Managed" },
@@ -252,11 +252,11 @@ export default function Home() {
               <p className="text-white/30 text-sm mb-4">Real campaign metrics from our sim racing venue clients.</p>
               <div className="space-y-3">
                 {[
-                  { metric: "Cost per Booking", value: "$4.87 – $14.60" },
-                  { metric: "Best Performing CPB", value: "$4.87" },
+                  { metric: "Cost per Booking", value: "$5.03 – $14.60" },
+                  { metric: "Best Performing CPB", value: "$5.03" },
                   { metric: "Total Bookings", value: "8,800+" },
                   { metric: "People Reached", value: "1.9M+" },
-                  { metric: "Avg. CPM", value: "$10.82" },
+                  { metric: "Avg. CPM", value: "$11.56" },
                 ].map((row, i) => (
                   <div key={i} className="flex items-center justify-between py-2 border-b border-white/5 last:border-0">
                     <span className="text-white/50 text-sm">{row.metric}</span>

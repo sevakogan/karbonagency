@@ -58,21 +58,12 @@ export const metadata: Metadata = {
     title: "Karbon Agency | Meta & Instagram Ads for Sim Racing Businesses",
     description:
       "The only marketing agency specializing exclusively in Meta & Instagram ads for sim racing businesses. Hyper-targeted campaigns for racing simulator venues, F1 experiences, drift simulators, and motorsport entertainment centers.",
-    images: [
-      {
-        url: "/og-image.png",
-        width: 1200,
-        height: 630,
-        alt: "Karbon Agency - Meta & Instagram Ads for Sim Racing, F1 Simulators, Drift Racing, and Motorsport Venues",
-      },
-    ],
   },
   twitter: {
     card: "summary_large_image",
     title: "Karbon Agency | Meta & Instagram Ads for Sim Racing",
     description:
       "The only ad agency built exclusively for sim racing businesses. Meta & Instagram ads that fill every seat — racing simulators, F1 experiences, drift arcades, and motorsport venues.",
-    images: ["/og-image.png"],
     creator: "@karbonagency",
   },
   robots: {

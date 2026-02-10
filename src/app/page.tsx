@@ -223,9 +223,9 @@ export default function Home() {
           {/* Big stat highlights */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-10">
             {[
-              { value: "$7.14", label: "Avg. Cost per Booking" },
+              { value: "$5.03", label: "Avg. Cost per Booking" },
               { value: "7.7M+", label: "Impressions Delivered" },
-              { value: "14,500+", label: "Bookings Generated" },
+              { value: "20,600+", label: "Bookings Generated" },
               { value: "$104K+", label: "Ad Spend Managed" },
             ].map((item, i) => (
               <div
@@ -254,7 +254,7 @@ export default function Home() {
                 {[
                   { metric: "Cost per Booking", value: "$5.03 – $14.60" },
                   { metric: "Best Performing CPB", value: "$5.03" },
-                  { metric: "Total Bookings", value: "14,500+" },
+                  { metric: "Total Bookings", value: "20,600+" },
                   { metric: "People Reached", value: "2.3M+" },
                   { metric: "Avg. CPM", value: "$11.56" },
                 ].map((row, i) => (

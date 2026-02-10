@@ -58,7 +58,7 @@ export default function Home() {
               href="/book"
               className="cta-glow w-full sm:w-auto px-8 py-4 rounded-xl bg-red-600 text-white font-bold text-base hover:bg-red-700 active:bg-red-800 transition-all duration-200 text-center"
             >
-              Book a Free Strategy Call
+              Start Your Ads Now
             </Link>
             <Link
               href="/contact"

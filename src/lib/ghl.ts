@@ -15,6 +15,7 @@ export async function createGHLContact(data: {
   name: string;
   email: string;
   phone?: string;
+  company?: string;
   message?: string;
 }) {
   const apiKey = process.env.GHL_API_KEY;
@@ -30,11 +31,12 @@ export async function createGHLContact(data: {
   const firstName = nameParts[0] || data.name;
   const lastName = nameParts.length > 1 ? nameParts.slice(1).join(" ") : undefined;
 
-  const contactPayload: GHLContactData = {
+  const contactPayload: Record<string, unknown> = {
     firstName,
     ...(lastName ? { lastName } : {}),
     email: data.email,
     ...(data.phone?.trim() ? { phone: data.phone.trim() } : {}),
+    ...(data.company?.trim() ? { companyName: data.company.trim() } : {}),
     locationId,
     tags: ["karbon-website", "contact-form"],
     source: "Karbon Agency Website",

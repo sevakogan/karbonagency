@@ -8,10 +8,11 @@ export async function POST(request: NextRequest) {
     const name = (body.name || "").trim();
     const email = (body.email || "").trim();
     const phone = (body.phone || "").trim() || undefined;
+    const company = (body.company || "").trim() || undefined;
     const message = (body.message || "").trim();
 
-    if (!name || !email || !message) {
-      return NextResponse.json({ success: false, message: "Name, email, and message are required" }, { status: 400 });
+    if (!name || !email || !phone || !message) {
+      return NextResponse.json({ success: false, message: "Name, email, phone, and message are required" }, { status: 400 });
     }
 
     // Save to Supabase and push to GoHighLevel in parallel
@@ -19,13 +20,14 @@ export async function POST(request: NextRequest) {
       createContactSubmission({
         name,
         email,
-        phone: phone || "",
-        message,
+        phone,
+        message: company ? `[${company}] ${message}` : message,
       }),
       createGHLContact({
         name,
         email,
-        ...(phone ? { phone } : {}),
+        phone,
+        ...(company ? { company } : {}),
         message,
       }),
     ]);

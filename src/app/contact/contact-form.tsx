@@ -20,6 +20,7 @@ export default function ContactForm() {
           name: formData.get("name"),
           email: formData.get("email"),
           phone: formData.get("phone"),
+          company: formData.get("company"),
           message: formData.get("message"),
         }),
       });
@@ -70,13 +71,25 @@ export default function ContactForm() {
         </div>
 
         <div>
-          <label htmlFor="phone" className="block text-xs font-semibold text-white/60 mb-1">Phone</label>
+          <label htmlFor="phone" className="block text-xs font-semibold text-white/60 mb-1">Phone <span className="text-red-400">*</span></label>
           <input
             id="phone"
             name="phone"
             type="tel"
+            required
             className="w-full px-4 py-3 rounded-xl border border-white/10 bg-white/5 text-white text-sm placeholder-white/25 focus:outline-none focus:ring-2 focus:ring-red-500/50 focus:border-transparent"
             placeholder="(555) 123-4567"
+          />
+        </div>
+
+        <div>
+          <label htmlFor="company" className="block text-xs font-semibold text-white/60 mb-1">Company / Venue Name</label>
+          <input
+            id="company"
+            name="company"
+            type="text"
+            className="w-full px-4 py-3 rounded-xl border border-white/10 bg-white/5 text-white text-sm placeholder-white/25 focus:outline-none focus:ring-2 focus:ring-red-500/50 focus:border-transparent"
+            placeholder="Your business name"
           />
         </div>
 

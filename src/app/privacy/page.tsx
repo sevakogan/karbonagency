@@ -32,6 +32,14 @@ export default function PrivacyPage() {
 
         <div className="space-y-8 text-sm text-white/60 leading-relaxed">
           <section>
+            <p className="mb-4">
+              TheLevelTeam LLC, doing business as Karbon Agency (&quot;we,&quot; &quot;us,&quot; or &quot;our&quot;),
+              operates the website karbonagency.com. This Privacy Policy describes how we collect,
+              use, and protect your personal information.
+            </p>
+          </section>
+
+          <section>
             <h2 className="text-lg font-bold text-white mb-2">Information We Collect</h2>
             <p>
               When you submit our contact form, we collect your name, email address, phone number,
@@ -96,6 +104,34 @@ export default function PrivacyPage() {
           </section>
 
           <section>
+            <h2 className="text-lg font-bold text-white mb-2">Cookies & Tracking Technologies</h2>
+            <p className="mb-3">
+              Our website may use cookies and similar tracking technologies to improve your
+              browsing experience and analyze site traffic. These may include:
+            </p>
+            <ul className="list-disc list-inside space-y-1 ml-2">
+              <li>
+                <strong className="text-white">Essential cookies:</strong> Required for basic
+                site functionality
+              </li>
+              <li>
+                <strong className="text-white">Analytics cookies:</strong> Help us understand how
+                visitors interact with our website (e.g., page views, traffic sources)
+              </li>
+              <li>
+                <strong className="text-white">Third-party tracking:</strong> We use GoHighLevel
+                for form handling and calendar booking, which may set its own cookies to process
+                your submissions
+              </li>
+            </ul>
+            <p className="mt-3">
+              You can control cookies through your browser settings. Disabling cookies may affect
+              some website functionality. We do not use cookies to collect personal information
+              for sale to third parties.
+            </p>
+          </section>
+
+          <section>
             <h2 className="text-lg font-bold text-white mb-2">Your Rights</h2>
             <p>
               You may request to view, update, or delete your personal information at any time by
@@ -131,7 +167,7 @@ export default function PrivacyPage() {
         </div>
 
         <div className="mt-12 pt-6 border-t border-white/10 text-center text-xs text-white/20">
-          &copy; {new Date().getFullYear()} Karbon Agency. All rights reserved.
+          <p>&copy; {new Date().getFullYear()} TheLevelTeam LLC, DBA Karbon Agency. All rights reserved.</p>
         </div>
       </div>
     </div>

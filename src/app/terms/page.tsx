@@ -34,8 +34,9 @@ export default function TermsPage() {
           <section>
             <h2 className="text-lg font-bold text-white mb-2">1. Description of SMS Use Cases</h2>
             <p className="mb-3">
-              Karbon Agency (&quot;we,&quot; &quot;us,&quot; or &quot;our&quot;) uses SMS messaging to communicate with leads
-              and clients who have opted in through our website. SMS messages may include:
+              TheLevelTeam LLC, doing business as Karbon Agency (&quot;we,&quot; &quot;us,&quot; or &quot;our&quot;),
+              uses SMS messaging to communicate with leads and clients who have opted in through
+              our website. SMS messages may include:
             </p>
             <ul className="list-disc list-inside space-y-1 ml-2">
               <li>Appointment confirmations and reminders for strategy calls</li>
@@ -215,7 +216,7 @@ export default function TermsPage() {
         </div>
 
         <div className="mt-12 pt-6 border-t border-white/10 text-center text-xs text-white/20">
-          &copy; {new Date().getFullYear()} Karbon Agency. All rights reserved.
+          <p>&copy; {new Date().getFullYear()} TheLevelTeam LLC, DBA Karbon Agency. All rights reserved.</p>
         </div>
       </div>
     </div>

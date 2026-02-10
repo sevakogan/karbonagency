@@ -118,11 +118,10 @@ export default function ContactForm() {
             id="sms-consent"
             name="smsConsent"
             type="checkbox"
-            required
             className="mt-1 w-4 h-4 rounded border-white/20 bg-white/5 text-red-500 focus:ring-red-500/50 accent-red-600 cursor-pointer shrink-0"
           />
           <label htmlFor="sms-consent" className="text-xs text-white/40 leading-relaxed cursor-pointer">
-            By checking this box, you agree to receive SMS messages from Karbon Agency, including appointment confirmations, reminders, and follow-ups. Message frequency varies (approx. 2-5 msgs/month). Message & data rates may apply. Reply STOP to opt out at any time. Reply HELP for help. Consent is not a condition of purchase. View our{" "}
+            I agree to receive SMS messages from TheLevelTeam LLC (DBA Karbon Agency), including appointment confirmations, reminders, and follow-ups. Message frequency varies (approx. 2-5 msgs/month). Message & data rates may apply. Reply STOP to opt out at any time. Reply HELP for help. Consent is not a condition of purchase. View our{" "}
             <a href="/terms" className="text-red-400 hover:text-red-300 transition-colors underline">Terms of Service</a>{" "}and{" "}
             <a href="/privacy" className="text-red-400 hover:text-red-300 transition-colors underline">Privacy Policy</a>.
           </label>
@@ -157,6 +156,9 @@ export default function ContactForm() {
           No spam. No obligations. Just a conversation about growing your business. View our{" "}
           <a href="/privacy" className="underline hover:text-white/40 transition-colors">Privacy Policy</a>{" "}and{" "}
           <a href="/terms" className="underline hover:text-white/40 transition-colors">Terms of Service</a>.
+        </p>
+        <p className="text-center text-[10px] text-white/15 mt-1">
+          TheLevelTeam LLC, DBA Karbon Agency
         </p>
       </form>
     </div>

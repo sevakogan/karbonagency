@@ -28,9 +28,11 @@ export default function Home() {
 
         <ParallaxSection speed={0.15} className="relative z-10 max-w-4xl mx-auto text-center">
           {/* Badge */}
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-red-500/30 bg-red-500/10 text-red-400 text-xs font-semibold tracking-wide uppercase mb-8">
-            <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-            The Only Agency of Its Kind
+          <div className="inline-flex items-center gap-3 px-6 py-3 rounded-full border border-red-500/40 bg-red-500/10 backdrop-blur-sm mb-8 shadow-[0_0_30px_rgba(239,68,68,0.15)]">
+            <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse shadow-[0_0_8px_rgba(239,68,68,0.6)]" />
+            <span className="text-sm sm:text-base font-bold tracking-wide uppercase text-transparent bg-clip-text bg-gradient-to-r from-red-400 to-orange-400">
+              The Only Agency of Its Kind
+            </span>
           </div>
 
           {/* Headline */}

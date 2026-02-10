@@ -27,7 +27,7 @@ export default function ContactForm() {
       const data = await res.json();
       if (data.success) {
         setStatus("success");
-        setMessage("Thank you! Your message has been sent.");
+        setMessage("We got your message! We'll be in touch within 24 hours.");
         (e.target as HTMLFormElement).reset();
       } else {
         setStatus("error");
@@ -40,60 +40,60 @@ export default function ContactForm() {
   }, []);
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-      <h2 className="text-xl font-bold text-gray-900 mb-1">Send a Message</h2>
-      <p className="text-sm text-gray-500 mb-6">Fill out the form below and we&apos;ll get back to you.</p>
+    <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-6 sm:p-8">
+      <h2 className="text-xl font-bold mb-1">Tell Us About Your Venue</h2>
+      <p className="text-sm text-white/40 mb-6">Fill out the form and we&apos;ll reach out to schedule your free strategy call.</p>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label htmlFor="name" className="block text-xs font-semibold text-gray-700 mb-1">Name</label>
+          <label htmlFor="name" className="block text-xs font-semibold text-white/60 mb-1">Name</label>
           <input
             id="name"
             name="name"
             type="text"
             required
-            className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+            className="w-full px-4 py-3 rounded-xl border border-white/10 bg-white/5 text-white text-sm placeholder-white/25 focus:outline-none focus:ring-2 focus:ring-red-500/50 focus:border-transparent"
             placeholder="Your name"
           />
         </div>
 
         <div>
-          <label htmlFor="email" className="block text-xs font-semibold text-gray-700 mb-1">Email</label>
+          <label htmlFor="email" className="block text-xs font-semibold text-white/60 mb-1">Email</label>
           <input
             id="email"
             name="email"
             type="email"
             required
-            className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+            className="w-full px-4 py-3 rounded-xl border border-white/10 bg-white/5 text-white text-sm placeholder-white/25 focus:outline-none focus:ring-2 focus:ring-red-500/50 focus:border-transparent"
             placeholder="your@email.com"
           />
         </div>
 
         <div>
-          <label htmlFor="phone" className="block text-xs font-semibold text-gray-700 mb-1">Phone</label>
+          <label htmlFor="phone" className="block text-xs font-semibold text-white/60 mb-1">Phone</label>
           <input
             id="phone"
             name="phone"
             type="tel"
-            className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+            className="w-full px-4 py-3 rounded-xl border border-white/10 bg-white/5 text-white text-sm placeholder-white/25 focus:outline-none focus:ring-2 focus:ring-red-500/50 focus:border-transparent"
             placeholder="(555) 123-4567"
           />
         </div>
 
         <div>
-          <label htmlFor="message" className="block text-xs font-semibold text-gray-700 mb-1">Message</label>
+          <label htmlFor="message" className="block text-xs font-semibold text-white/60 mb-1">Message</label>
           <textarea
             id="message"
             name="message"
             rows={4}
             required
-            className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent resize-none"
-            placeholder="How can we help you?"
+            className="w-full px-4 py-3 rounded-xl border border-white/10 bg-white/5 text-white text-sm placeholder-white/25 focus:outline-none focus:ring-2 focus:ring-red-500/50 focus:border-transparent resize-none"
+            placeholder="Tell us about your sim racing business — how many rigs, current marketing, goals..."
           />
         </div>
 
         {status === "success" && (
-          <div className="flex items-center gap-2 p-3 rounded-xl bg-green-50 text-green-700 text-sm">
+          <div className="flex items-center gap-2 p-3 rounded-xl bg-green-500/10 border border-green-500/20 text-green-400 text-sm">
             <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
@@ -101,7 +101,7 @@ export default function ContactForm() {
           </div>
         )}
         {status === "error" && (
-          <div className="flex items-center gap-2 p-3 rounded-xl bg-red-50 text-red-700 text-sm">
+          <div className="flex items-center gap-2 p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
             <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
@@ -112,10 +112,14 @@ export default function ContactForm() {
         <button
           type="submit"
           disabled={status === "submitting"}
-          className="w-full py-3 rounded-xl bg-blue-600 text-white font-semibold text-sm hover:bg-blue-700 active:bg-blue-800 transition-colors disabled:opacity-50 shadow-sm cursor-pointer"
+          className="cta-glow w-full py-3.5 rounded-xl bg-red-600 text-white font-bold text-sm hover:bg-red-700 active:bg-red-800 transition-all duration-200 disabled:opacity-50 cursor-pointer"
         >
-          {status === "submitting" ? "Sending..." : "Send Message"}
+          {status === "submitting" ? "Sending..." : "Get My Free Strategy Call"}
         </button>
+
+        <p className="text-center text-xs text-white/20">
+          No spam. No obligations. Just a conversation about growing your business.
+        </p>
       </form>
     </div>
   );

@@ -3,17 +3,17 @@ import ContactForm from "./contact-form";
 
 export default function ContactPage() {
   return (
-    <div className="bg-gray-50 min-h-screen">
+    <div className="bg-black text-white min-h-screen">
       {/* Header */}
-      <div className="max-w-2xl mx-auto px-4 py-4">
+      <div className="max-w-2xl mx-auto px-4 py-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-lg font-bold text-gray-900">Contact Us</h1>
-            <p className="text-xs text-gray-500">We&apos;d love to hear from you</p>
+            <h1 className="text-lg font-bold">Book Your Free Strategy Call</h1>
+            <p className="text-xs text-white/40">Let&apos;s talk about filling your seats.</p>
           </div>
           <Link
             href="/"
-            className="w-9 h-9 flex items-center justify-center rounded-full border border-gray-200 bg-white text-gray-500 hover:text-gray-700 hover:bg-gray-50 transition-colors shadow-sm"
+            className="w-9 h-9 flex items-center justify-center rounded-full border border-white/10 bg-white/5 text-white/50 hover:text-white hover:bg-white/10 transition-colors"
             title="Back to home"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -24,7 +24,7 @@ export default function ContactPage() {
       </div>
 
       {/* Contact Form */}
-      <main className="max-w-2xl mx-auto px-4 pb-8">
+      <main className="max-w-2xl mx-auto px-4 pb-12">
         <ContactForm />
       </main>
     </div>

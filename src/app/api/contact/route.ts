@@ -5,7 +5,10 @@ import { createGHLContact } from "@/lib/ghl";
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { name, email, phone, message } = body;
+    const name = (body.name || "").trim();
+    const email = (body.email || "").trim();
+    const phone = (body.phone || "").trim() || undefined;
+    const message = (body.message || "").trim();
 
     if (!name || !email || !message) {
       return NextResponse.json({ success: false, message: "Name, email, and message are required" }, { status: 400 });
@@ -22,7 +25,7 @@ export async function POST(request: NextRequest) {
       createGHLContact({
         name,
         email,
-        phone: phone || undefined,
+        ...(phone ? { phone } : {}),
         message,
       }),
     ]);

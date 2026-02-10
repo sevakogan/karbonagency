@@ -32,13 +32,18 @@ export async function createGHLContact(data: {
 
   const contactPayload: GHLContactData = {
     firstName,
-    ...(lastName && { lastName }),
+    ...(lastName ? { lastName } : {}),
     email: data.email,
-    ...(data.phone && { phone: data.phone }),
+    ...(data.phone?.trim() ? { phone: data.phone.trim() } : {}),
     locationId,
     tags: ["karbon-website", "contact-form"],
     source: "Karbon Agency Website",
   };
+
+  // Strip out any undefined/null/empty string values
+  const cleanPayload = Object.fromEntries(
+    Object.entries(contactPayload).filter(([, v]) => v !== undefined && v !== null && v !== "")
+  );
 
   const response = await fetch(`${GHL_API_URL}/contacts/`, {
     method: "POST",
@@ -47,7 +52,7 @@ export async function createGHLContact(data: {
       "Content-Type": "application/json",
       "Version": "2021-07-28",
     },
-    body: JSON.stringify(contactPayload),
+    body: JSON.stringify(cleanPayload),
   });
 
   if (!response.ok) {

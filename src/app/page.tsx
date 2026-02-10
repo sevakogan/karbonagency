@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import ParallaxSection from "@/components/parallax-section";
 
 export default function Home() {
   return (
@@ -9,7 +12,7 @@ export default function Home() {
         {/* Subtle grid overlay */}
         <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E\")" }} />
 
-        <div className="relative z-10 max-w-4xl mx-auto text-center">
+        <ParallaxSection speed={0.15} className="relative z-10 max-w-4xl mx-auto text-center">
           {/* Badge */}
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-red-500/30 bg-red-500/10 text-red-400 text-xs font-semibold tracking-wide uppercase mb-8">
             <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
@@ -53,7 +56,7 @@ export default function Home() {
           <p className="mt-12 text-xs text-white/25 tracking-wide uppercase">
             Trusted by sim racing venues across the country
           </p>
-        </div>
+        </ParallaxSection>
 
         {/* Scroll indicator */}
         <div className="absolute bottom-8 left-1/2 -translate-x-1/2 float-anim">
@@ -64,8 +67,8 @@ export default function Home() {
       </section>
 
       {/* ============ PAIN POINTS ============ */}
-      <section className="py-20 sm:py-28 px-4 bg-zinc-950">
-        <div className="max-w-4xl mx-auto">
+      <section className="py-20 sm:py-28 px-4 bg-zinc-950 overflow-hidden">
+        <ParallaxSection speed={0.08} className="max-w-4xl mx-auto">
           <h2 className="text-3xl sm:text-4xl font-black text-center mb-4">
             Sound Familiar?
           </h2>
@@ -93,12 +96,12 @@ export default function Home() {
               </div>
             ))}
           </div>
-        </div>
+        </ParallaxSection>
       </section>
 
       {/* ============ WHAT WE DO ============ */}
-      <section className="py-20 sm:py-28 px-4 bg-black">
-        <div className="max-w-4xl mx-auto text-center">
+      <section className="py-20 sm:py-28 px-4 bg-black overflow-hidden">
+        <ParallaxSection speed={0.1} className="max-w-4xl mx-auto text-center">
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-orange-500/30 bg-orange-500/10 text-orange-400 text-xs font-semibold tracking-wide uppercase mb-6">
             Our Specialty
           </div>
@@ -147,12 +150,12 @@ export default function Home() {
               </div>
             ))}
           </div>
-        </div>
+        </ParallaxSection>
       </section>
 
       {/* ============ WHY US / PROOF ============ */}
-      <section className="py-20 sm:py-28 px-4 bg-zinc-950">
-        <div className="max-w-4xl mx-auto">
+      <section className="py-20 sm:py-28 px-4 bg-zinc-950 overflow-hidden">
+        <ParallaxSection speed={0.08} className="max-w-4xl mx-auto">
           <h2 className="text-3xl sm:text-4xl font-black text-center mb-4">
             Why Sim Racing Businesses Choose Us
           </h2>
@@ -180,12 +183,12 @@ export default function Home() {
               </div>
             ))}
           </div>
-        </div>
+        </ParallaxSection>
       </section>
 
       {/* ============ RESULTS / AD STATS ============ */}
-      <section className="py-20 sm:py-28 px-4 bg-black">
-        <div className="max-w-5xl mx-auto">
+      <section className="py-20 sm:py-28 px-4 bg-black overflow-hidden">
+        <ParallaxSection speed={0.1} className="max-w-5xl mx-auto">
           <div className="text-center mb-14">
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-red-500/30 bg-red-500/10 text-red-400 text-xs font-semibold tracking-wide uppercase mb-6">
               Real Results
@@ -270,12 +273,12 @@ export default function Home() {
               </div>
             </div>
           </div>
-        </div>
+        </ParallaxSection>
       </section>
 
       {/* ============ HOW IT WORKS ============ */}
-      <section id="how-it-works" className="py-20 sm:py-28 px-4 bg-black">
-        <div className="max-w-3xl mx-auto">
+      <section id="how-it-works" className="py-20 sm:py-28 px-4 bg-black overflow-hidden">
+        <ParallaxSection speed={0.08} className="max-w-3xl mx-auto">
           <h2 className="text-3xl sm:text-4xl font-black text-center mb-4">
             How It Works
           </h2>
@@ -315,12 +318,12 @@ export default function Home() {
               </div>
             ))}
           </div>
-        </div>
+        </ParallaxSection>
       </section>
 
       {/* ============ FINAL CTA ============ */}
-      <section className="py-20 sm:py-28 px-4 bg-gradient-to-b from-zinc-950 to-black">
-        <div className="max-w-2xl mx-auto text-center">
+      <section className="py-20 sm:py-28 px-4 bg-gradient-to-b from-zinc-950 to-black overflow-hidden">
+        <ParallaxSection speed={0.12} className="max-w-2xl mx-auto text-center">
           <h2 className="text-3xl sm:text-5xl font-black mb-4 leading-tight">
             Ready to Fill Every{" "}
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-orange-500">
@@ -343,7 +346,7 @@ export default function Home() {
           <p className="mt-6 text-xs text-white/20">
             No contracts. No commitments. Just a conversation.
           </p>
-        </div>
+        </ParallaxSection>
       </section>
 
       {/* ============ FOOTER ============ */}

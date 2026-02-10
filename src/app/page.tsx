@@ -224,9 +224,9 @@ export default function Home() {
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-10">
             {[
               { value: "$7.14", label: "Avg. Cost per Booking" },
-              { value: "6.4M+", label: "Impressions Delivered" },
-              { value: "8,800+", label: "Bookings Generated" },
-              { value: "$85K+", label: "Ad Spend Managed" },
+              { value: "7.7M+", label: "Impressions Delivered" },
+              { value: "14,500+", label: "Bookings Generated" },
+              { value: "$104K+", label: "Ad Spend Managed" },
             ].map((item, i) => (
               <div
                 key={i}
@@ -254,8 +254,8 @@ export default function Home() {
                 {[
                   { metric: "Cost per Booking", value: "$5.03 – $14.60" },
                   { metric: "Best Performing CPB", value: "$5.03" },
-                  { metric: "Total Bookings", value: "8,800+" },
-                  { metric: "People Reached", value: "1.9M+" },
+                  { metric: "Total Bookings", value: "14,500+" },
+                  { metric: "People Reached", value: "2.3M+" },
                   { metric: "Avg. CPM", value: "$11.56" },
                 ].map((row, i) => (
                   <div key={i} className="flex items-center justify-between py-2 border-b border-white/5 last:border-0">

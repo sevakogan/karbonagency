@@ -30,7 +30,7 @@ export default function Home() {
           {/* Badge */}
           <div className="inline-flex items-center gap-3 px-6 py-3 rounded-full border border-red-500/40 bg-red-500/10 backdrop-blur-sm mb-8 shadow-[0_0_30px_rgba(239,68,68,0.15)]">
             <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse shadow-[0_0_8px_rgba(239,68,68,0.6)]" />
-            <span className="text-sm sm:text-base font-bold tracking-wide uppercase text-transparent bg-clip-text bg-gradient-to-r from-red-400 to-orange-400">
+            <span className="badge-roll text-sm sm:text-base font-bold tracking-wide uppercase">
               The Only Agency of Its Kind
             </span>
           </div>

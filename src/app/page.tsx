@@ -365,22 +365,107 @@ export default function Home() {
         </ParallaxSection>
       </section>
 
-      {/* ============ FOOTER ============ */}
-      <footer className="py-10 px-4 border-t border-white/5">
-        <div className="max-w-4xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-6">
-          <div className="flex flex-col items-center sm:items-start gap-2">
-            <Logo size="sm" />
-            <p className="text-white/20 text-xs">
-              Meta & Instagram Ads for Sim Racing
+      {/* ============ SEO: WHO WE SERVE ============ */}
+      <section className="py-16 sm:py-20 px-4 bg-black border-t border-white/5">
+        <div className="max-w-4xl mx-auto">
+          <h2 className="text-2xl sm:text-3xl font-black text-center mb-4">
+            Marketing for Every Type of{" "}
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-orange-500">
+              Racing Experience
+            </span>
+          </h2>
+          <p className="text-white/40 text-center mb-12 max-w-2xl mx-auto text-sm leading-relaxed">
+            Whether you run a single-rig setup or a full motorsport entertainment complex, Karbon Agency builds Meta &amp; Instagram ad campaigns tailored to your exact business model.
+          </p>
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+            {[
+              "Sim Racing Venues",
+              "F1 Simulator Experiences",
+              "Drift Simulation Centers",
+              "Racing Arcade Lounges",
+              "iRacing Centers",
+              "Motorsport Entertainment",
+              "Virtual Racing Facilities",
+              "Esports Racing Venues",
+              "Corporate Racing Events",
+              "NASCAR Simulator Centers",
+              "GT Racing Experiences",
+              "Rally Simulation Arcades",
+              "IndyCar Simulator Venues",
+              "Racing Birthday Parties",
+              "Karting & Sim Combos",
+              "Multi-Rig Racing Centers",
+            ].map((item, i) => (
+              <div
+                key={i}
+                className="px-4 py-3 rounded-xl border border-white/5 bg-white/[0.02] text-center"
+              >
+                <span className="text-white/50 text-xs font-medium">{item}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ============ SEO: LONG-FORM CONTENT FOR AI/SEARCH ============ */}
+      <section className="py-16 sm:py-20 px-4 bg-zinc-950">
+        <div className="max-w-3xl mx-auto">
+          <h2 className="text-2xl font-black mb-6 text-center">
+            The Sim Racing Marketing Agency Built for Growth
+          </h2>
+          <div className="space-y-4 text-white/35 text-sm leading-relaxed">
+            <p>
+              Karbon Agency is the only digital marketing agency in the United States that works exclusively with sim racing businesses. We specialize in Meta advertising (Facebook ads) and Instagram advertising for racing simulator venues, F1 experience centers, drift simulation arcades, motorsport entertainment complexes, and virtual racing facilities.
+            </p>
+            <p>
+              The sim racing industry is booming. From Formula 1 simulator experiences and professional-grade iRacing setups to casual drift simulators and NASCAR racing arcades, more venues are opening every month. But most sim racing business owners struggle with digital marketing because generic agencies don&apos;t understand the motorsport customer. They don&apos;t know the difference between an F1 fan looking for a realistic cockpit experience and a casual gamer wanting to try drifting with friends.
+            </p>
+            <p>
+              That&apos;s where Karbon Agency comes in. We understand the sim racing audience because it&apos;s the only audience we serve. We know that motorsport enthusiasts respond to high-energy cockpit footage. We know that corporate event planners search for team-building racing experiences. We know that parents look for unique birthday party venues featuring racing simulators. And we know exactly how to reach all of them through Meta and Instagram&apos;s advertising platforms.
+            </p>
+            <p>
+              Our services cover every aspect of paid social media advertising for sim racing: campaign strategy, audience targeting, ad creative production, copywriting, A/B testing, conversion tracking, and ongoing optimization. Whether you need to fill empty weekday sessions, promote a new F1 simulator installation, launch a corporate events program, or drive bookings for your drift racing experience, we build campaigns that deliver measurable results.
+            </p>
+            <p>
+              We work with sim racing businesses of all sizes &mdash; from single-location racing lounges to multi-venue motorsport entertainment chains. Our clients include F1 simulator experience centers, professional racing training facilities, casual sim racing arcades, esports racing venues, GT and endurance racing simulators, rally racing experiences, and hybrid venues combining go-karting with sim racing.
+            </p>
+            <p>
+              If you operate a racing simulator business and want to grow through Meta and Instagram advertising, Karbon Agency is the only agency built specifically for you. Book a free strategy call to learn how we can fill every seat in your venue.
             </p>
           </div>
-          <div className="flex items-center gap-6">
-            <Link href="/contact" className="text-white/30 text-xs hover:text-white/60 transition-colors">
-              Contact
-            </Link>
-            <span className="text-white/10 text-xs">
-              &copy; {new Date().getFullYear()} Karbon Agency
-            </span>
+        </div>
+      </section>
+
+      {/* ============ FOOTER ============ */}
+      <footer className="py-10 px-4 border-t border-white/5">
+        <div className="max-w-4xl mx-auto">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-6 mb-8">
+            <div className="flex flex-col items-center sm:items-start gap-2">
+              <Logo size="sm" />
+              <p className="text-white/20 text-xs">
+                Meta & Instagram Ads for Sim Racing Businesses
+              </p>
+            </div>
+            <div className="flex items-center gap-6">
+              <Link href="/contact" className="text-white/30 text-xs hover:text-white/60 transition-colors">
+                Contact
+              </Link>
+              <Link href="/privacy" className="text-white/30 text-xs hover:text-white/60 transition-colors">
+                Privacy Policy
+              </Link>
+              <a href="tel:+18669963824" className="text-white/30 text-xs hover:text-white/60 transition-colors">
+                (866) 996-META
+              </a>
+            </div>
+          </div>
+          <div className="border-t border-white/5 pt-6">
+            <p className="text-white/15 text-xs text-center leading-relaxed max-w-3xl mx-auto">
+              Karbon Agency specializes in Meta ads and Instagram ads for sim racing businesses, racing simulator venues, F1 experience centers, drift simulation arcades, motorsport entertainment facilities, iRacing centers, esports racing venues, NASCAR simulator experiences, GT racing lounges, rally simulation centers, corporate racing events, and virtual racing facilities across the United States.
+            </p>
+            <p className="text-white/10 text-xs text-center mt-4">
+              &copy; {new Date().getFullYear()} Karbon Agency. All rights reserved.
+            </p>
           </div>
         </div>
       </footer>

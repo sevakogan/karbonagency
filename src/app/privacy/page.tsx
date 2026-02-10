@@ -1,5 +1,15 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import Logo from "@/components/logo";
+
+export const metadata: Metadata = {
+  title: "Privacy Policy",
+  description:
+    "Karbon Agency privacy policy covering data collection, SMS messaging consent, and information protection for sim racing business clients.",
+  alternates: {
+    canonical: "https://karbonagency.com/privacy",
+  },
+};
 
 export default function PrivacyPage() {
   return (

@@ -27,23 +27,6 @@ html {
   to { opacity: 1; transform: translateY(0); }
 }
 
-@keyframes twinkle-1 {
-  0%, 100% { opacity: 0.02; }
-  50% { opacity: 0.08; }
-}
-
-@keyframes twinkle-2 {
-  0%, 100% { opacity: 0.04; }
-  40% { opacity: 0.12; }
-  60% { opacity: 0.03; }
-}
-
-@keyframes twinkle-3 {
-  0%, 100% { opacity: 0.03; }
-  30% { opacity: 0.06; }
-  70% { opacity: 0.15; }
-}
-
 .hero-bg {
   background: linear-gradient(135deg,
     #0a0a0a 0%,
@@ -57,18 +40,6 @@ html {
   );
   background-size: 400% 400%;
   animation: gradient-shift 20s ease infinite;
-}
-
-.twinkle-layer-1 {
-  animation: twinkle-1 4s ease-in-out infinite;
-}
-
-.twinkle-layer-2 {
-  animation: twinkle-2 6s ease-in-out infinite 1s;
-}
-
-.twinkle-layer-3 {
-  animation: twinkle-3 5s ease-in-out infinite 2.5s;
 }
 
 .cta-glow {

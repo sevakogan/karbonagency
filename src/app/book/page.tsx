@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import Logo from "@/components/logo";
+import CalendarEmbed from "./calendar-embed";
 
 export const metadata: Metadata = {
   title: "Book a Strategy Call | Free Sim Racing Ad Consultation",
@@ -96,25 +97,17 @@ export default function BookPage() {
           ))}
         </div>
 
-        {/* CTA to contact form */}
-        <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-8 text-center">
-          <h2 className="text-xl font-bold mb-2">Ready to Fill More Seats?</h2>
-          <p className="text-white/40 text-sm mb-6 max-w-md mx-auto">
-            Drop us your info and we&apos;ll reach out within 24 hours to schedule your free strategy call.
-          </p>
-          <Link
-            href="/contact"
-            className="cta-glow inline-block px-8 py-4 rounded-xl bg-red-600 text-white font-bold text-sm hover:bg-red-700 active:bg-red-800 transition-all duration-200"
-          >
-            Get My Free Strategy Call
-          </Link>
-          <p className="text-white/20 text-xs mt-4">
-            Or call us directly:{" "}
-            <a href="tel:+18669963824" className="text-white/40 hover:text-white/60 transition-colors">
-              (866) 996-META
-            </a>
-          </p>
+        {/* GHL Calendar Embed */}
+        <div className="rounded-2xl border border-white/10 bg-white/[0.03] overflow-hidden">
+          <CalendarEmbed />
         </div>
+
+        <p className="text-center text-white/20 text-xs mt-6">
+          Or call us directly:{" "}
+          <a href="tel:+18669963824" className="text-white/40 hover:text-white/60 transition-colors">
+            (866) 996-META
+          </a>
+        </p>
       </main>
     </div>
   );

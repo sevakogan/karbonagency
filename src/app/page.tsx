@@ -15,10 +15,10 @@ export default function Home() {
             <Logo size="sm" />
           </Link>
           <Link
-            href="/contact"
+            href="/book"
             className="px-5 py-2 rounded-lg bg-red-600 text-white text-sm font-semibold hover:bg-red-700 transition-colors"
           >
-            Get Started
+            Book a Free Call
           </Link>
         </div>
       </nav>
@@ -55,17 +55,17 @@ export default function Home() {
           {/* CTA Buttons */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link
-              href="/contact"
+              href="/book"
               className="cta-glow w-full sm:w-auto px-8 py-4 rounded-xl bg-red-600 text-white font-bold text-base hover:bg-red-700 active:bg-red-800 transition-all duration-200 text-center"
             >
               Book a Free Strategy Call
             </Link>
-            <a
-              href="#how-it-works"
+            <Link
+              href="/contact"
               className="w-full sm:w-auto px-8 py-4 rounded-xl border border-white/20 text-white/70 font-semibold text-base hover:bg-white/5 hover:text-white transition-all duration-200 text-center"
             >
-              See How It Works
-            </a>
+              Request More Info
+            </Link>
           </div>
 
           {/* Social proof line */}
@@ -219,7 +219,7 @@ export default function Home() {
               Here&apos;s what our Meta &amp; Instagram campaigns deliver for sim racing businesses.
             </p>
             <Link
-              href="/contact"
+              href="/book"
               className="cta-glow inline-block px-8 py-4 rounded-xl bg-red-600 text-white font-bold text-base hover:bg-red-700 active:bg-red-800 transition-all duration-200"
             >
               Get These Results for Your Venue
@@ -372,12 +372,20 @@ export default function Home() {
             and breathes sim racing marketing.
           </p>
 
-          <Link
-            href="/contact"
-            className="cta-glow inline-block px-10 py-4 rounded-xl bg-red-600 text-white font-bold text-lg hover:bg-red-700 active:bg-red-800 transition-all duration-200"
-          >
-            Book Your Free Strategy Call
-          </Link>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+            <Link
+              href="/book"
+              className="cta-glow w-full sm:w-auto px-10 py-4 rounded-xl bg-red-600 text-white font-bold text-lg hover:bg-red-700 active:bg-red-800 transition-all duration-200 text-center"
+            >
+              Book Your Free Strategy Call
+            </Link>
+            <Link
+              href="/contact"
+              className="w-full sm:w-auto px-10 py-4 rounded-xl border border-white/20 text-white/70 font-semibold text-lg hover:bg-white/5 hover:text-white transition-all duration-200 text-center"
+            >
+              Request More Info
+            </Link>
+          </div>
 
           <p className="mt-6 text-xs text-white/20">
             No contracts. No commitments. Just a conversation.
@@ -468,8 +476,11 @@ export default function Home() {
               </p>
             </div>
             <div className="flex items-center gap-6">
+              <Link href="/book" className="text-white/30 text-xs hover:text-white/60 transition-colors">
+                Book a Call
+              </Link>
               <Link href="/contact" className="text-white/30 text-xs hover:text-white/60 transition-colors">
-                Contact
+                Request Info
               </Link>
               <Link href="/privacy" className="text-white/30 text-xs hover:text-white/60 transition-colors">
                 Privacy Policy

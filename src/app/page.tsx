@@ -269,22 +269,22 @@ export default function Home() {
             <div className="p-6 rounded-2xl border border-white/5 bg-white/[0.02]">
               <h3 className="text-lg font-bold mb-3 flex items-center gap-2">
                 <svg className="w-5 h-5 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-                Campaign Highlights
+                Why Our Ads Work
               </h3>
-              <p className="text-white/30 text-sm mb-4">What our ad campaigns consistently deliver for sim racing clients.</p>
+              <p className="text-white/30 text-sm mb-4">The Karbon difference — built for sim racing from day one.</p>
               <div className="space-y-3">
                 {[
-                  { metric: "Avg. Click-Through Rate", value: "2.8%" },
-                  { metric: "Booking Conversion Rate", value: "12.4%" },
-                  { metric: "Avg. ROAS", value: "8.2x" },
-                  { metric: "Repeat Customer Rate", value: "34%" },
-                  { metric: "Weekday Session Fill Rate", value: "+62%" },
+                  { icon: "🎯", text: "Audiences built from real motorsport & gaming behavior" },
+                  { icon: "🎬", text: "High-energy creative that stops the scroll" },
+                  { icon: "📊", text: "Weekly optimization — never \"set it and forget it\"" },
+                  { icon: "📅", text: "Campaigns shaped around your peak & off-peak hours" },
+                  { icon: "💬", text: "Dedicated strategist who knows the sim racing world" },
                 ].map((row, i) => (
-                  <div key={i} className="flex items-center justify-between py-2 border-b border-white/5 last:border-0">
-                    <span className="text-white/50 text-sm">{row.metric}</span>
-                    <span className="text-white font-bold text-sm">{row.value}</span>
+                  <div key={i} className="flex items-center gap-3 py-2 border-b border-white/5 last:border-0">
+                    <span className="text-base">{row.icon}</span>
+                    <span className="text-white/50 text-sm">{row.text}</span>
                   </div>
                 ))}
               </div>

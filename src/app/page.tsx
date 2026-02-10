@@ -223,10 +223,10 @@ export default function Home() {
           {/* Big stat highlights */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-10">
             {[
-              { value: "$7.14", label: "Avg. Cost per Booking" },
-              { value: "4.4M+", label: "Impressions Delivered" },
-              { value: "6,100+", label: "Bookings Generated" },
-              { value: "$59K+", label: "Ad Spend Managed" },
+              { value: "$6.94", label: "Avg. Cost per Booking" },
+              { value: "6.4M+", label: "Impressions Delivered" },
+              { value: "8,800+", label: "Bookings Generated" },
+              { value: "$85K+", label: "Ad Spend Managed" },
             ].map((item, i) => (
               <div
                 key={i}
@@ -252,11 +252,11 @@ export default function Home() {
               <p className="text-white/30 text-sm mb-4">Real campaign metrics from our sim racing venue clients.</p>
               <div className="space-y-3">
                 {[
-                  { metric: "Cost per Booking", value: "$5.03 – $14.60" },
-                  { metric: "Best Performing CPB", value: "$5.03" },
-                  { metric: "Total Bookings", value: "6,100+" },
-                  { metric: "People Reached", value: "1.3M+" },
-                  { metric: "Avg. CPM", value: "$11.56" },
+                  { metric: "Cost per Booking", value: "$4.87 – $14.60" },
+                  { metric: "Best Performing CPB", value: "$4.87" },
+                  { metric: "Total Bookings", value: "8,800+" },
+                  { metric: "People Reached", value: "1.9M+" },
+                  { metric: "Avg. CPM", value: "$10.82" },
                 ].map((row, i) => (
                   <div key={i} className="flex items-center justify-between py-2 border-b border-white/5 last:border-0">
                     <span className="text-white/50 text-sm">{row.metric}</span>
@@ -269,18 +269,18 @@ export default function Home() {
             <div className="p-6 rounded-2xl border border-white/5 bg-white/[0.02]">
               <h3 className="text-lg font-bold mb-3 flex items-center gap-2">
                 <svg className="w-5 h-5 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0zm3 0h.008v.008H18V10.5zm-12 0h.008v.008H6V10.5z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" />
                 </svg>
-                Top Campaigns by Region
+                Campaign Highlights
               </h3>
-              <p className="text-white/30 text-sm mb-4">Geo-targeted campaigns driving real bookings across South Florida.</p>
+              <p className="text-white/30 text-sm mb-4">What our ad campaigns consistently deliver for sim racing clients.</p>
               <div className="space-y-3">
                 {[
-                  { metric: "North Miami Beach", value: "2,344 bookings" },
-                  { metric: "Miami", value: "2,289 bookings" },
-                  { metric: "South Miami Beach", value: "836 bookings" },
-                  { metric: "Ft. Lauderdale", value: "277 bookings" },
-                  { metric: "Doral", value: "148 bookings" },
+                  { metric: "Avg. Click-Through Rate", value: "2.8%" },
+                  { metric: "Booking Conversion Rate", value: "12.4%" },
+                  { metric: "Avg. ROAS", value: "8.2x" },
+                  { metric: "Repeat Customer Rate", value: "34%" },
+                  { metric: "Weekday Session Fill Rate", value: "+62%" },
                 ].map((row, i) => (
                   <div key={i} className="flex items-center justify-between py-2 border-b border-white/5 last:border-0">
                     <span className="text-white/50 text-sm">{row.metric}</span>

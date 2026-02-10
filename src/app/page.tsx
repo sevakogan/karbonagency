@@ -215,9 +215,15 @@ export default function Home() {
                 Speak for Themselves
               </span>
             </h2>
-            <p className="text-white/40 max-w-2xl mx-auto leading-relaxed">
+            <p className="text-white/40 max-w-2xl mx-auto leading-relaxed mb-8">
               Here&apos;s what our Meta &amp; Instagram campaigns deliver for sim racing businesses.
             </p>
+            <Link
+              href="/contact"
+              className="cta-glow inline-block px-8 py-4 rounded-xl bg-red-600 text-white font-bold text-base hover:bg-red-700 active:bg-red-800 transition-all duration-200"
+            >
+              Get These Results for Your Venue
+            </Link>
           </div>
 
           {/* Big stat highlights */}

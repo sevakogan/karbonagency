@@ -353,7 +353,7 @@ export default function Home() {
       <footer className="py-8 px-4 border-t border-white/5">
         <div className="max-w-4xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="text-white/30 text-xs">
-            SIMS Marketing &mdash; Meta & Instagram Ads for Sim Racing
+            Karbon Agency &mdash; Meta & Instagram Ads for Sim Racing
           </div>
           <div className="flex items-center gap-6">
             <Link href="/contact" className="text-white/30 text-xs hover:text-white/60 transition-colors">

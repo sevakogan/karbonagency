@@ -5,8 +5,8 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Baseline App",
-  description: "Baseline application",
+  title: "Karbon Agency | Meta & Instagram Ads for Sim Racing",
+  description: "The only ad agency that specializes exclusively in Meta & Instagram advertising for sim racing businesses. We fill your seats. Period.",
 };
 
 export const viewport: Viewport = {
@@ -22,10 +22,8 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${inter.className} antialiased flex flex-col min-h-screen`}>
-        <div className="flex-1 flex flex-col">
-          {children}
-        </div>
+      <body className={`${inter.className} antialiased`}>
+        {children}
       </body>
     </html>
   );

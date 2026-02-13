@@ -51,6 +51,29 @@ export async function getLeadById(id: string): Promise<Lead | null> {
   return data as Lead;
 }
 
+export async function createLead(data: {
+  name: string;
+  email?: string;
+  phone?: string;
+  company?: string;
+  source?: string;
+  notes?: string;
+  client_id?: string | null;
+}): Promise<{ error: string | null }> {
+  const supabase = await createSupabaseServer();
+  const { error } = await supabase.from("agency_leads").insert({
+    name: data.name,
+    email: data.email || "",
+    phone: data.phone || "",
+    company: data.company || "",
+    source: data.source || "manual",
+    notes: data.notes || "",
+    client_id: data.client_id || null,
+  });
+
+  return { error: error?.message ?? null };
+}
+
 export async function updateLeadStatus(
   id: string,
   status: LeadStatus

@@ -3,6 +3,7 @@ export const dynamic = "force-dynamic";
 import { createSupabaseServer } from "@/lib/supabase-server";
 import { getLeads } from "@/lib/actions/leads";
 import LeadsTable from "@/components/dashboard/leads-table";
+import AddLeadButton from "./add-lead-button";
 import type { LeadStatus } from "@/types";
 
 interface Props {
@@ -37,6 +38,7 @@ export default async function LeadsPage({ searchParams }: Props) {
           </h1>
           <p className="text-sm text-white/40">{leads.length} total</p>
         </div>
+        <AddLeadButton />
       </div>
 
       {/* Filters */}

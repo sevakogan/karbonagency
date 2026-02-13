@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createContactSubmission } from "@/lib/db";
+import { createContactSubmission, createLead } from "@/lib/db";
 import { createGHLContact } from "@/lib/ghl";
 
 export async function POST(request: NextRequest) {
@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, message: "Name, email, phone, and message are required" }, { status: 400 });
     }
 
-    // Save to Supabase and push to GoHighLevel in parallel
+    // Save to Supabase, push to GHL, and create lead in parallel
     const [id] = await Promise.all([
       createContactSubmission({
         name,
@@ -29,6 +29,17 @@ export async function POST(request: NextRequest) {
         phone,
         ...(company ? { company } : {}),
         message,
+      }),
+      createLead({
+        name,
+        email,
+        phone,
+        company,
+        source: "website",
+        notes: message,
+      }).catch((err) => {
+        console.error("Lead creation failed (non-blocking):", err);
+        return null;
       }),
     ]);
 

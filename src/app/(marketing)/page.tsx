@@ -9,17 +9,25 @@ export default function Home() {
     <div className="bg-black text-white">
 
       {/* ============ NAVBAR ============ */}
-      <nav className="fixed top-0 left-0 right-0 z-50 px-4 py-4">
+      <nav className="fixed top-0 left-0 right-0 z-50 px-4 py-3 bg-black/60 backdrop-blur-md border-b border-white/5">
         <div className="max-w-5xl mx-auto flex items-center justify-between">
           <Link href="/">
             <Logo size="sm" />
           </Link>
-          <Link
-            href="/book"
-            className="px-5 py-2 rounded-lg bg-red-600 text-white text-sm font-semibold hover:bg-red-700 transition-colors"
-          >
-            Book a Free Call
-          </Link>
+          <div className="flex items-center gap-3">
+            <Link
+              href="/login"
+              className="px-4 py-2 rounded-lg border border-white/30 text-white text-sm font-semibold hover:bg-white/10 transition-colors"
+            >
+              Sign In
+            </Link>
+            <Link
+              href="/book"
+              className="px-5 py-2 rounded-lg bg-red-600 text-white text-sm font-semibold hover:bg-red-700 transition-colors"
+            >
+              Book a Free Call
+            </Link>
+          </div>
         </div>
       </nav>
 

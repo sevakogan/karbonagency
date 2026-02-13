@@ -1,13 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-// Mock the supabase module
+// Mock the supabase-admin module
 const mockSingle = vi.fn();
 const mockSelect = vi.fn(() => ({ single: mockSingle }));
 const mockInsert = vi.fn(() => ({ select: mockSelect }));
 const mockFrom = vi.fn(() => ({ insert: mockInsert }));
 
-vi.mock("./supabase", () => ({
-  getSupabase: () => ({ from: mockFrom }),
+vi.mock("./supabase-admin", () => ({
+  getAdminSupabase: () => ({ from: mockFrom }),
 }));
 
 import { createContactSubmission } from "./db";

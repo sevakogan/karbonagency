@@ -91,6 +91,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(null);
     setProfile(null);
     setSession(null);
+    window.location.href = "/login";
   };
 
   const updateProfile = async (updates: Partial<Pick<Profile, "full_name">>) => {

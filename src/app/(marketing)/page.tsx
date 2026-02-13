@@ -19,7 +19,7 @@ export default function Home() {
               href="/login"
               className="px-4 py-2 rounded-lg border border-white/30 text-white text-sm font-semibold hover:bg-white/10 transition-colors"
             >
-              Sign In
+              Client Dashboard
             </Link>
             <Link
               href="/book"

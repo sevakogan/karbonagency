@@ -5,14 +5,19 @@ import type { NextRequest } from "next/server";
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  let response = NextResponse.next({
-    request: { headers: request.headers },
-  });
+  // Skip if Supabase env vars are not configured
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  if (!supabaseUrl || !supabaseAnonKey) {
+    return NextResponse.next();
+  }
 
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
+  try {
+    let response = NextResponse.next({
+      request: { headers: request.headers },
+    });
+
+    const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
       cookies: {
         get(name: string) {
           return request.cookies.get(name)?.value;
@@ -34,43 +39,46 @@ export async function middleware(request: NextRequest) {
           response.cookies.set(name, "", options);
         },
       },
-    }
-  );
+    });
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
-  // Auth pages — redirect logged-in users to dashboard
-  if (user && pathname.startsWith("/login")) {
-    return NextResponse.redirect(new URL("/dashboard", request.url));
-  }
-
-  // Protected routes — require auth
-  if (
-    !user &&
-    (pathname.startsWith("/dashboard") || pathname.startsWith("/admin"))
-  ) {
-    return NextResponse.redirect(new URL("/login", request.url));
-  }
-
-  if (!user) return response;
-
-  // Fetch profile for role checks
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .single();
-
-  // Admin routes require admin role
-  if (pathname.startsWith("/admin")) {
-    if (profile?.role !== "admin") {
+    // Auth pages — redirect logged-in users to dashboard
+    if (user && pathname.startsWith("/login")) {
       return NextResponse.redirect(new URL("/dashboard", request.url));
     }
-  }
 
-  return response;
+    // Protected routes — require auth
+    if (
+      !user &&
+      (pathname.startsWith("/dashboard") || pathname.startsWith("/admin"))
+    ) {
+      return NextResponse.redirect(new URL("/login", request.url));
+    }
+
+    if (!user) return response;
+
+    // Fetch profile for role checks
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .single();
+
+    // Admin routes require admin role
+    if (pathname.startsWith("/admin")) {
+      if (profile?.role !== "admin") {
+        return NextResponse.redirect(new URL("/dashboard", request.url));
+      }
+    }
+
+    return response;
+  } catch (error) {
+    console.error("Middleware error:", error);
+    return NextResponse.next();
+  }
 }
 
 export const config = {

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { buttonStyles } from "@/components/ui/form-styles";
 import AddLeadForm from "./add-lead-form";
 
 export default function AddLeadButton() {
@@ -10,7 +11,7 @@ export default function AddLeadButton() {
     <>
       <button
         onClick={() => setOpen(true)}
-        className="px-4 py-2 rounded-xl bg-red-600 text-white text-sm font-semibold hover:bg-red-700 transition-colors"
+        className={buttonStyles.primary}
       >
         + Add Lead
       </button>

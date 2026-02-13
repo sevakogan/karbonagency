@@ -3,9 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createLead } from "@/lib/actions/leads";
-
-const inputClass =
-  "w-full px-4 py-2.5 rounded-xl border border-white/10 bg-white/5 text-white text-sm placeholder-white/25 focus:outline-none focus:ring-2 focus:ring-red-500/50 focus:border-transparent";
+import { formStyles, buttonStyles } from "@/components/ui/form-styles";
 
 export default function AddLeadForm({ onClose }: { onClose: () => void }) {
   const router = useRouter();
@@ -38,13 +36,13 @@ export default function AddLeadForm({ onClose }: { onClose: () => void }) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
-      <div className="w-full max-w-md rounded-2xl border border-white/10 bg-zinc-950 p-6">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4">
+      <div className="w-full max-w-md rounded-xl border border-gray-200 bg-white p-6 shadow-xl">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-lg font-bold">Add Lead</h2>
+          <h2 className="text-lg font-bold text-gray-900">Add Lead</h2>
           <button
             onClick={onClose}
-            className="text-white/30 hover:text-white/60 transition-colors text-xl leading-none"
+            className="text-gray-400 hover:text-gray-600 transition-colors text-xl leading-none"
           >
             &times;
           </button>
@@ -52,42 +50,42 @@ export default function AddLeadForm({ onClose }: { onClose: () => void }) {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-xs font-semibold text-white/60 mb-1">Name *</label>
-            <input name="name" required className={inputClass} placeholder="John Doe" />
+            <label className={formStyles.label}>Name *</label>
+            <input name="name" required className={formStyles.input} placeholder="John Doe" />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-semibold text-white/60 mb-1">Email</label>
-              <input name="email" type="email" className={inputClass} placeholder="john@example.com" />
+              <label className={formStyles.label}>Email</label>
+              <input name="email" type="email" className={formStyles.input} placeholder="john@example.com" />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-white/60 mb-1">Phone</label>
-              <input name="phone" className={inputClass} placeholder="555-1234" />
+              <label className={formStyles.label}>Phone</label>
+              <input name="phone" className={formStyles.input} placeholder="555-1234" />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-semibold text-white/60 mb-1">Company</label>
-              <input name="company" className={inputClass} placeholder="Acme Racing" />
+              <label className={formStyles.label}>Company</label>
+              <input name="company" className={formStyles.input} placeholder="Acme Racing" />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-white/60 mb-1">Source</label>
-              <select name="source" className={inputClass}>
-                <option value="manual" className="bg-zinc-900">Manual</option>
-                <option value="website" className="bg-zinc-900">Website</option>
-                <option value="referral" className="bg-zinc-900">Referral</option>
-                <option value="social" className="bg-zinc-900">Social Media</option>
-                <option value="other" className="bg-zinc-900">Other</option>
+              <label className={formStyles.label}>Source</label>
+              <select name="source" className={formStyles.select}>
+                <option value="manual">Manual</option>
+                <option value="website">Website</option>
+                <option value="referral">Referral</option>
+                <option value="social">Social Media</option>
+                <option value="other">Other</option>
               </select>
             </div>
           </div>
           <div>
-            <label className="block text-xs font-semibold text-white/60 mb-1">Notes</label>
-            <textarea name="notes" rows={3} className={inputClass} placeholder="Any additional details..." />
+            <label className={formStyles.label}>Notes</label>
+            <textarea name="notes" rows={3} className={formStyles.textarea} placeholder="Any additional details..." />
           </div>
 
           {status === "error" && (
-            <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
+            <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm">
               {errorMessage}
             </div>
           )}
@@ -96,14 +94,14 @@ export default function AddLeadForm({ onClose }: { onClose: () => void }) {
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 py-2.5 rounded-xl border border-white/10 text-white/60 text-sm font-semibold hover:bg-white/5 transition-colors"
+              className={`flex-1 ${buttonStyles.secondary}`}
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={status === "loading"}
-              className="flex-1 py-2.5 rounded-xl bg-red-600 text-white text-sm font-bold hover:bg-red-700 transition-colors disabled:opacity-50"
+              className={`flex-1 ${buttonStyles.primary}`}
             >
               {status === "loading" ? "Adding..." : "Add Lead"}
             </button>

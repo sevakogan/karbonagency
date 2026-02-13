@@ -4,10 +4,12 @@ import { createSupabaseServer } from "@/lib/supabase-server";
 import { getLeads } from "@/lib/actions/leads";
 import LeadsTable from "@/components/dashboard/leads-table";
 import AddLeadButton from "./add-lead-button";
+import { formStyles } from "@/components/ui/form-styles";
+import { buttonStyles } from "@/components/ui/form-styles";
 import type { LeadStatus } from "@/types";
 
 interface Props {
-  searchParams: Promise<{ status?: string; search?: string }>;
+  searchParams: Promise<{ status?: string; search?: string; clientId?: string }>;
 }
 
 export default async function LeadsPage({ searchParams }: Props) {
@@ -27,16 +29,17 @@ export default async function LeadsPage({ searchParams }: Props) {
   const leads = await getLeads({
     status: params.status as LeadStatus | undefined,
     search: params.search,
+    clientId: params.clientId,
   });
 
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-black mb-1">
+          <h1 className="text-2xl font-black text-gray-900 mb-1">
             {isAdmin ? "All Leads" : "My Leads"}
           </h1>
-          <p className="text-sm text-white/40">{leads.length} total</p>
+          <p className="text-sm text-gray-500">{leads.length} total</p>
         </div>
         <AddLeadButton />
       </div>
@@ -44,35 +47,35 @@ export default async function LeadsPage({ searchParams }: Props) {
       {/* Filters */}
       <div className="flex gap-3 mb-6">
         <form className="flex gap-3" action="/dashboard/leads">
+          {params.clientId && (
+            <input type="hidden" name="clientId" value={params.clientId} />
+          )}
           <input
             name="search"
             type="text"
             placeholder="Search leads..."
             defaultValue={params.search || ""}
-            className="px-4 py-2 rounded-xl border border-white/10 bg-white/5 text-sm text-white placeholder-white/25 focus:outline-none focus:ring-2 focus:ring-red-500/50 w-64"
+            className={`${formStyles.input} w-64`}
           />
           <select
             name="status"
             defaultValue={params.status || ""}
-            className="px-4 py-2 rounded-xl border border-white/10 bg-white/5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-red-500/50"
+            className={formStyles.select}
           >
-            <option value="" className="bg-zinc-900">All Statuses</option>
-            <option value="new" className="bg-zinc-900">New</option>
-            <option value="contacted" className="bg-zinc-900">Contacted</option>
-            <option value="qualified" className="bg-zinc-900">Qualified</option>
-            <option value="converted" className="bg-zinc-900">Converted</option>
-            <option value="lost" className="bg-zinc-900">Lost</option>
+            <option value="">All Statuses</option>
+            <option value="new">New</option>
+            <option value="contacted">Contacted</option>
+            <option value="qualified">Qualified</option>
+            <option value="converted">Converted</option>
+            <option value="lost">Lost</option>
           </select>
-          <button
-            type="submit"
-            className="px-4 py-2 rounded-xl bg-red-600 text-white text-sm font-semibold hover:bg-red-700 transition-colors"
-          >
+          <button type="submit" className={buttonStyles.primary}>
             Filter
           </button>
         </form>
       </div>
 
-      <div className="rounded-2xl border border-white/5 bg-white/[0.02] overflow-hidden">
+      <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
         <LeadsTable leads={leads} showClientColumn={isAdmin} />
       </div>
     </div>

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { AuthProvider } from "@/components/auth/auth-provider";
-import Sidebar from "@/components/dashboard/sidebar";
+import TopNav from "@/components/dashboard/top-nav";
+import { getClients } from "@/lib/actions/clients";
 
 export const metadata: Metadata = {
   title: {
@@ -9,18 +10,18 @@ export const metadata: Metadata = {
   },
 };
 
-export default function DashboardLayout({
+export default async function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const clients = await getClients();
+
   return (
     <AuthProvider>
-      <div className="flex min-h-screen bg-black text-white">
-        <Sidebar />
-        <main className="flex-1 overflow-y-auto">
-          <div className="p-6 sm:p-8">{children}</div>
-        </main>
+      <div className="min-h-screen bg-gray-50 text-gray-900">
+        <TopNav clients={clients} />
+        <main className="mx-auto max-w-7xl px-6 py-8">{children}</main>
       </div>
     </AuthProvider>
   );

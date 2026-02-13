@@ -26,16 +26,16 @@ export default async function ClientDetailPage({ params }: Props) {
   return (
     <div>
       <div className="flex items-center gap-3 mb-1">
-        <Link href="/admin/clients" className="text-white/40 hover:text-white/70 text-sm transition-colors">
+        <Link href="/admin/clients" className="text-gray-400 hover:text-gray-600 text-sm transition-colors">
           Clients
         </Link>
-        <span className="text-white/20">/</span>
-        <h1 className="text-2xl font-black">{client.name}</h1>
+        <span className="text-gray-300">/</span>
+        <h1 className="text-2xl font-black text-gray-900">{client.name}</h1>
         <Badge variant={client.is_active ? "active" : "lost"}>
           {client.is_active ? "Active" : "Inactive"}
         </Badge>
       </div>
-      <p className="text-sm text-white/40 mb-8">
+      <p className="text-sm text-gray-500 mb-8">
         {client.contact_email || "No email"} | Slug: {client.slug}
       </p>
 
@@ -48,24 +48,24 @@ export default async function ClientDetailPage({ params }: Props) {
 
       {/* Leads section */}
       <div className="mb-8">
-        <h2 className="text-lg font-bold mb-4">Leads</h2>
-        <div className="rounded-2xl border border-white/5 bg-white/[0.02] overflow-hidden">
+        <h2 className="text-lg font-bold text-gray-900 mb-4">Leads</h2>
+        <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
           <LeadsTable leads={leads} />
         </div>
       </div>
 
       {/* Campaigns section */}
       <div>
-        <h2 className="text-lg font-bold mb-4">Campaigns</h2>
+        <h2 className="text-lg font-bold text-gray-900 mb-4">Campaigns</h2>
         {campaigns.length === 0 ? (
-          <div className="rounded-2xl border border-white/5 bg-white/[0.02] p-8 text-center text-white/30 text-sm">
+          <div className="rounded-xl border border-gray-200 bg-white shadow-sm p-8 text-center text-gray-400 text-sm">
             No campaigns yet
           </div>
         ) : (
-          <div className="rounded-2xl border border-white/5 bg-white/[0.02] overflow-hidden">
+          <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-white/5 text-white/40 text-xs uppercase tracking-wide">
+                <tr className="border-b border-gray-200 bg-gray-50 text-gray-500 text-xs uppercase tracking-wide">
                   <th className="text-left py-3 px-4 font-medium">Name</th>
                   <th className="text-left py-3 px-4 font-medium">Platform</th>
                   <th className="text-left py-3 px-4 font-medium">Status</th>
@@ -74,20 +74,20 @@ export default async function ClientDetailPage({ params }: Props) {
               </thead>
               <tbody>
                 {campaigns.map((campaign) => (
-                  <tr key={campaign.id} className="border-b border-white/5 hover:bg-white/[0.02]">
+                  <tr key={campaign.id} className="border-b border-gray-100 last:border-0 hover:bg-gray-50">
                     <td className="py-3 px-4">
                       <Link
                         href={`/dashboard/campaigns/${campaign.id}`}
-                        className="text-red-400 hover:text-red-300 font-medium transition-colors"
+                        className="text-red-600 hover:text-red-700 font-medium transition-colors"
                       >
                         {campaign.name}
                       </Link>
                     </td>
-                    <td className="py-3 px-4 text-white/60 capitalize">{campaign.platform}</td>
+                    <td className="py-3 px-4 text-gray-600 capitalize">{campaign.platform}</td>
                     <td className="py-3 px-4">
                       <Badge variant={campaign.status}>{campaign.status}</Badge>
                     </td>
-                    <td className="py-3 px-4 text-white/60">
+                    <td className="py-3 px-4 text-gray-600">
                       {campaign.budget ? `$${Number(campaign.budget).toLocaleString()}` : "—"}
                     </td>
                   </tr>

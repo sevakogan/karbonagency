@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import Badge from "@/components/ui/badge";
 import { updateLeadStatus } from "@/lib/actions/leads";
+import { formStyles } from "@/components/ui/form-styles";
 import type { Lead, LeadStatus } from "@/types";
 
 const STATUS_OPTIONS: LeadStatus[] = ["new", "contacted", "qualified", "converted", "lost"];
@@ -34,7 +35,7 @@ export default function LeadsTable({ leads, showClientColumn }: LeadsTableProps)
 
   if (optimisticLeads.length === 0) {
     return (
-      <div className="text-center py-12 text-white/30 text-sm">
+      <div className="text-center py-12 text-gray-400 text-sm">
         No leads found
       </div>
     );
@@ -44,7 +45,7 @@ export default function LeadsTable({ leads, showClientColumn }: LeadsTableProps)
     <div className="overflow-x-auto">
       <table className="w-full text-sm">
         <thead>
-          <tr className="border-b border-white/5 text-white/40 text-xs uppercase tracking-wide">
+          <tr className="border-b border-gray-200 bg-gray-50 text-gray-500 text-xs uppercase tracking-wide">
             <th className="text-left py-3 px-4 font-medium">Name</th>
             <th className="text-left py-3 px-4 font-medium">Email</th>
             <th className="text-left py-3 px-4 font-medium">Phone</th>
@@ -60,30 +61,30 @@ export default function LeadsTable({ leads, showClientColumn }: LeadsTableProps)
           {optimisticLeads.map((lead) => (
             <tr
               key={lead.id}
-              className="border-b border-white/5 hover:bg-white/[0.02] transition-colors"
+              className="border-b border-gray-100 last:border-0 hover:bg-gray-50 transition-colors"
             >
-              <td className="py-3 px-4 font-medium">{lead.name}</td>
-              <td className="py-3 px-4 text-white/60">{lead.email}</td>
-              <td className="py-3 px-4 text-white/60">{lead.phone}</td>
+              <td className="py-3 px-4 font-medium text-gray-900">{lead.name}</td>
+              <td className="py-3 px-4 text-gray-600">{lead.email}</td>
+              <td className="py-3 px-4 text-gray-600">{lead.phone}</td>
               {showClientColumn && (
-                <td className="py-3 px-4 text-white/60">{lead.company}</td>
+                <td className="py-3 px-4 text-gray-600">{lead.company}</td>
               )}
-              <td className="py-3 px-4 text-white/60">{lead.source}</td>
+              <td className="py-3 px-4 text-gray-600">{lead.source}</td>
               <td className="py-3 px-4">
                 <select
                   value={lead.status}
                   onChange={(e) => handleStatusChange(lead.id, e.target.value as LeadStatus)}
                   disabled={isPending}
-                  className="bg-transparent border border-white/10 rounded-lg px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-red-500/50 cursor-pointer"
+                  className={`${formStyles.select} !w-auto !py-1 !px-2 text-xs`}
                 >
                   {STATUS_OPTIONS.map((s) => (
-                    <option key={s} value={s} className="bg-zinc-900">
+                    <option key={s} value={s}>
                       {s.charAt(0).toUpperCase() + s.slice(1)}
                     </option>
                   ))}
                 </select>
               </td>
-              <td className="py-3 px-4 text-white/40 text-xs">
+              <td className="py-3 px-4 text-gray-400 text-xs">
                 {new Date(lead.created_at).toLocaleDateString()}
               </td>
             </tr>

@@ -3,6 +3,7 @@ export const dynamic = "force-dynamic";
 import Link from "next/link";
 import { getClients } from "@/lib/actions/clients";
 import Badge from "@/components/ui/badge";
+import { buttonStyles } from "@/components/ui/form-styles";
 
 export default async function ClientsPage() {
   const clients = await getClients();
@@ -11,26 +12,23 @@ export default async function ClientsPage() {
     <div>
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-black mb-1">Clients</h1>
-          <p className="text-sm text-white/40">{clients.length} total</p>
+          <h1 className="text-2xl font-black text-gray-900 mb-1">Clients</h1>
+          <p className="text-sm text-gray-500">{clients.length} total</p>
         </div>
-        <Link
-          href="/admin/clients/new"
-          className="px-5 py-2.5 rounded-xl bg-red-600 text-white text-sm font-semibold hover:bg-red-700 transition-colors"
-        >
+        <Link href="/admin/clients/new" className={buttonStyles.primary}>
           Add Client
         </Link>
       </div>
 
-      <div className="rounded-2xl border border-white/5 bg-white/[0.02] overflow-hidden">
+      <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
         {clients.length === 0 ? (
-          <div className="text-center py-12 text-white/30 text-sm">
+          <div className="text-center py-12 text-gray-400 text-sm">
             No clients yet
           </div>
         ) : (
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-white/5 text-white/40 text-xs uppercase tracking-wide">
+              <tr className="border-b border-gray-200 bg-gray-50 text-gray-500 text-xs uppercase tracking-wide">
                 <th className="text-left py-3 px-4 font-medium">Name</th>
                 <th className="text-left py-3 px-4 font-medium">Slug</th>
                 <th className="text-left py-3 px-4 font-medium">Email</th>
@@ -42,20 +40,20 @@ export default async function ClientsPage() {
               {clients.map((client) => (
                 <tr
                   key={client.id}
-                  className="border-b border-white/5 hover:bg-white/[0.02] transition-colors"
+                  className="border-b border-gray-100 last:border-0 hover:bg-gray-50 transition-colors"
                 >
                   <td className="py-3 px-4">
                     <Link
                       href={`/admin/clients/${client.id}`}
-                      className="font-medium text-red-400 hover:text-red-300 transition-colors"
+                      className="font-medium text-red-600 hover:text-red-700 transition-colors"
                     >
                       {client.name}
                     </Link>
                   </td>
-                  <td className="py-3 px-4 text-white/40 font-mono text-xs">
+                  <td className="py-3 px-4 text-gray-400 font-mono text-xs">
                     {client.slug}
                   </td>
-                  <td className="py-3 px-4 text-white/60">
+                  <td className="py-3 px-4 text-gray-600">
                     {client.contact_email || "—"}
                   </td>
                   <td className="py-3 px-4">
@@ -63,7 +61,7 @@ export default async function ClientsPage() {
                       {client.is_active ? "Active" : "Inactive"}
                     </Badge>
                   </td>
-                  <td className="py-3 px-4 text-white/40 text-xs">
+                  <td className="py-3 px-4 text-gray-400 text-xs">
                     {new Date(client.created_at).toLocaleDateString()}
                   </td>
                 </tr>

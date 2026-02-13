@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/actions/clients";
+import { formStyles, buttonStyles } from "@/components/ui/form-styles";
 
 export default function NewClientPage() {
   const router = useRouter();
@@ -38,30 +39,27 @@ export default function NewClientPage() {
     router.push(`/admin/clients/${id}`);
   };
 
-  const inputClass =
-    "w-full px-4 py-3 rounded-xl border border-white/10 bg-white/5 text-white text-sm placeholder-white/25 focus:outline-none focus:ring-2 focus:ring-red-500/50 focus:border-transparent";
-
   return (
     <div className="max-w-lg">
-      <h1 className="text-2xl font-black mb-1">Add Client</h1>
-      <p className="text-sm text-white/40 mb-8">Create a new sim racing venue client</p>
+      <h1 className="text-2xl font-black text-gray-900 mb-1">Add Client</h1>
+      <p className="text-sm text-gray-500 mb-8">Create a new sim racing venue client</p>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block text-xs font-semibold text-white/60 mb-1">
-            Venue Name <span className="text-red-400">*</span>
+          <label className={formStyles.label}>
+            Venue Name <span className="text-red-600">*</span>
           </label>
-          <input name="name" required className={inputClass} placeholder="e.g. SpeedZone Racing" />
+          <input name="name" required className={formStyles.input} placeholder="e.g. SpeedZone Racing" />
         </div>
 
         <div>
-          <label className="block text-xs font-semibold text-white/60 mb-1">
-            Slug <span className="text-red-400">*</span>
+          <label className={formStyles.label}>
+            Slug <span className="text-red-600">*</span>
           </label>
           <input
             name="slug"
             required
-            className={inputClass}
+            className={formStyles.input}
             placeholder="e.g. speedzone-racing"
             pattern="[a-z0-9-]+"
             title="Lowercase letters, numbers, and hyphens only"
@@ -69,22 +67,22 @@ export default function NewClientPage() {
         </div>
 
         <div>
-          <label className="block text-xs font-semibold text-white/60 mb-1">Contact Email</label>
-          <input name="contact_email" type="email" className={inputClass} placeholder="contact@venue.com" />
+          <label className={formStyles.label}>Contact Email</label>
+          <input name="contact_email" type="email" className={formStyles.input} placeholder="contact@venue.com" />
         </div>
 
         <div>
-          <label className="block text-xs font-semibold text-white/60 mb-1">Contact Phone</label>
-          <input name="contact_phone" type="tel" className={inputClass} placeholder="(555) 123-4567" />
+          <label className={formStyles.label}>Contact Phone</label>
+          <input name="contact_phone" type="tel" className={formStyles.input} placeholder="(555) 123-4567" />
         </div>
 
         <div>
-          <label className="block text-xs font-semibold text-white/60 mb-1">GHL Location ID</label>
-          <input name="ghl_location_id" className={inputClass} placeholder="Optional GoHighLevel location ID" />
+          <label className={formStyles.label}>GHL Location ID</label>
+          <input name="ghl_location_id" className={formStyles.input} placeholder="Optional GoHighLevel location ID" />
         </div>
 
         {status === "error" && (
-          <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
+          <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm">
             {errorMessage}
           </div>
         )}
@@ -92,7 +90,7 @@ export default function NewClientPage() {
         <button
           type="submit"
           disabled={status === "saving"}
-          className="w-full py-3 rounded-xl bg-red-600 text-white font-bold text-sm hover:bg-red-700 transition-colors disabled:opacity-50"
+          className={`w-full ${buttonStyles.primary}`}
         >
           {status === "saving" ? "Creating..." : "Create Client"}
         </button>

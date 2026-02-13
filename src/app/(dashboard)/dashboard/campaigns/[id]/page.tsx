@@ -18,7 +18,6 @@ export default async function CampaignDetailPage({ params }: Props) {
 
   const metrics = await getCampaignMetrics(id);
 
-  // Compute aggregate metrics
   const totalSpend = metrics.reduce((sum, m) => sum + Number(m.spend), 0);
   const totalImpressions = metrics.reduce((sum, m) => sum + m.impressions, 0);
   const totalClicks = metrics.reduce((sum, m) => sum + m.clicks, 0);
@@ -29,20 +28,19 @@ export default async function CampaignDetailPage({ params }: Props) {
   return (
     <div>
       <div className="flex items-center gap-3 mb-1">
-        <Link href="/dashboard/campaigns" className="text-white/40 hover:text-white/70 text-sm transition-colors">
+        <Link href="/dashboard/campaigns" className="text-gray-400 hover:text-gray-600 text-sm transition-colors">
           Campaigns
         </Link>
-        <span className="text-white/20">/</span>
-        <h1 className="text-2xl font-black">{campaign.name}</h1>
+        <span className="text-gray-300">/</span>
+        <h1 className="text-2xl font-black text-gray-900">{campaign.name}</h1>
         <Badge variant={campaign.status}>{campaign.status}</Badge>
       </div>
-      <p className="text-sm text-white/40 mb-8">
+      <p className="text-sm text-gray-500 mb-8">
         Platform: {campaign.platform} | Budget: {campaign.budget ? `$${Number(campaign.budget).toLocaleString()}` : "—"}
         {campaign.start_date && ` | ${new Date(campaign.start_date).toLocaleDateString()}`}
         {campaign.end_date && ` — ${new Date(campaign.end_date).toLocaleDateString()}`}
       </p>
 
-      {/* Aggregate stats */}
       <div className="grid grid-cols-2 lg:grid-cols-6 gap-4 mb-8">
         <StatCard label="Total Spend" value={`$${totalSpend.toLocaleString()}`} />
         <StatCard label="Impressions" value={totalImpressions.toLocaleString()} />
@@ -52,21 +50,19 @@ export default async function CampaignDetailPage({ params }: Props) {
         <StatCard label="Avg CPB" value={avgCPB > 0 ? `$${avgCPB.toFixed(2)}` : "—"} />
       </div>
 
-      {/* Metrics chart */}
       <CampaignMetricsChart metrics={metrics} />
 
-      {/* Metrics table */}
       <div className="mt-8">
-        <h2 className="text-lg font-bold mb-4">Performance by Period</h2>
-        <div className="rounded-2xl border border-white/5 bg-white/[0.02] overflow-hidden">
+        <h2 className="text-lg font-bold text-gray-900 mb-4">Performance by Period</h2>
+        <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
           {metrics.length === 0 ? (
-            <div className="text-center py-12 text-white/30 text-sm">
+            <div className="text-center py-12 text-gray-400 text-sm">
               No metrics recorded yet
             </div>
           ) : (
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-white/5 text-white/40 text-xs uppercase tracking-wide">
+                <tr className="border-b border-gray-200 bg-gray-50 text-gray-500 text-xs uppercase tracking-wide">
                   <th className="text-left py-3 px-4 font-medium">Period</th>
                   <th className="text-right py-3 px-4 font-medium">Spend</th>
                   <th className="text-right py-3 px-4 font-medium">Impressions</th>
@@ -80,16 +76,16 @@ export default async function CampaignDetailPage({ params }: Props) {
                 {metrics.map((m) => {
                   const mCtr = m.impressions > 0 ? (m.clicks / m.impressions) * 100 : 0;
                   return (
-                    <tr key={m.id} className="border-b border-white/5 hover:bg-white/[0.02]">
-                      <td className="py-3 px-4">
+                    <tr key={m.id} className="border-b border-gray-100 last:border-0 hover:bg-gray-50">
+                      <td className="py-3 px-4 text-gray-900">
                         {new Date(m.period_start).toLocaleDateString()} — {new Date(m.period_end).toLocaleDateString()}
                       </td>
-                      <td className="py-3 px-4 text-right">${Number(m.spend).toLocaleString()}</td>
-                      <td className="py-3 px-4 text-right text-white/60">{m.impressions.toLocaleString()}</td>
-                      <td className="py-3 px-4 text-right text-white/60">{m.clicks.toLocaleString()}</td>
-                      <td className="py-3 px-4 text-right text-white/60">{mCtr.toFixed(2)}%</td>
-                      <td className="py-3 px-4 text-right font-medium">{m.bookings.toLocaleString()}</td>
-                      <td className="py-3 px-4 text-right font-medium">
+                      <td className="py-3 px-4 text-right text-gray-900">${Number(m.spend).toLocaleString()}</td>
+                      <td className="py-3 px-4 text-right text-gray-600">{m.impressions.toLocaleString()}</td>
+                      <td className="py-3 px-4 text-right text-gray-600">{m.clicks.toLocaleString()}</td>
+                      <td className="py-3 px-4 text-right text-gray-600">{mCtr.toFixed(2)}%</td>
+                      <td className="py-3 px-4 text-right font-medium text-gray-900">{m.bookings.toLocaleString()}</td>
+                      <td className="py-3 px-4 text-right font-medium text-gray-900">
                         {m.cost_per_booking ? `$${Number(m.cost_per_booking).toFixed(2)}` : "—"}
                       </td>
                     </tr>

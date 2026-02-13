@@ -45,10 +45,10 @@ export default async function DashboardOverview() {
 
   return (
     <div>
-      <h1 className="text-2xl font-black mb-1">
+      <h1 className="text-2xl font-black text-gray-900 mb-1">
         {isAdmin ? "Admin Dashboard" : "Dashboard"}
       </h1>
-      <p className="text-sm text-white/40 mb-8">
+      <p className="text-sm text-gray-500 mb-8">
         Welcome back{profile?.full_name ? `, ${profile.full_name}` : ""}
       </p>
 

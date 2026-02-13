@@ -4,15 +4,15 @@ interface BadgeProps {
 }
 
 const variantStyles: Record<BadgeProps["variant"], string> = {
-  new: "bg-blue-500/10 text-blue-400 border-blue-500/20",
-  contacted: "bg-yellow-500/10 text-yellow-400 border-yellow-500/20",
-  qualified: "bg-purple-500/10 text-purple-400 border-purple-500/20",
-  converted: "bg-green-500/10 text-green-400 border-green-500/20",
-  lost: "bg-red-500/10 text-red-400 border-red-500/20",
-  draft: "bg-zinc-500/10 text-zinc-400 border-zinc-500/20",
-  active: "bg-green-500/10 text-green-400 border-green-500/20",
-  paused: "bg-yellow-500/10 text-yellow-400 border-yellow-500/20",
-  completed: "bg-blue-500/10 text-blue-400 border-blue-500/20",
+  new: "bg-blue-50 text-blue-700 border-blue-200",
+  contacted: "bg-yellow-50 text-yellow-700 border-yellow-200",
+  qualified: "bg-purple-50 text-purple-700 border-purple-200",
+  converted: "bg-green-50 text-green-700 border-green-200",
+  lost: "bg-red-50 text-red-700 border-red-200",
+  draft: "bg-gray-50 text-gray-700 border-gray-200",
+  active: "bg-green-50 text-green-700 border-green-200",
+  paused: "bg-yellow-50 text-yellow-700 border-yellow-200",
+  completed: "bg-blue-50 text-blue-700 border-blue-200",
 };
 
 export default function Badge({ variant, children }: BadgeProps) {

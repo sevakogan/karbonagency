@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { inviteClientUser } from "@/lib/actions/users";
 import { getClients } from "@/lib/actions/clients";
+import { formStyles, buttonStyles } from "@/components/ui/form-styles";
 import type { Client } from "@/types";
 
 export default function InviteUserForm() {
@@ -40,26 +41,23 @@ export default function InviteUserForm() {
     router.refresh();
   };
 
-  const inputClass =
-    "w-full px-4 py-3 rounded-xl border border-white/10 bg-white/5 text-white text-sm placeholder-white/25 focus:outline-none focus:ring-2 focus:ring-red-500/50 focus:border-transparent";
-
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div>
-          <label className="block text-xs font-semibold text-white/60 mb-1">Email</label>
-          <input name="email" type="email" required className={inputClass} placeholder="user@venue.com" />
+          <label className={formStyles.label}>Email</label>
+          <input name="email" type="email" required className={formStyles.input} placeholder="user@venue.com" />
         </div>
         <div>
-          <label className="block text-xs font-semibold text-white/60 mb-1">Full Name</label>
-          <input name="full_name" required className={inputClass} placeholder="John Doe" />
+          <label className={formStyles.label}>Full Name</label>
+          <input name="full_name" required className={formStyles.input} placeholder="John Doe" />
         </div>
         <div>
-          <label className="block text-xs font-semibold text-white/60 mb-1">Client</label>
-          <select name="client_id" required className={inputClass}>
-            <option value="" className="bg-zinc-900">Select a client</option>
+          <label className={formStyles.label}>Client</label>
+          <select name="client_id" required className={formStyles.select}>
+            <option value="">Select a client</option>
             {clients.map((client) => (
-              <option key={client.id} value={client.id} className="bg-zinc-900">
+              <option key={client.id} value={client.id}>
                 {client.name}
               </option>
             ))}
@@ -68,16 +66,16 @@ export default function InviteUserForm() {
       </div>
 
       {status === "success" && (
-        <p className="text-sm text-green-400">{message}</p>
+        <p className="text-sm text-green-600">{message}</p>
       )}
       {status === "error" && (
-        <p className="text-sm text-red-400">{message}</p>
+        <p className="text-sm text-red-600">{message}</p>
       )}
 
       <button
         type="submit"
         disabled={status === "saving"}
-        className="px-6 py-2.5 rounded-xl bg-red-600 text-white text-sm font-semibold hover:bg-red-700 transition-colors disabled:opacity-50"
+        className={buttonStyles.primary}
       >
         {status === "saving" ? "Inviting..." : "Invite User"}
       </button>

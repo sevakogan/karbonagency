@@ -2,9 +2,10 @@ interface LogoProps {
   className?: string;
   showWordmark?: boolean;
   size?: "sm" | "md" | "lg";
+  variant?: "dark" | "light";
 }
 
-export default function Logo({ className = "", showWordmark = true, size = "md" }: LogoProps) {
+export default function Logo({ className = "", showWordmark = true, size = "md", variant = "dark" }: LogoProps) {
   const sizes = {
     sm: { icon: "w-6 h-6", text: "text-sm" },
     md: { icon: "w-8 h-8", text: "text-lg" },
@@ -44,10 +45,10 @@ export default function Logo({ className = "", showWordmark = true, size = "md" 
 
       {showWordmark && (
         <div className="flex items-baseline gap-1.5">
-          <span className={`${s.text} font-black tracking-tight text-white`}>
+          <span className={`${s.text} font-black tracking-tight ${variant === "light" ? "text-gray-900" : "text-white"}`}>
             KARBON
           </span>
-          <span className={`${s.text} font-light tracking-tight text-white/50`}>
+          <span className={`${s.text} font-light tracking-tight ${variant === "light" ? "text-gray-400" : "text-white/50"}`}>
             AGENCY
           </span>
         </div>

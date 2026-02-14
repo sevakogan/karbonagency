@@ -44,6 +44,12 @@ CREATE TABLE IF NOT EXISTS clients (
 CREATE INDEX IF NOT EXISTS idx_clients_slug ON clients (slug);
 CREATE INDEX IF NOT EXISTS idx_clients_is_active ON clients (is_active);
 
+-- Add client branding & social columns
+ALTER TABLE clients ADD COLUMN IF NOT EXISTS company_name TEXT;
+ALTER TABLE clients ADD COLUMN IF NOT EXISTS logo_url TEXT;
+ALTER TABLE clients ADD COLUMN IF NOT EXISTS instagram_url TEXT;
+ALTER TABLE clients ADD COLUMN IF NOT EXISTS facebook_url TEXT;
+
 -- Add FK after clients table exists
 DO $$
 BEGIN
@@ -224,6 +230,53 @@ CREATE POLICY "Admins can manage all campaign metrics"
 
 CREATE POLICY "Client users can view their own campaign metrics"
   ON campaign_metrics FOR SELECT
+  USING (client_id = auth_client_id());
+
+-- ============================================================
+-- Meta integration columns on clients
+-- ============================================================
+ALTER TABLE clients ADD COLUMN IF NOT EXISTS meta_ad_account_id TEXT;
+ALTER TABLE clients ADD COLUMN IF NOT EXISTS meta_pixel_id TEXT;
+ALTER TABLE clients ADD COLUMN IF NOT EXISTS meta_page_id TEXT;
+
+-- ============================================================
+-- Daily Metrics — aggregated ad performance per client per day
+-- ============================================================
+CREATE TABLE IF NOT EXISTS daily_metrics (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  client_id UUID NOT NULL REFERENCES clients(id) ON DELETE CASCADE,
+  date DATE NOT NULL,
+  platform TEXT NOT NULL DEFAULT 'meta' CHECK (platform IN ('meta', 'google', 'tiktok')),
+  spend NUMERIC(12, 2) NOT NULL DEFAULT 0,
+  impressions INTEGER NOT NULL DEFAULT 0,
+  reach INTEGER NOT NULL DEFAULT 0,
+  clicks INTEGER NOT NULL DEFAULT 0,
+  ctr NUMERIC(8, 4) NOT NULL DEFAULT 0,
+  cpc NUMERIC(10, 4) NOT NULL DEFAULT 0,
+  cpm NUMERIC(10, 4) NOT NULL DEFAULT 0,
+  conversions INTEGER NOT NULL DEFAULT 0,
+  cost_per_conversion NUMERIC(10, 2),
+  roas NUMERIC(10, 4),
+  video_views INTEGER NOT NULL DEFAULT 0,
+  leads INTEGER NOT NULL DEFAULT 0,
+  link_clicks INTEGER NOT NULL DEFAULT 0,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE (client_id, date, platform)
+);
+
+CREATE INDEX IF NOT EXISTS idx_daily_metrics_client_id ON daily_metrics (client_id);
+CREATE INDEX IF NOT EXISTS idx_daily_metrics_date ON daily_metrics (date DESC);
+CREATE INDEX IF NOT EXISTS idx_daily_metrics_client_date ON daily_metrics (client_id, date);
+
+-- RLS for daily_metrics
+ALTER TABLE daily_metrics ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Admins can manage all daily metrics"
+  ON daily_metrics FOR ALL
+  USING (auth_role() = 'admin');
+
+CREATE POLICY "Client users can view their own daily metrics"
+  ON daily_metrics FOR SELECT
   USING (client_id = auth_client_id());
 
 -- ============================================================

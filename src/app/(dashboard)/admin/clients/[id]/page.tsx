@@ -8,6 +8,7 @@ import { getCampaigns } from "@/lib/actions/campaigns";
 import LeadsTable from "@/components/dashboard/leads-table";
 import Badge from "@/components/ui/badge";
 import StatCard from "@/components/dashboard/stat-card";
+import ClientInfoCard from "@/components/dashboard/client-info-card";
 import AddProjectButton from "@/components/dashboard/add-project-button";
 import { SERVICE_LABELS } from "@/types";
 import type { CampaignService } from "@/types";
@@ -28,19 +29,15 @@ export default async function ClientDetailPage({ params }: Props) {
 
   return (
     <div>
-      <div className="flex items-center gap-3 mb-1">
+      <div className="flex items-center gap-2 mb-4">
         <Link href="/admin/clients" className="text-gray-400 hover:text-gray-600 text-sm transition-colors">
           Clients
         </Link>
         <span className="text-gray-300">/</span>
-        <h1 className="text-2xl font-black text-gray-900">{client.name}</h1>
-        <Badge variant={client.is_active ? "active" : "lost"}>
-          {client.is_active ? "Active" : "Inactive"}
-        </Badge>
+        <span className="text-sm text-gray-600">{client.name}</span>
       </div>
-      <p className="text-sm text-gray-500 mb-8">
-        {client.contact_email || "No email"} | Slug: {client.slug}
-      </p>
+
+      <ClientInfoCard client={client} />
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <StatCard label="Total Leads" value={leads.length} />

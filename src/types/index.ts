@@ -2,9 +2,16 @@ export interface Client {
   id: string;
   name: string;
   slug: string;
+  company_name: string | null;
   contact_email: string | null;
   contact_phone: string | null;
+  logo_url: string | null;
+  instagram_url: string | null;
+  facebook_url: string | null;
   ghl_location_id: string | null;
+  meta_ad_account_id: string | null;
+  meta_pixel_id: string | null;
+  meta_page_id: string | null;
   is_active: boolean;
   created_at: string;
   updated_at: string;
@@ -92,4 +99,33 @@ export interface CampaignMetrics {
   bookings: number;
   cost_per_booking: number | null;
   created_at: string;
+}
+
+/** Aggregated daily metrics pulled from Meta Ads API (or entered manually) */
+export interface DailyMetrics {
+  id: string;
+  client_id: string;
+  date: string;
+  platform: "meta" | "google" | "tiktok";
+  spend: number;
+  impressions: number;
+  reach: number;
+  clicks: number;
+  ctr: number;
+  cpc: number;
+  cpm: number;
+  conversions: number;
+  cost_per_conversion: number | null;
+  roas: number | null;
+  video_views: number;
+  leads: number;
+  link_clicks: number;
+  created_at: string;
+}
+
+/** Metric definition for tooltips on the client dashboard */
+export interface MetricInfo {
+  label: string;
+  description: string;
+  formula?: string;
 }

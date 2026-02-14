@@ -182,14 +182,14 @@ export default function UserAvatarDropdown() {
 
           {/* Menu items */}
           <div className="py-1.5">
-            <MenuItem href="/dashboard/settings" icon={<SettingsIcon />} label="Settings" onClick={close} />
             <MenuItem href="/dashboard/profile" icon={<ProfileIcon />} label="My Profile" onClick={close} />
+            <MenuItem href="/dashboard/settings" icon={<SettingsIcon />} label="Settings" onClick={close} />
 
             {isAdmin && (
               <>
                 <div className="border-t border-gray-100 my-1.5" />
-                <MenuItem href="/admin/users" icon={<UsersIcon />} label="Users" onClick={close} />
                 <MenuItem href="/admin" icon={<AdminIcon />} label="Admin Panel" onClick={close} />
+                <MenuItem href="/admin/users" icon={<UsersIcon />} label="Users" onClick={close} />
                 <MenuItem href="/dashboard/settings" icon={<IntegrationsIcon />} label="Integrations" onClick={close} />
               </>
             )}

@@ -335,6 +335,17 @@ function validateAdAccountId(id: string): boolean {
   return /^act_\d+$/.test(id);
 }
 
+/**
+ * Normalize an ad account ID to include the "act_" prefix.
+ * Accepts either "123456" or "act_123456" and always returns "act_123456".
+ */
+export function normalizeAdAccountId(id: string): string {
+  const trimmed = id.trim();
+  if (trimmed.startsWith("act_")) return trimmed;
+  if (/^\d+$/.test(trimmed)) return `act_${trimmed}`;
+  return trimmed; // let validation catch invalid formats
+}
+
 function validateInputs(adAccountId: string, since: string, until: string): void {
   if (!validateAdAccountId(adAccountId)) {
     throw new MetaApiError(

@@ -9,6 +9,7 @@ import {
   fetchAgeGenderBreakdown,
   fetchPlatformBreakdown,
   validateAccessToken,
+  normalizeAdAccountId,
   type AccountOverview,
   type CampaignInsight,
   type DemographicInsight,
@@ -143,14 +144,15 @@ export async function syncClientMetrics(
   const effectiveUntil =
     until && isValidDateString(until) ? until : defaults.until;
 
-  const adAccountId = directAdAccountId ?? (await getClientAdAccountId(clientId));
-  if (!adAccountId) {
+  const rawAdAccountId = directAdAccountId ?? (await getClientAdAccountId(clientId));
+  if (!rawAdAccountId) {
     return {
       success: false,
       rowsSynced: 0,
       error: "No Meta Ad Account configured",
     };
   }
+  const adAccountId = normalizeAdAccountId(rawAdAccountId);
 
   const { data: insights, error: metaError } = await fetchAdAccountInsights(
     adAccountId,
@@ -298,10 +300,11 @@ export async function getRealtimeMetrics(
     return { data: null, error: "Access denied" };
   }
 
-  const adAccountId = directAdAccountId ?? (await getClientAdAccountId(clientId));
-  if (!adAccountId) {
+  const rawAdAccountId = directAdAccountId ?? (await getClientAdAccountId(clientId));
+  if (!rawAdAccountId) {
     return { data: null, error: "No Meta Ad Account configured" };
   }
+  const adAccountId = normalizeAdAccountId(rawAdAccountId);
 
   const result = await fetchAccountOverview(adAccountId, since, until);
   if (result.error) {
@@ -341,10 +344,11 @@ export async function getCampaignBreakdown(
     return { data: null, error: "Access denied" };
   }
 
-  const adAccountId = directAdAccountId ?? (await getClientAdAccountId(clientId));
-  if (!adAccountId) {
+  const rawAdAccountId = directAdAccountId ?? (await getClientAdAccountId(clientId));
+  if (!rawAdAccountId) {
     return { data: null, error: "No Meta Ad Account configured" };
   }
+  const adAccountId = normalizeAdAccountId(rawAdAccountId);
 
   const result = await fetchCampaignBreakdown(adAccountId, since, until);
   if (result.error) {
@@ -387,10 +391,11 @@ export async function getDemographicsBreakdown(
     return { data: null, error: "Access denied" };
   }
 
-  const adAccountId = directAdAccountId ?? (await getClientAdAccountId(clientId));
-  if (!adAccountId) {
+  const rawAdAccountId = directAdAccountId ?? (await getClientAdAccountId(clientId));
+  if (!rawAdAccountId) {
     return { data: null, error: "No Meta Ad Account configured" };
   }
+  const adAccountId = normalizeAdAccountId(rawAdAccountId);
 
   const result = await fetchAgeGenderBreakdown(adAccountId, since, until);
   if (result.error) {
@@ -433,10 +438,11 @@ export async function getPlacementBreakdown(
     return { data: null, error: "Access denied" };
   }
 
-  const adAccountId = directAdAccountId ?? (await getClientAdAccountId(clientId));
-  if (!adAccountId) {
+  const rawAdAccountId = directAdAccountId ?? (await getClientAdAccountId(clientId));
+  if (!rawAdAccountId) {
     return { data: null, error: "No Meta Ad Account configured" };
   }
+  const adAccountId = normalizeAdAccountId(rawAdAccountId);
 
   const result = await fetchPlatformBreakdown(adAccountId, since, until);
   if (result.error) {

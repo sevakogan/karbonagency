@@ -3,7 +3,6 @@ export const dynamic = "force-dynamic";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getClientById } from "@/lib/actions/clients";
-import { getLeads } from "@/lib/actions/leads";
 import { getCampaigns } from "@/lib/actions/campaigns";
 import StatCard from "@/components/dashboard/stat-card";
 import ClientInfoCard from "@/components/dashboard/client-info-card";
@@ -19,10 +18,14 @@ export default async function ClientDetailPage({ params }: Props) {
   const client = await getClientById(id);
   if (!client) notFound();
 
-  const [leads, campaigns] = await Promise.all([
-    getLeads({ clientId: id }),
-    getCampaigns({ clientId: id }),
-  ]);
+  const campaigns = await getCampaigns({ clientId: id });
+
+  const activeProjects = campaigns.filter((c) => c.status === "active").length;
+  const totalMonthly = campaigns.reduce((sum, c) => sum + (Number(c.monthly_cost) || 0), 0);
+  const totalAdBudget = campaigns.reduce((sum, c) => {
+    const budgets = c.ad_budgets ?? {};
+    return sum + Object.values(budgets).reduce((s, v) => s + (Number(v) || 0), 0);
+  }, 0);
 
   return (
     <div>
@@ -37,10 +40,10 @@ export default async function ClientDetailPage({ params }: Props) {
       <ClientInfoCard client={client} />
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <StatCard label="Total Leads" value={leads.length} />
-        <StatCard label="New Leads" value={leads.filter((l) => l.status === "new").length} />
-        <StatCard label="Converted" value={leads.filter((l) => l.status === "converted").length} />
         <StatCard label="Projects" value={campaigns.length} />
+        <StatCard label="Active" value={activeProjects} />
+        <StatCard label="Monthly Cost" value={totalMonthly > 0 ? `$${totalMonthly.toLocaleString()}` : "—"} />
+        <StatCard label="Ad Budget" value={totalAdBudget > 0 ? `$${totalAdBudget.toLocaleString()}` : "—"} />
       </div>
 
       <ProjectsListView

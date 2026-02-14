@@ -257,9 +257,16 @@ export default async function CampaignDetailPage({ params }: Props) {
           { label: campaign.name },
         ]}
       />
-      <div className="flex items-center gap-3 mt-2 mb-1">
-        <RenameCampaignName campaignId={id} initialName={campaign.name} />
-        <Badge variant={campaign.status}>{campaign.status}</Badge>
+      <div className="flex items-center justify-between mt-2 mb-1">
+        <div className="flex items-center gap-3">
+          <RenameCampaignName campaignId={id} initialName={campaign.name} />
+          <Badge variant={campaign.status}>{campaign.status}</Badge>
+        </div>
+        <MetaConnectCard
+          campaignId={id}
+          currentAdAccountId={campaign.meta_ad_account_id ?? null}
+          isAdmin={isAdmin}
+        />
       </div>
       <div className="flex flex-wrap items-center gap-2 mb-2">
         {(campaign.services ?? []).map((s: CampaignService) => (
@@ -328,17 +335,6 @@ export default async function CampaignDetailPage({ params }: Props) {
           )}
         </div>
       </div>
-
-      {/* Meta Connect Card — admin can connect/disconnect ad accounts */}
-      {isAdmin && (
-        <div className="mt-8">
-          <MetaConnectCard
-            campaignId={id}
-            currentAdAccountId={campaign.meta_ad_account_id ?? null}
-            isAdmin={isAdmin}
-          />
-        </div>
-      )}
 
       {/* Meta Reporting section -- only rendered when the campaign has an ad account */}
       {adAccountId && reportingData && (

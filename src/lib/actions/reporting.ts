@@ -275,6 +275,46 @@ function buildPlacementPoints(
 }
 
 // ---------------------------------------------------------------------------
+// Public server action: fetch reporting data for a single campaign's ad account
+// ---------------------------------------------------------------------------
+
+/**
+ * Fetch a complete reporting snapshot using a campaign's ad account ID directly.
+ * Called client-side from the campaign detail page when the date range changes.
+ */
+export async function getCampaignReportingSnapshot(
+  clientId: string,
+  adAccountId: string,
+  since: string,
+  until: string
+): Promise<ReportingSnapshot> {
+  const [metrics, metaCampaigns, demoResult, placementResult] =
+    await Promise.all([
+      getClientMetrics(clientId, since, until),
+      getMetaCampaignBreakdown(clientId, since, until, adAccountId),
+      getDemographicsBreakdown(clientId, since, until, adAccountId),
+      getPlacementBreakdown(clientId, since, until, adAccountId),
+    ]);
+
+  const kpi = buildKpiFromDaily(metrics.daily);
+  const campaigns: CampaignRow[] = buildCampaignRows(metaCampaigns.data);
+  const demographics: DemographicDataPoint[] = buildDemographicPoints(
+    demoResult.data
+  );
+  const placements: PlacementDataPoint[] = buildPlacementPoints(
+    placementResult.data
+  );
+
+  return {
+    kpi,
+    daily: metrics.daily,
+    campaigns,
+    demographics,
+    placements,
+  };
+}
+
+// ---------------------------------------------------------------------------
 // Admin: trigger Meta sync
 // ---------------------------------------------------------------------------
 
@@ -294,4 +334,17 @@ export async function triggerMetaSync(
   until?: string
 ): Promise<SyncStatus> {
   return syncClientMetrics(clientId, since, until);
+}
+
+/**
+ * Trigger a Meta Ads data sync for a specific campaign's ad account.
+ * Admin-only action.
+ */
+export async function triggerCampaignMetaSync(
+  clientId: string,
+  adAccountId: string,
+  since?: string,
+  until?: string
+): Promise<SyncStatus> {
+  return syncClientMetrics(clientId, since, until, adAccountId);
 }

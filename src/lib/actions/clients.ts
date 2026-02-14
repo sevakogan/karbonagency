@@ -60,7 +60,7 @@ export async function createClient(data: {
 
 export async function updateClient(
   id: string,
-  data: Partial<Pick<Client, "name" | "slug" | "contact_email" | "contact_phone" | "ghl_location_id" | "is_active">>
+  data: Partial<Pick<Client, "name" | "slug" | "contact_email" | "contact_phone" | "ghl_location_id" | "is_active" | "meta_ad_account_id" | "meta_pixel_id" | "meta_page_id" | "company_name" | "instagram_url" | "facebook_url" | "logo_url">>
 ): Promise<{ error: string | null }> {
   const supabase = await createSupabaseServer();
   const { error } = await supabase

@@ -118,11 +118,15 @@ function canAccessClient(
  * Trigger a sync of Meta Ads metrics for a single client.
  * Fetches data from Meta API and upserts into daily_metrics table.
  * Only admins can trigger syncs.
+ *
+ * If `directAdAccountId` is provided, it is used directly instead of
+ * looking up the ad account from the clients table.
  */
 export async function syncClientMetrics(
   clientId: string,
   since?: string,
-  until?: string
+  until?: string,
+  directAdAccountId?: string
 ): Promise<SyncResult> {
   if (!isValidUuid(clientId)) {
     return { success: false, rowsSynced: 0, error: "Invalid client ID format" };
@@ -139,12 +143,12 @@ export async function syncClientMetrics(
   const effectiveUntil =
     until && isValidDateString(until) ? until : defaults.until;
 
-  const adAccountId = await getClientAdAccountId(clientId);
+  const adAccountId = directAdAccountId ?? (await getClientAdAccountId(clientId));
   if (!adAccountId) {
     return {
       success: false,
       rowsSynced: 0,
-      error: "Client has no Meta Ad Account configured",
+      error: "No Meta Ad Account configured",
     };
   }
 
@@ -200,9 +204,13 @@ export async function syncClientMetrics(
 /**
  * Check if Meta is connected for a client and whether the token is valid.
  * Both admins and the client's own users can check status.
+ *
+ * If `directAdAccountId` is provided, it is used directly instead of
+ * looking up the ad account from the clients table.
  */
 export async function getMetaAccountStatus(
-  clientId: string
+  clientId: string,
+  directAdAccountId?: string
 ): Promise<MetaAccountStatus> {
   if (!isValidUuid(clientId)) {
     return {
@@ -232,7 +240,7 @@ export async function getMetaAccountStatus(
     };
   }
 
-  const adAccountId = await getClientAdAccountId(clientId);
+  const adAccountId = directAdAccountId ?? (await getClientAdAccountId(clientId));
   if (!adAccountId) {
     return {
       isConnected: false,
@@ -263,11 +271,15 @@ export async function getMetaAccountStatus(
 /**
  * Fetch real-time account overview metrics directly from Meta API.
  * Does not read from database -- always returns fresh data.
+ *
+ * If `directAdAccountId` is provided, it is used directly instead of
+ * looking up the ad account from the clients table.
  */
 export async function getRealtimeMetrics(
   clientId: string,
   since: string,
-  until: string
+  until: string,
+  directAdAccountId?: string
 ): Promise<{ data: AccountOverview | null; error: string | null }> {
   if (!isValidUuid(clientId)) {
     return { data: null, error: "Invalid client ID format" };
@@ -286,9 +298,9 @@ export async function getRealtimeMetrics(
     return { data: null, error: "Access denied" };
   }
 
-  const adAccountId = await getClientAdAccountId(clientId);
+  const adAccountId = directAdAccountId ?? (await getClientAdAccountId(clientId));
   if (!adAccountId) {
-    return { data: null, error: "Client has no Meta Ad Account configured" };
+    return { data: null, error: "No Meta Ad Account configured" };
   }
 
   const result = await fetchAccountOverview(adAccountId, since, until);
@@ -302,11 +314,15 @@ export async function getRealtimeMetrics(
 /**
  * Fetch real-time campaign-level breakdown directly from Meta API.
  * Returns per-campaign, per-day metrics for the given date range.
+ *
+ * If `directAdAccountId` is provided, it is used directly instead of
+ * looking up the ad account from the clients table.
  */
 export async function getCampaignBreakdown(
   clientId: string,
   since: string,
-  until: string
+  until: string,
+  directAdAccountId?: string
 ): Promise<{ data: readonly CampaignInsight[] | null; error: string | null }> {
   if (!isValidUuid(clientId)) {
     return { data: null, error: "Invalid client ID format" };
@@ -325,9 +341,9 @@ export async function getCampaignBreakdown(
     return { data: null, error: "Access denied" };
   }
 
-  const adAccountId = await getClientAdAccountId(clientId);
+  const adAccountId = directAdAccountId ?? (await getClientAdAccountId(clientId));
   if (!adAccountId) {
-    return { data: null, error: "Client has no Meta Ad Account configured" };
+    return { data: null, error: "No Meta Ad Account configured" };
   }
 
   const result = await fetchCampaignBreakdown(adAccountId, since, until);
@@ -341,11 +357,15 @@ export async function getCampaignBreakdown(
 /**
  * Fetch real-time age/gender demographics breakdown from Meta API.
  * Returns metrics segmented by age range and gender.
+ *
+ * If `directAdAccountId` is provided, it is used directly instead of
+ * looking up the ad account from the clients table.
  */
 export async function getDemographicsBreakdown(
   clientId: string,
   since: string,
-  until: string
+  until: string,
+  directAdAccountId?: string
 ): Promise<{
   data: readonly DemographicInsight[] | null;
   error: string | null;
@@ -367,9 +387,9 @@ export async function getDemographicsBreakdown(
     return { data: null, error: "Access denied" };
   }
 
-  const adAccountId = await getClientAdAccountId(clientId);
+  const adAccountId = directAdAccountId ?? (await getClientAdAccountId(clientId));
   if (!adAccountId) {
-    return { data: null, error: "Client has no Meta Ad Account configured" };
+    return { data: null, error: "No Meta Ad Account configured" };
   }
 
   const result = await fetchAgeGenderBreakdown(adAccountId, since, until);
@@ -383,11 +403,15 @@ export async function getDemographicsBreakdown(
 /**
  * Fetch real-time platform placement breakdown from Meta API.
  * Returns metrics segmented by publisher platform (Facebook, Instagram, etc.).
+ *
+ * If `directAdAccountId` is provided, it is used directly instead of
+ * looking up the ad account from the clients table.
  */
 export async function getPlacementBreakdown(
   clientId: string,
   since: string,
-  until: string
+  until: string,
+  directAdAccountId?: string
 ): Promise<{
   data: readonly PlatformInsight[] | null;
   error: string | null;
@@ -409,9 +433,9 @@ export async function getPlacementBreakdown(
     return { data: null, error: "Access denied" };
   }
 
-  const adAccountId = await getClientAdAccountId(clientId);
+  const adAccountId = directAdAccountId ?? (await getClientAdAccountId(clientId));
   if (!adAccountId) {
-    return { data: null, error: "Client has no Meta Ad Account configured" };
+    return { data: null, error: "No Meta Ad Account configured" };
   }
 
   const result = await fetchPlatformBreakdown(adAccountId, since, until);

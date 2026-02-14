@@ -52,6 +52,7 @@ export async function createCampaign(data: {
   status?: string;
   monthly_cost?: number;
   ad_budgets?: Record<string, number>;
+  meta_ad_account_id?: string;
   start_date?: string;
   notes?: string;
 }): Promise<{ id: string | null; error: string | null }> {
@@ -65,6 +66,7 @@ export async function createCampaign(data: {
       status: data.status || "draft",
       monthly_cost: data.monthly_cost ?? null,
       ad_budgets: data.ad_budgets ?? null,
+      meta_ad_account_id: data.meta_ad_account_id ?? null,
       start_date: data.start_date || null,
       notes: data.notes || "",
     })
@@ -79,7 +81,7 @@ export async function createCampaign(data: {
 
 export async function updateCampaign(
   id: string,
-  data: Partial<Pick<Campaign, "name" | "services" | "status" | "monthly_cost" | "ad_budgets" | "start_date" | "notes">>
+  data: Partial<Pick<Campaign, "name" | "services" | "status" | "monthly_cost" | "ad_budgets" | "meta_ad_account_id" | "start_date" | "notes">>
 ): Promise<{ error: string | null }> {
   const supabase = await createSupabaseServer();
   const { error } = await supabase

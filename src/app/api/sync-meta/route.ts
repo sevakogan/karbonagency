@@ -7,7 +7,8 @@ import { fetchAdAccountInsights } from "@/lib/meta-api";
 // ---------------------------------------------------------------------------
 
 interface SyncResult {
-  readonly client: string;
+  readonly campaign: string;
+  readonly campaignId: string;
   readonly clientId: string;
   readonly rows: number;
   readonly error: string | null;
@@ -61,6 +62,11 @@ function parseDateParams(
 // Core sync logic (shared by GET and POST)
 // ---------------------------------------------------------------------------
 
+/**
+ * Sync Meta metrics by iterating over campaigns that have a meta_ad_account_id.
+ * Falls back to client-level meta_ad_account_id for backward compatibility
+ * with clients that haven't migrated their ad account to campaigns yet.
+ */
 async function syncMetaMetrics(
   since: string,
   until: string,
@@ -68,32 +74,57 @@ async function syncMetaMetrics(
 ): Promise<SyncResponse> {
   const supabase = getAdminSupabase();
 
-  let query = supabase
-    .from("clients")
-    .select("id, name, meta_ad_account_id")
-    .eq("is_active", true)
+  // First: query campaigns with meta_ad_account_id
+  let campaignQuery = supabase
+    .from("campaigns")
+    .select("id, name, client_id, meta_ad_account_id")
     .not("meta_ad_account_id", "is", null);
 
   if (clientId) {
-    query = query.eq("id", clientId);
+    campaignQuery = campaignQuery.eq("client_id", clientId);
   }
 
-  const { data: clients, error: clientError } = await query;
+  const { data: campaigns, error: campaignError } = await campaignQuery;
 
-  if (clientError) {
+  if (campaignError) {
     return {
-      message: `Failed to fetch clients: ${clientError.message}`,
+      message: `Failed to fetch campaigns: ${campaignError.message}`,
       since,
       until,
       results: [],
     };
   }
 
-  if (!clients || clients.length === 0) {
+  // Collect client IDs that are already covered by campaigns
+  const coveredClientIds = new Set(
+    (campaigns ?? []).map((c) => c.client_id)
+  );
+
+  // Fallback: query clients with meta_ad_account_id that are NOT covered by campaigns
+  let clientQuery = supabase
+    .from("clients")
+    .select("id, name, meta_ad_account_id")
+    .eq("is_active", true)
+    .not("meta_ad_account_id", "is", null);
+
+  if (clientId) {
+    clientQuery = clientQuery.eq("id", clientId);
+  }
+
+  const { data: clients } = await clientQuery;
+
+  const fallbackClients = (clients ?? []).filter(
+    (c) => !coveredClientIds.has(c.id)
+  );
+
+  if (
+    (!campaigns || campaigns.length === 0) &&
+    fallbackClients.length === 0
+  ) {
     return {
       message: clientId
-        ? "Client not found or has no Meta Ad Account"
-        : "No clients with Meta Ad Accounts",
+        ? "No campaigns or clients found with Meta Ad Account"
+        : "No campaigns or clients with Meta Ad Accounts",
       since,
       until,
       results: [],
@@ -102,11 +133,27 @@ async function syncMetaMetrics(
 
   const results: SyncResult[] = [];
 
-  for (const client of clients) {
-    const result = await syncSingleClient(
+  // Sync campaign-level ad accounts
+  for (const campaign of campaigns ?? []) {
+    const result = await syncSingleCampaign(
+      supabase,
+      campaign.id,
+      campaign.name,
+      campaign.client_id,
+      campaign.meta_ad_account_id,
+      since,
+      until
+    );
+    results.push(result);
+  }
+
+  // Sync fallback client-level ad accounts
+  for (const client of fallbackClients) {
+    const result = await syncSingleCampaign(
       supabase,
       client.id,
       client.name,
+      client.id,
       client.meta_ad_account_id,
       since,
       until
@@ -125,10 +172,11 @@ async function syncMetaMetrics(
   };
 }
 
-async function syncSingleClient(
+async function syncSingleCampaign(
   supabase: ReturnType<typeof getAdminSupabase>,
+  campaignId: string,
+  campaignName: string,
   clientId: string,
-  clientName: string,
   metaAdAccountId: string,
   since: string,
   until: string
@@ -140,11 +188,23 @@ async function syncSingleClient(
   );
 
   if (metaError) {
-    return { client: clientName, clientId, rows: 0, error: metaError };
+    return {
+      campaign: campaignName,
+      campaignId,
+      clientId,
+      rows: 0,
+      error: metaError,
+    };
   }
 
   if (!insights || insights.length === 0) {
-    return { client: clientName, clientId, rows: 0, error: null };
+    return {
+      campaign: campaignName,
+      campaignId,
+      clientId,
+      rows: 0,
+      error: null,
+    };
   }
 
   const rows = insights.map((day) => ({
@@ -172,14 +232,21 @@ async function syncSingleClient(
 
   if (insertError) {
     return {
-      client: clientName,
+      campaign: campaignName,
+      campaignId,
       clientId,
       rows: 0,
       error: `Database error: ${insertError.message}`,
     };
   }
 
-  return { client: clientName, clientId, rows: rows.length, error: null };
+  return {
+    campaign: campaignName,
+    campaignId,
+    clientId,
+    rows: rows.length,
+    error: null,
+  };
 }
 
 // ---------------------------------------------------------------------------

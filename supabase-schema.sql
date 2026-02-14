@@ -301,3 +301,11 @@ FROM karbon_contact_submissions ks
 WHERE NOT EXISTS (
   SELECT 1 FROM agency_leads al WHERE al.email = ks.email AND al.created_at = ks.created_at
 );
+
+-- ============================================================
+-- Migration: add meta_ad_account_id to campaigns table
+-- Moves Meta ad account association from client-level to
+-- campaign (project) level so each project can have its own
+-- Meta ad account for per-project reporting.
+-- ============================================================
+ALTER TABLE campaigns ADD COLUMN IF NOT EXISTS meta_ad_account_id TEXT;

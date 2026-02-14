@@ -5,11 +5,13 @@ import { getMetaAccountStatus } from "@/lib/actions/meta";
 
 interface MetaStatusBadgeProps {
   readonly clientId: string;
+  /** If provided, uses this ad account ID directly instead of looking up from the clients table. */
+  readonly adAccountId?: string;
 }
 
 type ConnectionState = "loading" | "connected" | "disconnected" | "error";
 
-export default function MetaStatusBadge({ clientId }: MetaStatusBadgeProps) {
+export default function MetaStatusBadge({ clientId, adAccountId }: MetaStatusBadgeProps) {
   const [state, setState] = useState<ConnectionState>("loading");
   const [detail, setDetail] = useState<string | null>(null);
 
@@ -18,7 +20,7 @@ export default function MetaStatusBadge({ clientId }: MetaStatusBadgeProps) {
 
     async function checkStatus() {
       try {
-        const status = await getMetaAccountStatus(clientId);
+        const status = await getMetaAccountStatus(clientId, adAccountId);
 
         if (cancelled) return;
 
@@ -55,7 +57,7 @@ export default function MetaStatusBadge({ clientId }: MetaStatusBadgeProps) {
 
     checkStatus();
     return () => { cancelled = true; };
-  }, [clientId]);
+  }, [clientId, adAccountId]);
 
   const config: Record<
     ConnectionState,

@@ -81,6 +81,7 @@ export interface Campaign {
   status: CampaignStatus;
   monthly_cost: number | null;
   ad_budgets: Record<string, number> | null;
+  meta_ad_account_id: string | null;
   start_date: string | null;
   notes: string;
   created_at: string;

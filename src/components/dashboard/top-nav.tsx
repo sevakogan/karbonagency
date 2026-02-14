@@ -17,15 +17,12 @@ const adminTabs: TabItem[] = [
   { label: "Overview", href: "/dashboard" },
   { label: "CRM", href: "/dashboard/leads" },
   { label: "Clients", href: "/dashboard/campaigns" },
-  { label: "Reporting", href: "/dashboard/reporting" },
-  { label: "Users", href: "/admin/users" },
 ];
 
 const clientTabs: TabItem[] = [
   { label: "Overview", href: "/dashboard" },
   { label: "CRM", href: "/dashboard/leads" },
   { label: "Clients", href: "/dashboard/campaigns" },
-  { label: "Reporting", href: "/dashboard/reporting" },
 ];
 
 interface TopNavProps {

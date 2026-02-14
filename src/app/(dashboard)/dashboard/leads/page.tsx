@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import { getLeads } from "@/lib/actions/leads";
+import Breadcrumb from "@/components/ui/breadcrumb";
 import KanbanBoard from "@/components/dashboard/kanban-board";
 import AddLeadButton from "./add-lead-button";
 import { formStyles } from "@/components/ui/form-styles";
@@ -19,9 +20,10 @@ export default async function LeadsPage({ searchParams }: Props) {
 
   return (
     <div>
+      <Breadcrumb items={[{ label: "CRM" }]} />
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-black text-gray-900 mb-1">CRM</h1>
+          <h1 className="text-2xl font-black text-gray-900 mt-2 mb-1">CRM</h1>
           <p className="text-sm text-gray-500">{leads.length} total leads</p>
         </div>
         <AddLeadButton />

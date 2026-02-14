@@ -4,7 +4,10 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getClientById } from "@/lib/actions/clients";
 import { getCampaigns } from "@/lib/actions/campaigns";
+import Breadcrumb from "@/components/ui/breadcrumb";
 import Badge from "@/components/ui/badge";
+import MetaStatusBadge from "@/components/dashboard/meta-status-badge";
+import RenameClientName from "@/components/dashboard/rename-client-name";
 import AddProjectButton from "@/components/dashboard/add-project-button";
 import { SERVICE_LABELS } from "@/types";
 import type { CampaignService } from "@/types";
@@ -22,13 +25,15 @@ export default async function ClientDashboardPage({ params }: Props) {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-1">
+      <Breadcrumb
+        items={[
+          { label: "Clients", href: "/dashboard/campaigns" },
+          { label: client.name },
+        ]}
+      />
+      <div className="flex items-center justify-between mt-2 mb-1">
         <div className="flex items-center gap-3">
-          <Link href="/dashboard/campaigns" className="text-gray-400 hover:text-gray-600 text-sm transition-colors">
-            Clients Projects
-          </Link>
-          <span className="text-gray-300">/</span>
-          <h1 className="text-2xl font-black text-gray-900">{client.name}</h1>
+          <RenameClientName clientId={id} initialName={client.name} />
           <Badge variant={client.is_active ? "active" : "lost"}>
             {client.is_active ? "Active" : "Inactive"}
           </Badge>
@@ -51,6 +56,7 @@ export default async function ClientDashboardPage({ params }: Props) {
                 <th className="text-left py-3 px-4 font-medium">Name</th>
                 <th className="text-left py-3 px-4 font-medium">Services</th>
                 <th className="text-left py-3 px-4 font-medium">Status</th>
+                <th className="text-left py-3 px-4 font-medium">Meta</th>
                 <th className="text-left py-3 px-4 font-medium">Monthly Cost</th>
               </tr>
             </thead>
@@ -79,6 +85,12 @@ export default async function ClientDashboardPage({ params }: Props) {
                   </td>
                   <td className="py-3 px-4">
                     <Badge variant={campaign.status}>{campaign.status}</Badge>
+                  </td>
+                  <td className="py-3 px-4">
+                    <MetaStatusBadge
+                      clientId={campaign.client_id}
+                      adAccountId={campaign.meta_ad_account_id ?? undefined}
+                    />
                   </td>
                   <td className="py-3 px-4 text-gray-600">
                     {campaign.monthly_cost ? `$${Number(campaign.monthly_cost).toLocaleString()}` : "—"}

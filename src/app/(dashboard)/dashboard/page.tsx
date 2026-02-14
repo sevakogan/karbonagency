@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import Link from "next/link";
+import Breadcrumb from "@/components/ui/breadcrumb";
 import { createSupabaseServer } from "@/lib/supabase-server";
 import { getClientMetrics } from "@/lib/actions/metrics";
 import { getCampaigns } from "@/lib/actions/campaigns";
@@ -58,7 +59,8 @@ export default async function DashboardOverview() {
 
     return (
       <div>
-        <h1 className="text-2xl font-black text-gray-900 mb-1">
+        <Breadcrumb items={[{ label: "Overview" }]} />
+        <h1 className="text-2xl font-black text-gray-900 mt-2 mb-1">
           Admin Dashboard
         </h1>
         <p className="text-sm text-gray-500 mb-8">
@@ -104,7 +106,8 @@ export default async function DashboardOverview() {
     <div>
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-2xl font-black text-gray-900 mb-1">Dashboard</h1>
+        <Breadcrumb items={[{ label: "Overview" }]} />
+        <h1 className="text-2xl font-black text-gray-900 mt-2 mb-1">Dashboard</h1>
         <p className="text-sm text-gray-500">
           Welcome back
           {profile?.full_name ? `, ${profile.full_name}` : ""} —

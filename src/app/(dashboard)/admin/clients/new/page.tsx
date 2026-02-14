@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/actions/clients";
+import Breadcrumb from "@/components/ui/breadcrumb";
 import { formStyles, buttonStyles } from "@/components/ui/form-styles";
 
 export default function NewClientPage() {
@@ -41,7 +42,8 @@ export default function NewClientPage() {
 
   return (
     <div className="max-w-lg">
-      <h1 className="text-2xl font-black text-gray-900 mb-1">Add Client</h1>
+      <Breadcrumb items={[{ label: "Admin", href: "/admin" }, { label: "Clients", href: "/admin/clients" }, { label: "New Client" }]} />
+      <h1 className="text-2xl font-black text-gray-900 mt-2 mb-1">Add Client</h1>
       <p className="text-sm text-gray-500 mb-8">Create a new sim racing venue client</p>
 
       <form onSubmit={handleSubmit} className="space-y-4">

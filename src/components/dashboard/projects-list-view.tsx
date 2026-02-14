@@ -35,6 +35,28 @@ function GridIcon({ active }: { readonly active: boolean }) {
 }
 
 // ---------------------------------------------------------------------------
+// Inline Meta status (no API call — just checks if ad account ID exists)
+// ---------------------------------------------------------------------------
+
+function MetaInlineStatus({ adAccountId }: { readonly adAccountId: string | null }) {
+  const connected = !!adAccountId;
+
+  return (
+    <span
+      className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs font-medium ${
+        connected
+          ? "bg-green-50 border-green-200 text-green-700"
+          : "bg-gray-50 border-gray-200 text-gray-500"
+      }`}
+      title={connected ? `Ad Account: ${adAccountId}` : "No Meta Ad Account connected"}
+    >
+      <span className={`w-1.5 h-1.5 rounded-full ${connected ? "bg-green-500" : "bg-gray-400"}`} />
+      {connected ? "Connected" : "Not Connected"}
+    </span>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Status color for card accent
 // ---------------------------------------------------------------------------
 
@@ -90,6 +112,7 @@ function ListView({ campaigns }: { readonly campaigns: readonly Campaign[] }) {
             <th className="text-left py-3 px-4 font-medium">Name</th>
             <th className="text-left py-3 px-4 font-medium">Services</th>
             <th className="text-left py-3 px-4 font-medium">Status</th>
+            <th className="text-left py-3 px-4 font-medium">Meta</th>
             <th className="text-left py-3 px-4 font-medium">Monthly Cost</th>
           </tr>
         </thead>
@@ -118,6 +141,9 @@ function ListView({ campaigns }: { readonly campaigns: readonly Campaign[] }) {
               </td>
               <td className="py-3 px-4">
                 <Badge variant={campaign.status}>{campaign.status}</Badge>
+              </td>
+              <td className="py-3 px-4">
+                <MetaInlineStatus adAccountId={campaign.meta_ad_account_id ?? null} />
               </td>
               <td className="py-3 px-4 text-gray-600">
                 {campaign.monthly_cost ? `$${Number(campaign.monthly_cost).toLocaleString()}` : "—"}
@@ -171,6 +197,11 @@ function ThumbnailsView({ campaigns }: { readonly campaigns: readonly Campaign[]
                 {(!campaign.services || campaign.services.length === 0) && (
                   <span className="text-xs text-gray-400">No services</span>
                 )}
+              </div>
+
+              {/* Meta status */}
+              <div className="mb-3">
+                <MetaInlineStatus adAccountId={campaign.meta_ad_account_id ?? null} />
               </div>
 
               {/* Footer */}

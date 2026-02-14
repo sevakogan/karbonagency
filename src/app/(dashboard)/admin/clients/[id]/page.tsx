@@ -1,14 +1,14 @@
 export const dynamic = "force-dynamic";
 
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getClientById } from "@/lib/actions/clients";
 import { getCampaigns } from "@/lib/actions/campaigns";
+import Breadcrumb from "@/components/ui/breadcrumb";
 import StatCard from "@/components/dashboard/stat-card";
 import ClientInfoCard from "@/components/dashboard/client-info-card";
 import AddProjectButton from "@/components/dashboard/add-project-button";
 import ProjectsListView from "@/components/dashboard/projects-list-view";
-import MetaStatusBadge from "@/components/dashboard/meta-status-badge";
+import RenameClientName from "@/components/dashboard/rename-client-name";
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -30,15 +30,16 @@ export default async function ClientDetailPage({ params }: Props) {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
-          <Link href="/dashboard/campaigns" className="text-gray-400 hover:text-gray-600 text-sm transition-colors">
-            Clients
-          </Link>
-          <span className="text-gray-300">/</span>
-          <span className="text-sm text-gray-600">{client.name}</span>
-        </div>
-        <MetaStatusBadge clientId={id} />
+      <Breadcrumb
+        items={[
+          { label: "Admin", href: "/admin" },
+          { label: "Clients", href: "/admin/clients" },
+          { label: client.name },
+        ]}
+      />
+      <div className="flex items-center justify-between mt-2 mb-4">
+        <RenameClientName clientId={id} initialName={client.name} />
+        <AddProjectButton clientId={id} />
       </div>
 
       <ClientInfoCard client={client} />

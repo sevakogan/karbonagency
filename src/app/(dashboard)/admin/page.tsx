@@ -3,7 +3,7 @@ export const dynamic = "force-dynamic";
 import Link from "next/link";
 import { getClients } from "@/lib/actions/clients";
 import { getCampaigns } from "@/lib/actions/campaigns";
-import Badge from "@/components/ui/badge";
+import Breadcrumb from "@/components/ui/breadcrumb";
 import { buttonStyles } from "@/components/ui/form-styles";
 import AdminClientRow from "@/components/dashboard/admin-client-row";
 
@@ -24,7 +24,8 @@ export default async function AdminPanelPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
+      <Breadcrumb items={[{ label: "Admin Panel" }]} />
+      <div className="flex items-center justify-between mt-2 mb-6">
         <div>
           <h1 className="text-2xl font-black text-gray-900 mb-1">Admin Panel</h1>
           <p className="text-sm text-gray-500">

@@ -1,8 +1,8 @@
 export const dynamic = "force-dynamic";
 
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getCampaignById, getCampaignMetrics } from "@/lib/actions/campaigns";
+import { getClientById } from "@/lib/actions/clients";
 import { getClientMetrics } from "@/lib/actions/metrics";
 import {
   getDemographicsBreakdown,
@@ -10,10 +10,13 @@ import {
   getCampaignBreakdown as getMetaCampaignBreakdown,
 } from "@/lib/actions/meta";
 import { createSupabaseServer } from "@/lib/supabase-server";
+import Breadcrumb from "@/components/ui/breadcrumb";
 import Badge from "@/components/ui/badge";
 import StatCard from "@/components/dashboard/stat-card";
 import CampaignMetricsChart from "@/components/dashboard/campaign-metrics-chart";
 import CampaignReporting from "@/components/dashboard/reporting/campaign-reporting";
+import RenameCampaignName from "@/components/dashboard/rename-campaign-name";
+import MetaConnectCard from "@/components/dashboard/meta-connect-card";
 import { SERVICE_LABELS } from "@/types";
 import type { CampaignService } from "@/types";
 import type { ReportingKpiData } from "@/components/dashboard/reporting/reporting-kpi-grid";
@@ -185,7 +188,10 @@ export default async function CampaignDetailPage({ params }: Props) {
   const campaign = await getCampaignById(id);
   if (!campaign) notFound();
 
-  const metrics = await getCampaignMetrics(id);
+  const [metrics, client] = await Promise.all([
+    getCampaignMetrics(id),
+    getClientById(campaign.client_id),
+  ]);
 
   // Determine user role
   const supabase = await createSupabaseServer();
@@ -244,12 +250,15 @@ export default async function CampaignDetailPage({ params }: Props) {
 
   return (
     <div>
-      <div className="flex items-center gap-3 mb-1">
-        <Link href="/dashboard/campaigns" className="text-gray-400 hover:text-gray-600 text-sm transition-colors">
-          Projects
-        </Link>
-        <span className="text-gray-300">/</span>
-        <h1 className="text-2xl font-black text-gray-900">{campaign.name}</h1>
+      <Breadcrumb
+        items={[
+          { label: "Clients", href: "/dashboard/campaigns" },
+          ...(client ? [{ label: client.name, href: `/dashboard/clients/${client.id}` }] : []),
+          { label: campaign.name },
+        ]}
+      />
+      <div className="flex items-center gap-3 mt-2 mb-1">
+        <RenameCampaignName campaignId={id} initialName={campaign.name} />
         <Badge variant={campaign.status}>{campaign.status}</Badge>
       </div>
       <div className="flex flex-wrap items-center gap-2 mb-2">
@@ -319,6 +328,17 @@ export default async function CampaignDetailPage({ params }: Props) {
           )}
         </div>
       </div>
+
+      {/* Meta Connect Card — admin can connect/disconnect ad accounts */}
+      {isAdmin && (
+        <div className="mt-8">
+          <MetaConnectCard
+            campaignId={id}
+            currentAdAccountId={campaign.meta_ad_account_id ?? null}
+            isAdmin={isAdmin}
+          />
+        </div>
+      )}
 
       {/* Meta Reporting section -- only rendered when the campaign has an ad account */}
       {adAccountId && reportingData && (

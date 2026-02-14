@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import { getUsers } from "@/lib/actions/users";
+import Breadcrumb from "@/components/ui/breadcrumb";
 import Badge from "@/components/ui/badge";
 import InviteUserForm from "./invite-user-form";
 
@@ -9,7 +10,8 @@ export default async function UsersPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
+      <Breadcrumb items={[{ label: "Admin", href: "/admin" }, { label: "Users" }]} />
+      <div className="flex items-center justify-between mt-2 mb-6">
         <div>
           <h1 className="text-2xl font-black text-gray-900 mb-1">Users</h1>
           <p className="text-sm text-gray-500">{users.length} total</p>

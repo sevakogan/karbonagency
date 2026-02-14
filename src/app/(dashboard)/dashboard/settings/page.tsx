@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { supabase } from "@/lib/supabase";
+import Breadcrumb from "@/components/ui/breadcrumb";
 import { formStyles, buttonStyles } from "@/components/ui/form-styles";
 
 export default function SettingsPage() {
@@ -29,7 +30,8 @@ export default function SettingsPage() {
 
   return (
     <div className="max-w-2xl">
-      <h1 className="text-2xl font-black text-gray-900 mb-1">Settings</h1>
+      <Breadcrumb items={[{ label: "Settings" }]} />
+      <h1 className="text-2xl font-black text-gray-900 mt-2 mb-1">Settings</h1>
       <p className="text-sm text-gray-500 mb-8">Account and security settings</p>
 
       <div className="rounded-2xl border border-gray-200 bg-white shadow-sm p-6">

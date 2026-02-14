@@ -2,6 +2,7 @@ export const dynamic = "force-dynamic";
 
 import Link from "next/link";
 import { getClients } from "@/lib/actions/clients";
+import Breadcrumb from "@/components/ui/breadcrumb";
 import Badge from "@/components/ui/badge";
 import { buttonStyles } from "@/components/ui/form-styles";
 
@@ -10,7 +11,8 @@ export default async function ClientsPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
+      <Breadcrumb items={[{ label: "Admin", href: "/admin" }, { label: "Clients" }]} />
+      <div className="flex items-center justify-between mt-2 mb-6">
         <div>
           <h1 className="text-2xl font-black text-gray-900 mb-1">Clients</h1>
           <p className="text-sm text-gray-500">{clients.length} total</p>

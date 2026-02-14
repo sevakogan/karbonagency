@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useAuth } from "@/components/auth/auth-provider";
 import { updateProfileFields } from "@/lib/actions/profile";
+import Breadcrumb from "@/components/ui/breadcrumb";
 import AvatarUpload from "@/components/dashboard/avatar-upload";
 import { formStyles, buttonStyles } from "@/components/ui/form-styles";
 
@@ -34,7 +35,8 @@ export default function ProfilePage() {
 
   return (
     <div className="max-w-lg">
-      <h1 className="text-2xl font-black text-gray-900 mb-1">Profile</h1>
+      <Breadcrumb items={[{ label: "My Profile" }]} />
+      <h1 className="text-2xl font-black text-gray-900 mt-2 mb-1">Profile</h1>
       <p className="text-sm text-gray-500 mb-8">Manage your personal information</p>
 
       <div className="mb-8">

@@ -18,7 +18,6 @@ const adminTabs: TabItem[] = [
   { label: "CRM", href: "/dashboard/leads" },
   { label: "Clients", href: "/dashboard/campaigns" },
   { label: "Reporting", href: "/dashboard/reporting" },
-  { label: "Clients", href: "/admin/clients" },
   { label: "Users", href: "/admin/users" },
 ];
 

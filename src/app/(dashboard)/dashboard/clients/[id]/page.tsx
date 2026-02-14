@@ -6,6 +6,8 @@ import { getClientById } from "@/lib/actions/clients";
 import { getCampaigns } from "@/lib/actions/campaigns";
 import Badge from "@/components/ui/badge";
 import AddProjectButton from "@/components/dashboard/add-project-button";
+import { SERVICE_LABELS } from "@/types";
+import type { CampaignService } from "@/types";
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -47,9 +49,9 @@ export default async function ClientDashboardPage({ params }: Props) {
             <thead>
               <tr className="border-b border-gray-200 bg-gray-50 text-gray-500 text-xs uppercase tracking-wide">
                 <th className="text-left py-3 px-4 font-medium">Name</th>
-                <th className="text-left py-3 px-4 font-medium">Platform</th>
+                <th className="text-left py-3 px-4 font-medium">Services</th>
                 <th className="text-left py-3 px-4 font-medium">Status</th>
-                <th className="text-left py-3 px-4 font-medium">Budget</th>
+                <th className="text-left py-3 px-4 font-medium">Monthly Cost</th>
               </tr>
             </thead>
             <tbody>
@@ -63,12 +65,23 @@ export default async function ClientDashboardPage({ params }: Props) {
                       {campaign.name}
                     </Link>
                   </td>
-                  <td className="py-3 px-4 text-gray-600 capitalize">{campaign.platform}</td>
+                  <td className="py-3 px-4">
+                    <div className="flex flex-wrap gap-1">
+                      {(campaign.services ?? []).map((s: CampaignService) => (
+                        <span key={s} className="inline-block rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600">
+                          {SERVICE_LABELS[s] ?? s}
+                        </span>
+                      ))}
+                      {(!campaign.services || campaign.services.length === 0) && (
+                        <span className="text-gray-400">—</span>
+                      )}
+                    </div>
+                  </td>
                   <td className="py-3 px-4">
                     <Badge variant={campaign.status}>{campaign.status}</Badge>
                   </td>
                   <td className="py-3 px-4 text-gray-600">
-                    {campaign.budget ? `$${Number(campaign.budget).toLocaleString()}` : "—"}
+                    {campaign.monthly_cost ? `$${Number(campaign.monthly_cost).toLocaleString()}` : "—"}
                   </td>
                 </tr>
               ))}

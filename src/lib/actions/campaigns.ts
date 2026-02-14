@@ -1,7 +1,7 @@
 "use server";
 
 import { createSupabaseServer } from "@/lib/supabase-server";
-import type { Campaign, CampaignMetrics, CampaignStatus } from "@/types";
+import type { Campaign, CampaignMetrics, CampaignStatus, CampaignService } from "@/types";
 
 interface CampaignFilters {
   clientId?: string;
@@ -48,11 +48,11 @@ export async function getCampaignById(id: string): Promise<Campaign | null> {
 export async function createCampaign(data: {
   client_id: string;
   name: string;
-  platform?: string;
+  services: CampaignService[];
   status?: string;
+  monthly_cost?: number;
+  ad_budgets?: Record<string, number>;
   start_date?: string;
-  end_date?: string;
-  budget?: number;
   notes?: string;
 }): Promise<{ id: string | null; error: string | null }> {
   const supabase = await createSupabaseServer();
@@ -61,11 +61,11 @@ export async function createCampaign(data: {
     .insert({
       client_id: data.client_id,
       name: data.name,
-      platform: data.platform || "meta",
+      services: data.services,
       status: data.status || "draft",
+      monthly_cost: data.monthly_cost ?? null,
+      ad_budgets: data.ad_budgets ?? null,
       start_date: data.start_date || null,
-      end_date: data.end_date || null,
-      budget: data.budget || null,
       notes: data.notes || "",
     })
     .select("id")
@@ -79,7 +79,7 @@ export async function createCampaign(data: {
 
 export async function updateCampaign(
   id: string,
-  data: Partial<Pick<Campaign, "name" | "platform" | "status" | "start_date" | "end_date" | "budget" | "notes">>
+  data: Partial<Pick<Campaign, "name" | "services" | "status" | "monthly_cost" | "ad_budgets" | "start_date" | "notes">>
 ): Promise<{ error: string | null }> {
   const supabase = await createSupabaseServer();
   const { error } = await supabase

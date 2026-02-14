@@ -41,18 +41,40 @@ export interface Lead {
   updated_at: string;
 }
 
-export type CampaignPlatform = "meta" | "instagram" | "both";
+export type CampaignService = "meta_ads" | "google_ads" | "tiktok_ads" | "seo" | "email_marketing" | "social_media" | "web_design" | "branding";
 export type CampaignStatus = "draft" | "active" | "paused" | "completed";
+
+export const SERVICE_LABELS: Record<CampaignService, string> = {
+  meta_ads: "Meta Ads",
+  google_ads: "Google Ads",
+  tiktok_ads: "TikTok Ads",
+  seo: "SEO",
+  email_marketing: "Email Marketing",
+  social_media: "Social Media",
+  web_design: "Web Design",
+  branding: "Branding",
+};
+
+export const ALL_SERVICES: CampaignService[] = [
+  "meta_ads",
+  "google_ads",
+  "tiktok_ads",
+  "seo",
+  "email_marketing",
+  "social_media",
+  "web_design",
+  "branding",
+];
 
 export interface Campaign {
   id: string;
   client_id: string;
   name: string;
-  platform: CampaignPlatform;
+  services: CampaignService[];
   status: CampaignStatus;
+  monthly_cost: number | null;
+  ad_budgets: Record<string, number> | null;
   start_date: string | null;
-  end_date: string | null;
-  budget: number | null;
   notes: string;
   created_at: string;
   updated_at: string;

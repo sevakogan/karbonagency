@@ -89,15 +89,26 @@ CREATE TABLE IF NOT EXISTS campaigns (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   client_id UUID NOT NULL REFERENCES clients(id) ON DELETE CASCADE,
   name TEXT NOT NULL,
-  platform TEXT NOT NULL DEFAULT 'meta' CHECK (platform IN ('meta', 'instagram', 'both')),
+  services JSONB NOT NULL DEFAULT '[]',
   status TEXT NOT NULL DEFAULT 'draft' CHECK (status IN ('draft', 'active', 'paused', 'completed')),
+  monthly_cost NUMERIC(12, 2),
+  ad_budgets JSONB,
   start_date DATE,
-  end_date DATE,
-  budget NUMERIC(12, 2),
   notes TEXT DEFAULT '',
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+-- Migration: add new columns to existing campaigns table
+ALTER TABLE campaigns ADD COLUMN IF NOT EXISTS services JSONB NOT NULL DEFAULT '[]';
+ALTER TABLE campaigns ADD COLUMN IF NOT EXISTS monthly_cost NUMERIC(12, 2);
+ALTER TABLE campaigns ADD COLUMN IF NOT EXISTS ad_budgets JSONB;
+-- Migrate existing platform data into services array
+UPDATE campaigns SET services = jsonb_build_array(platform) WHERE services = '[]' AND platform IS NOT NULL;
+-- Drop old columns (optional, run after verifying migration)
+-- ALTER TABLE campaigns DROP COLUMN IF EXISTS platform;
+-- ALTER TABLE campaigns DROP COLUMN IF EXISTS budget;
+-- ALTER TABLE campaigns DROP COLUMN IF EXISTS end_date;
 
 CREATE INDEX IF NOT EXISTS idx_campaigns_client_id ON campaigns (client_id);
 CREATE INDEX IF NOT EXISTS idx_campaigns_status ON campaigns (status);

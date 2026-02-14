@@ -6,6 +6,8 @@ import { getCampaignById, getCampaignMetrics } from "@/lib/actions/campaigns";
 import Badge from "@/components/ui/badge";
 import StatCard from "@/components/dashboard/stat-card";
 import CampaignMetricsChart from "@/components/dashboard/campaign-metrics-chart";
+import { SERVICE_LABELS } from "@/types";
+import type { CampaignService } from "@/types";
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -35,10 +37,16 @@ export default async function CampaignDetailPage({ params }: Props) {
         <h1 className="text-2xl font-black text-gray-900">{campaign.name}</h1>
         <Badge variant={campaign.status}>{campaign.status}</Badge>
       </div>
+      <div className="flex flex-wrap items-center gap-2 mb-2">
+        {(campaign.services ?? []).map((s: CampaignService) => (
+          <span key={s} className="inline-block rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-600">
+            {SERVICE_LABELS[s] ?? s}
+          </span>
+        ))}
+      </div>
       <p className="text-sm text-gray-500 mb-8">
-        Platform: {campaign.platform} | Budget: {campaign.budget ? `$${Number(campaign.budget).toLocaleString()}` : "—"}
-        {campaign.start_date && ` | ${new Date(campaign.start_date).toLocaleDateString()}`}
-        {campaign.end_date && ` — ${new Date(campaign.end_date).toLocaleDateString()}`}
+        Monthly Cost: {campaign.monthly_cost ? `$${Number(campaign.monthly_cost).toLocaleString()}` : "—"}
+        {campaign.start_date && ` | Started ${new Date(campaign.start_date).toLocaleDateString()}`}
       </p>
 
       <div className="grid grid-cols-2 lg:grid-cols-6 gap-4 mb-8">

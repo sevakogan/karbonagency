@@ -36,59 +36,20 @@ function MetaIcon({ className = "w-5 h-5" }: { readonly className?: string }) {
   );
 }
 
-function HelpIcon() {
+function ChevronIcon({ open }: { readonly open: boolean }) {
   return (
-    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 5.25h.008v.008H12v-.008z" />
+    <svg
+      className={`w-3.5 h-3.5 text-gray-400 transition-transform ${open ? "rotate-180" : ""}`}
+      fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor"
+    >
+      <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
     </svg>
   );
 }
 
 // ---------------------------------------------------------------------------
-// Help popup — how to find your Ad Account ID
+// Copyable helpers
 // ---------------------------------------------------------------------------
-
-function HelpPopup({ onClose }: { readonly onClose: () => void }) {
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    function handleClickOutside(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) {
-        onClose();
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [onClose]);
-
-  return (
-    <div
-      ref={ref}
-      className="absolute right-0 top-full mt-2 z-50 w-80 rounded-xl border border-gray-200 bg-white shadow-xl p-4"
-    >
-      <div className="flex items-center justify-between mb-3">
-        <h4 className="text-sm font-semibold text-gray-900">How to find your Ad Account ID</h4>
-        <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
-      </div>
-      <ol className="text-xs text-gray-600 space-y-2 list-decimal list-inside">
-        <li>Go to <CopyableLink text="business.facebook.com" /> </li>
-        <li>Click <span className="font-medium text-gray-900">Business Settings</span> (gear icon)</li>
-        <li>In the left menu, click <span className="font-medium text-gray-900">Accounts &gt; Ad Accounts</span></li>
-        <li>Select the ad account for this project</li>
-        <li>Copy the <span className="font-medium text-gray-900">Ad Account ID</span> (numeric, e.g. <CopyableCode text="881993397805743" />)</li>
-      </ol>
-      <div className="mt-3 p-2.5 rounded-lg bg-blue-50 border border-blue-100">
-        <p className="text-xs text-blue-700">
-          <span className="font-medium">Tip:</span> The ID is numbers only. Don&apos;t include the &quot;act_&quot; prefix.
-        </p>
-      </div>
-    </div>
-  );
-}
 
 function CopyableLink({ text }: { readonly text: string }) {
   const [copied, setCopied] = useState(false);
@@ -101,6 +62,7 @@ function CopyableLink({ text }: { readonly text: string }) {
 
   return (
     <button
+      type="button"
       onClick={handleCopy}
       className="inline-flex items-center gap-1 font-medium text-blue-600 hover:text-blue-700 hover:underline"
       title="Click to copy"
@@ -130,6 +92,7 @@ function CopyableCode({ text }: { readonly text: string }) {
 
   return (
     <button
+      type="button"
       onClick={handleCopy}
       className="inline-flex items-center gap-1 font-mono bg-gray-100 rounded px-1 py-0.5 text-gray-700 hover:bg-gray-200 transition-colors"
       title="Click to copy"
@@ -141,6 +104,30 @@ function CopyableCode({ text }: { readonly text: string }) {
         </svg>
       )}
     </button>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Inline help section (rendered inside the popover, no absolute positioning)
+// ---------------------------------------------------------------------------
+
+function HelpSection() {
+  return (
+    <div className="border-b border-gray-100 px-4 py-3 bg-gray-50">
+      <h4 className="text-xs font-semibold text-gray-700 mb-2">How to find your Ad Account ID</h4>
+      <ol className="text-xs text-gray-600 space-y-1.5 list-decimal list-inside">
+        <li>Go to <CopyableLink text="business.facebook.com" /></li>
+        <li>Click <span className="font-medium text-gray-900">Business Settings</span> (gear icon)</li>
+        <li>Go to <span className="font-medium text-gray-900">Accounts &gt; Ad Accounts</span></li>
+        <li>Select the ad account for this project</li>
+        <li>Copy the <span className="font-medium text-gray-900">Ad Account ID</span> (e.g. <CopyableCode text="881993397805743" />)</li>
+      </ol>
+      <div className="mt-2 p-2 rounded-lg bg-blue-50 border border-blue-100">
+        <p className="text-xs text-blue-700">
+          <span className="font-medium">Tip:</span> The ID is numbers only. Don&apos;t include the &quot;act_&quot; prefix.
+        </p>
+      </div>
+    </div>
   );
 }
 
@@ -299,8 +286,9 @@ function AdminPopover({
     <div ref={popoverRef} className="relative">
       {/* Compact trigger button */}
       <button
+        type="button"
         onClick={() => { setOpen((prev) => !prev); setShowHelp(false); }}
-        className={`inline-flex items-center gap-2 rounded-lg border px-3 py-1.5 transition-colors ${
+        className={`inline-flex items-center gap-2 rounded-lg border px-3 py-1.5 transition-colors cursor-pointer ${
           isConnected
             ? "bg-green-50 border-green-200 hover:bg-green-100"
             : "bg-gray-50 border-gray-200 hover:bg-gray-100"
@@ -311,17 +299,12 @@ function AdminPopover({
         <span className={`text-xs font-medium ${isConnected ? "text-green-700" : "text-gray-500"}`}>
           {isConnected ? "Connected" : "Not Connected"}
         </span>
-        <svg
-          className={`w-3.5 h-3.5 text-gray-400 transition-transform ${open ? "rotate-180" : ""}`}
-          fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor"
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-        </svg>
+        <ChevronIcon open={open} />
       </button>
 
       {/* Popover dropdown */}
       {open && (
-        <div className="absolute right-0 top-full mt-2 z-50 w-80 rounded-xl border border-gray-200 bg-white shadow-xl overflow-hidden">
+        <div className="absolute right-0 top-full mt-2 z-50 w-80 rounded-xl border border-gray-200 bg-white shadow-xl">
           {/* Header */}
           <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3">
             <div className="flex items-center gap-2">
@@ -329,17 +312,20 @@ function AdminPopover({
               <span className="text-sm font-semibold text-gray-900">Meta Ads</span>
             </div>
             <button
+              type="button"
               onClick={() => setShowHelp((prev) => !prev)}
-              className="flex items-center gap-1 text-xs text-gray-400 hover:text-blue-600 transition-colors"
+              className="flex items-center gap-1 text-xs text-gray-400 hover:text-blue-600 transition-colors cursor-pointer"
               title="How to find your Ad Account ID"
             >
-              <HelpIcon />
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 5.25h.008v.008H12v-.008z" />
+              </svg>
               <span>How to find ID</span>
             </button>
           </div>
 
-          {/* Help popup */}
-          {showHelp && <HelpPopup onClose={() => setShowHelp(false)} />}
+          {/* Inline help section (toggled, no absolute positioning) */}
+          {showHelp && <HelpSection />}
 
           {/* Body */}
           <div className="px-4 py-3">

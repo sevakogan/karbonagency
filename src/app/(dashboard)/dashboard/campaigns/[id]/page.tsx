@@ -29,7 +29,7 @@ export default async function CampaignDetailPage({ params }: Props) {
     <div>
       <div className="flex items-center gap-3 mb-1">
         <Link href="/dashboard/campaigns" className="text-gray-400 hover:text-gray-600 text-sm transition-colors">
-          Campaigns
+          Projects
         </Link>
         <span className="text-gray-300">/</span>
         <h1 className="text-2xl font-black text-gray-900">{campaign.name}</h1>

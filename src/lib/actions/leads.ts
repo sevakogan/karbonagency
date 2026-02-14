@@ -86,3 +86,16 @@ export async function updateLeadStatus(
 
   return { error: error?.message ?? null };
 }
+
+export async function linkLeadToClient(
+  leadId: string,
+  clientId: string
+): Promise<{ error: string | null }> {
+  const supabase = await createSupabaseServer();
+  const { error } = await supabase
+    .from("agency_leads")
+    .update({ client_id: clientId })
+    .eq("id", leadId);
+
+  return { error: error?.message ?? null };
+}

@@ -8,6 +8,7 @@ import { getCampaigns } from "@/lib/actions/campaigns";
 import LeadsTable from "@/components/dashboard/leads-table";
 import Badge from "@/components/ui/badge";
 import StatCard from "@/components/dashboard/stat-card";
+import AddProjectButton from "@/components/dashboard/add-project-button";
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -43,7 +44,7 @@ export default async function ClientDetailPage({ params }: Props) {
         <StatCard label="Total Leads" value={leads.length} />
         <StatCard label="New Leads" value={leads.filter((l) => l.status === "new").length} />
         <StatCard label="Converted" value={leads.filter((l) => l.status === "converted").length} />
-        <StatCard label="Campaigns" value={campaigns.length} />
+        <StatCard label="Projects" value={campaigns.length} />
       </div>
 
       {/* Leads section */}
@@ -54,12 +55,15 @@ export default async function ClientDetailPage({ params }: Props) {
         </div>
       </div>
 
-      {/* Campaigns section */}
+      {/* Projects section */}
       <div>
-        <h2 className="text-lg font-bold text-gray-900 mb-4">Campaigns</h2>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-bold text-gray-900">Projects</h2>
+          <AddProjectButton clientId={id} />
+        </div>
         {campaigns.length === 0 ? (
           <div className="rounded-xl border border-gray-200 bg-white shadow-sm p-8 text-center text-gray-400 text-sm">
-            No campaigns yet
+            No projects yet
           </div>
         ) : (
           <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">

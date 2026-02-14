@@ -15,6 +15,7 @@ export interface Profile {
   email: string;
   full_name: string | null;
   avatar_url: string | null;
+  phone: string | null;
   role: "admin" | "client";
   client_id: string | null;
   is_active: boolean;

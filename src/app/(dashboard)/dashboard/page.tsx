@@ -55,7 +55,7 @@ export default async function DashboardOverview() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard label="Total Leads" value={leadCount ?? 0} />
         <StatCard label="New Leads" value={newLeadCount ?? 0} />
-        <StatCard label="Campaigns" value={campaignCount ?? 0} />
+        <StatCard label="Projects" value={campaignCount ?? 0} />
 
         {isAdmin && adminStats ? (
           <>

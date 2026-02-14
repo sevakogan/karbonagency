@@ -13,7 +13,7 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<{ error: string | null }>;
   signInWithMagicLink: (email: string) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
-  updateProfile: (updates: Partial<Pick<Profile, "full_name">>) => Promise<{ error: string | null }>;
+  updateProfile: (updates: Partial<Pick<Profile, "full_name" | "phone" | "avatar_url">>) => Promise<{ error: string | null }>;
   refreshProfile: () => Promise<void>;
 }
 
@@ -94,7 +94,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     window.location.href = "/login";
   };
 
-  const updateProfile = async (updates: Partial<Pick<Profile, "full_name">>) => {
+  const updateProfile = async (updates: Partial<Pick<Profile, "full_name" | "phone" | "avatar_url">>) => {
     if (!user) return { error: "Not authenticated" };
 
     const { error } = await supabase

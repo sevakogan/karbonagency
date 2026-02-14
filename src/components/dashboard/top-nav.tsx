@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import Logo from "@/components/logo";
 import ClientSelector from "@/components/dashboard/client-selector";
+import UserAvatarDropdown from "@/components/dashboard/user-avatar-dropdown";
 import { useAuth } from "@/components/auth/auth-provider";
 import type { Client } from "@/types";
 
@@ -14,18 +15,16 @@ interface TabItem {
 
 const adminTabs: TabItem[] = [
   { label: "Overview", href: "/dashboard" },
-  { label: "Leads", href: "/dashboard/leads" },
-  { label: "Campaigns", href: "/dashboard/campaigns" },
+  { label: "CRM", href: "/dashboard/leads" },
+  { label: "Projects", href: "/dashboard/campaigns" },
   { label: "Clients", href: "/admin/clients" },
   { label: "Users", href: "/admin/users" },
-  { label: "Settings", href: "/dashboard/settings" },
 ];
 
 const clientTabs: TabItem[] = [
   { label: "Overview", href: "/dashboard" },
-  { label: "My Leads", href: "/dashboard/leads" },
-  { label: "My Campaigns", href: "/dashboard/campaigns" },
-  { label: "Settings", href: "/dashboard/settings" },
+  { label: "CRM", href: "/dashboard/leads" },
+  { label: "My Projects", href: "/dashboard/campaigns" },
 ];
 
 interface TopNavProps {
@@ -34,7 +33,7 @@ interface TopNavProps {
 
 export default function TopNav({ clients }: TopNavProps) {
   const pathname = usePathname();
-  const { profile, signOut } = useAuth();
+  const { profile } = useAuth();
 
   const isAdmin = profile?.role === "admin";
   const tabs = isAdmin ? adminTabs : clientTabs;
@@ -55,22 +54,7 @@ export default function TopNav({ clients }: TopNavProps) {
           {isAdmin && <ClientSelector clients={clients} />}
         </div>
 
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-red-50 text-xs font-bold text-red-600">
-              {(profile?.full_name || profile?.email || "?").charAt(0).toUpperCase()}
-            </div>
-            <span className="hidden text-sm font-medium text-gray-700 sm:block">
-              {profile?.full_name || "User"}
-            </span>
-          </div>
-          <button
-            onClick={signOut}
-            className="rounded-lg px-3 py-1.5 text-sm text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-colors"
-          >
-            Sign Out
-          </button>
-        </div>
+        <UserAvatarDropdown />
       </div>
 
       {/* Row 2: Tabs */}

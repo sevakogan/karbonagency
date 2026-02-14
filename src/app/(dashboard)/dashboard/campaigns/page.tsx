@@ -29,7 +29,7 @@ export default async function CampaignsPage({ searchParams }: Props) {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-black text-gray-900 mb-1">
-            {isAdmin ? "All Campaigns" : "My Campaigns"}
+            {isAdmin ? "All Projects" : "My Projects"}
           </h1>
           <p className="text-sm text-gray-500">{campaigns.length} total</p>
         </div>

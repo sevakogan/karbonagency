@@ -8,6 +8,7 @@ import StatCard from "@/components/dashboard/stat-card";
 import ClientInfoCard from "@/components/dashboard/client-info-card";
 import AddProjectButton from "@/components/dashboard/add-project-button";
 import ProjectsListView from "@/components/dashboard/projects-list-view";
+import MetaStatusBadge from "@/components/dashboard/meta-status-badge";
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -29,12 +30,15 @@ export default async function ClientDetailPage({ params }: Props) {
 
   return (
     <div>
-      <div className="flex items-center gap-2 mb-4">
-        <Link href="/dashboard/campaigns" className="text-gray-400 hover:text-gray-600 text-sm transition-colors">
-          Clients
-        </Link>
-        <span className="text-gray-300">/</span>
-        <span className="text-sm text-gray-600">{client.name}</span>
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <Link href="/dashboard/campaigns" className="text-gray-400 hover:text-gray-600 text-sm transition-colors">
+            Clients
+          </Link>
+          <span className="text-gray-300">/</span>
+          <span className="text-sm text-gray-600">{client.name}</span>
+        </div>
+        <MetaStatusBadge clientId={id} />
       </div>
 
       <ClientInfoCard client={client} />

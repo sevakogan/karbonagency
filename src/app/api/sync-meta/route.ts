@@ -251,46 +251,56 @@ export async function POST(request: NextRequest) {
 /**
  * GET /api/sync-meta?since=YYYY-MM-DD&until=YYYY-MM-DD&clientId=UUID
  *
- * Manual sync trigger. Requires valid Supabase session with admin role.
+ * Manual sync trigger or Vercel Cron invocation.
+ * Accepts either:
+ *   - CRON_SECRET via Authorization header (for Vercel Cron)
+ *   - Valid Supabase session with admin role (for dashboard trigger)
  * All query params are optional (defaults to yesterday for all clients).
  */
 export async function GET(request: NextRequest) {
-  // Verify admin session via Supabase
-  const supabase = getAdminSupabase();
   const authHeader = request.headers.get("authorization");
+  const cronSecret = process.env.CRON_SECRET;
 
-  if (!authHeader?.startsWith("Bearer ")) {
-    return NextResponse.json(
-      { error: "Authorization header required" },
-      { status: 401 }
-    );
-  }
+  // Check if this is a Vercel Cron invocation
+  const isCronCall = cronSecret && authHeader === `Bearer ${cronSecret}`;
 
-  const token = authHeader.replace("Bearer ", "");
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser(token);
+  if (!isCronCall) {
+    // Verify admin session via Supabase
+    const supabase = getAdminSupabase();
 
-  if (authError || !user) {
-    return NextResponse.json(
-      { error: "Invalid or expired session" },
-      { status: 401 }
-    );
-  }
+    if (!authHeader?.startsWith("Bearer ")) {
+      return NextResponse.json(
+        { error: "Authorization header required" },
+        { status: 401 }
+      );
+    }
 
-  // Check admin role
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .single();
+    const token = authHeader.replace("Bearer ", "");
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser(token);
 
-  if (!profile || profile.role !== "admin") {
-    return NextResponse.json(
-      { error: "Admin access required" },
-      { status: 403 }
-    );
+    if (authError || !user) {
+      return NextResponse.json(
+        { error: "Invalid or expired session" },
+        { status: 401 }
+      );
+    }
+
+    // Check admin role
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .single();
+
+    if (!profile || profile.role !== "admin") {
+      return NextResponse.json(
+        { error: "Admin access required" },
+        { status: 403 }
+      );
+    }
   }
 
   const searchParams = request.nextUrl.searchParams;

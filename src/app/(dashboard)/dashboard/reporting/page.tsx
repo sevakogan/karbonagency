@@ -2,6 +2,11 @@ export const dynamic = "force-dynamic";
 
 import { createSupabaseServer } from "@/lib/supabase-server";
 import { getClientMetrics } from "@/lib/actions/metrics";
+import {
+  getDemographicsBreakdown,
+  getPlacementBreakdown,
+  getCampaignBreakdown as getMetaCampaignBreakdown,
+} from "@/lib/actions/meta";
 import ReportingClient from "@/components/dashboard/reporting/reporting-client";
 import type { ReportingKpiData } from "@/components/dashboard/reporting/reporting-kpi-grid";
 import type { CampaignRow } from "@/components/dashboard/reporting/campaign-breakdown-table";
@@ -37,12 +42,72 @@ function buildInitialKpi(metrics: {
 
 /**
  * Fetch campaign-level breakdown for the reporting table.
- * This builds rows from the campaigns + campaign_metrics tables.
+ * First tries real-time Meta API data; falls back to local campaign_metrics.
  */
 async function fetchCampaignBreakdown(
   clientId: string,
+  since: string,
+  until: string,
   supabase: Awaited<ReturnType<typeof createSupabaseServer>>
 ): Promise<CampaignRow[]> {
+  // Try real-time Meta campaign breakdown first
+  const metaResult = await getMetaCampaignBreakdown(clientId, since, until);
+  if (metaResult.data && metaResult.data.length > 0) {
+    // Aggregate per-day rows into per-campaign totals
+    const campaignMap = new Map<
+      string,
+      { name: string; spend: number; impressions: number; clicks: number; conversions: number }
+    >();
+
+    for (const row of metaResult.data) {
+      const existing = campaignMap.get(row.campaign_id) ?? {
+        name: row.campaign_name,
+        spend: 0,
+        impressions: 0,
+        clicks: 0,
+        conversions: 0,
+      };
+      campaignMap.set(row.campaign_id, {
+        name: row.campaign_name,
+        spend: existing.spend + row.spend,
+        impressions: existing.impressions + row.impressions,
+        clicks: existing.clicks + row.clicks,
+        conversions: existing.conversions + row.conversions,
+      });
+    }
+
+    // Get campaign statuses from local DB
+    const { data: localCampaigns } = await supabase
+      .from("campaigns")
+      .select("id, name, status")
+      .eq("client_id", clientId);
+
+    const statusMap = new Map<string, string>();
+    for (const lc of localCampaigns ?? []) {
+      statusMap.set(lc.name.toLowerCase(), lc.status);
+    }
+
+    return [...campaignMap.entries()].map(([, m]) => {
+      const ctr = m.impressions > 0 ? (m.clicks / m.impressions) * 100 : 0;
+      const cpc = m.clicks > 0 ? m.spend / m.clicks : 0;
+      const roas = m.spend > 0 && m.conversions > 0 ? m.conversions / m.spend : 0;
+      const status = statusMap.get(m.name.toLowerCase()) ?? "active";
+
+      return {
+        name: m.name,
+        status: status as CampaignRow["status"],
+        spend: m.spend,
+        impressions: m.impressions,
+        clicks: m.clicks,
+        ctr,
+        cpc,
+        conversions: m.conversions,
+        roas,
+      };
+    });
+  }
+
+  // Fallback: use local campaign_metrics table
   const { data: campaigns, error } = await supabase
     .from("campaigns")
     .select("id, name, status")
@@ -101,20 +166,83 @@ async function fetchCampaignBreakdown(
 }
 
 /**
- * Build placeholder demographics data from daily_metrics.
- * The real demographics breakdown will come from the Meta API agent later.
- * For now we provide sample structure so the UI renders correctly.
+ * Build demographics data from real-time Meta API.
+ * Groups by age range + gender and aggregates spend/impressions/clicks.
  */
-function buildPlaceholderDemographics(): DemographicDataPoint[] {
-  return [];
+async function fetchDemographics(
+  clientId: string,
+  since: string,
+  until: string
+): Promise<DemographicDataPoint[]> {
+  const result = await getDemographicsBreakdown(clientId, since, until);
+  if (!result.data || result.data.length === 0) return [];
+
+  // Aggregate by age + gender (Meta may return per-day rows)
+  const groupMap = new Map<string, DemographicDataPoint>();
+
+  for (const row of result.data) {
+    const key = `${row.age}__${row.gender}`;
+    const existing = groupMap.get(key);
+    if (existing) {
+      groupMap.set(key, {
+        age_range: row.age,
+        gender: row.gender,
+        spend: existing.spend + row.spend,
+        impressions: existing.impressions + row.impressions,
+        clicks: existing.clicks + row.clicks,
+      });
+    } else {
+      groupMap.set(key, {
+        age_range: row.age,
+        gender: row.gender,
+        spend: row.spend,
+        impressions: row.impressions,
+        clicks: row.clicks,
+      });
+    }
+  }
+
+  return [...groupMap.values()];
 }
 
 /**
- * Build placeholder placement data.
- * The real breakdown will come from the Meta API agent later.
+ * Build placement data from real-time Meta API.
+ * Groups by platform and aggregates spend/impressions/clicks/conversions.
  */
-function buildPlaceholderPlacements(): PlacementDataPoint[] {
-  return [];
+async function fetchPlacements(
+  clientId: string,
+  since: string,
+  until: string
+): Promise<PlacementDataPoint[]> {
+  const result = await getPlacementBreakdown(clientId, since, until);
+  if (!result.data || result.data.length === 0) return [];
+
+  // Aggregate by platform (Meta may return per-day and per-position rows)
+  const platformMap = new Map<string, PlacementDataPoint>();
+
+  for (const row of result.data) {
+    const platform = row.publisher_platform;
+    const existing = platformMap.get(platform);
+    if (existing) {
+      platformMap.set(platform, {
+        platform,
+        spend: existing.spend + row.spend,
+        impressions: existing.impressions + row.impressions,
+        clicks: existing.clicks + row.clicks,
+        conversions: existing.conversions + row.conversions,
+      });
+    } else {
+      platformMap.set(platform, {
+        platform,
+        spend: row.spend,
+        impressions: row.impressions,
+        clicks: row.clicks,
+        conversions: row.conversions,
+      });
+    }
+  }
+
+  return [...platformMap.values()];
 }
 
 export default async function ReportingPage() {
@@ -168,18 +296,19 @@ export default async function ReportingPage() {
   const since = thirtyDaysAgo.toISOString().split("T")[0];
   const until = now.toISOString().split("T")[0];
 
-  const [metrics, campaignRows] = await Promise.all([
+  const [metrics, campaignRows, demographics, placements] = await Promise.all([
     getClientMetrics(clientId, since, until),
-    fetchCampaignBreakdown(clientId, supabase),
+    fetchCampaignBreakdown(clientId, since, until, supabase),
+    fetchDemographics(clientId, since, until),
+    fetchPlacements(clientId, since, until),
   ]);
 
   const initialKpi = buildInitialKpi(metrics);
-  const demographics = buildPlaceholderDemographics();
-  const placements = buildPlaceholderPlacements();
 
   return (
     <ReportingClient
       clientId={clientId}
+      isAdmin={isAdmin}
       initialKpi={initialKpi}
       initialDaily={metrics.daily}
       initialCampaigns={campaignRows}

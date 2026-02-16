@@ -16,8 +16,14 @@ export default function Home() {
           </Link>
           <div className="flex items-center gap-3">
             <Link
+              href="/consulting"
+              className="px-4 py-2 rounded-lg border border-orange-500/30 bg-orange-500/10 text-orange-400 text-sm font-semibold hover:bg-orange-500/20 transition-colors"
+            >
+              Open a Sim Center
+            </Link>
+            <Link
               href="/login"
-              className="px-4 py-2 rounded-lg border border-white/30 text-white text-sm font-semibold hover:bg-white/10 transition-colors"
+              className="hidden sm:inline-block px-4 py-2 rounded-lg border border-white/30 text-white text-sm font-semibold hover:bg-white/10 transition-colors"
             >
               Client Dashboard
             </Link>
@@ -75,6 +81,12 @@ export default function Home() {
               Request More Info
             </Link>
           </div>
+          <Link
+            href="/consulting"
+            className="inline-flex items-center gap-2 mt-6 px-6 py-3 rounded-xl border border-orange-500/30 bg-orange-500/10 text-orange-400 font-semibold text-sm hover:bg-orange-500/20 hover:text-orange-300 transition-all duration-200"
+          >
+            Open a Sim Center &rarr;
+          </Link>
 
           {/* Social proof line */}
           <p className="mt-12 text-xs text-white/25 tracking-wide uppercase">
@@ -484,6 +496,9 @@ export default function Home() {
               </p>
             </div>
             <div className="flex items-center gap-6">
+              <Link href="/consulting" className="text-white/30 text-xs hover:text-white/60 transition-colors">
+                Open a Sim Center
+              </Link>
               <Link href="/book" className="text-white/30 text-xs hover:text-white/60 transition-colors">
                 Book a Call
               </Link>

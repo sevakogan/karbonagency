@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import Logo from "@/components/logo";
 import ParallaxSection from "@/components/parallax-section";
+import GuideDownloadButton from "@/components/guide-download-button";
 
 export const metadata: Metadata = {
   title: "Open a Sim Racing Center | Turnkey Consulting",
@@ -115,11 +116,12 @@ export default function ConsultingPage() {
             You Own It.
           </h1>
 
-          <p className="text-white/50 max-w-xl mx-auto leading-relaxed mb-2">
+          <p className="text-white/50 max-w-xl mx-auto leading-relaxed mb-6">
             Everything you need to open a sim racing center — from finding the
             space to filling the seats. We handle the hardest parts so you can
             walk into a fully running business.
           </p>
+          <GuideDownloadButton />
         </ParallaxSection>
       </section>
 

@@ -11,8 +11,15 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Open a Sim Racing Center | Karbon Agency",
     description:
-      "Turnkey sim center consulting. We handle everything from finding your location to training your team — then hand you a fully running business.",
+      "Turnkey sim center consulting. We handle everything — location, lease, rigs, staff, marketing, and 30-day operations training. The business is 100% yours.",
     url: "https://karbonagency.com/consulting",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Open a Sim Racing Center | Karbon Agency",
+    description:
+      "We build it. You own it. Turnkey sim center consulting — location, rigs, staff, marketing, and 30-day operations training.",
   },
   alternates: {
     canonical: "https://karbonagency.com/consulting",

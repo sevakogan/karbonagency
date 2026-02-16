@@ -38,7 +38,7 @@ export default function Home() {
       </nav>
 
       {/* ============ HERO ============ */}
-      <section className="hero-bg relative min-h-screen flex items-center justify-center px-4 overflow-hidden">
+      <section className="hero-bg relative min-h-screen flex items-center justify-center px-4 pt-20 overflow-hidden">
 
         <ParallaxSection speed={0.15} className="relative z-10 max-w-4xl mx-auto text-center">
           {/* Badge */}

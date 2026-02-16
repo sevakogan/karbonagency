@@ -43,6 +43,7 @@ export default function GuideModal({ isOpen, onClose }: GuideModalProps) {
           body: JSON.stringify({
             name: formData.get("name"),
             email: formData.get("email"),
+            phone: formData.get("phone"),
           }),
         });
 
@@ -159,39 +160,31 @@ export default function GuideModal({ isOpen, onClose }: GuideModalProps) {
             </div>
 
             {/* Form */}
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label
-                  htmlFor="guide-name"
-                  className="block text-xs font-semibold text-white/60 mb-1"
-                >
-                  Name
-                </label>
-                <input
-                  id="guide-name"
-                  name="name"
-                  type="text"
-                  required
-                  className={inputClass}
-                  placeholder="Your name"
-                />
-              </div>
-              <div>
-                <label
-                  htmlFor="guide-email"
-                  className="block text-xs font-semibold text-white/60 mb-1"
-                >
-                  Email
-                </label>
-                <input
-                  id="guide-email"
-                  name="email"
-                  type="email"
-                  required
-                  className={inputClass}
-                  placeholder="your@email.com"
-                />
-              </div>
+            <form onSubmit={handleSubmit} className="space-y-3">
+              <input
+                id="guide-name"
+                name="name"
+                type="text"
+                required
+                className={inputClass}
+                placeholder="Your name"
+              />
+              <input
+                id="guide-email"
+                name="email"
+                type="email"
+                required
+                className={inputClass}
+                placeholder="your@email.com"
+              />
+              <input
+                id="guide-phone"
+                name="phone"
+                type="tel"
+                required
+                className={inputClass}
+                placeholder="(555) 123-4567"
+              />
 
               {status === "error" && (
                 <div className="flex items-center gap-2 p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm">

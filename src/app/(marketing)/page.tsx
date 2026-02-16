@@ -462,7 +462,7 @@ export default function Home() {
           <h2 className="text-2xl font-black mb-6 text-center">
             The Sim Racing Marketing Agency Built for Growth
           </h2>
-          <div className="space-y-4 text-white/35 text-sm leading-relaxed">
+          <div className="space-y-4 text-white/35 text-sm leading-relaxed text-justify">
             <p>
               Karbon Agency is the only digital marketing agency in the United States that works exclusively with sim racing businesses. We specialize in Meta advertising (Facebook ads) and Instagram advertising for racing simulator venues, F1 experience centers, drift simulation arcades, motorsport entertainment complexes, and virtual racing facilities.
             </p>

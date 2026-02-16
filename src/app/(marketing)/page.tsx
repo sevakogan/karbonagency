@@ -14,22 +14,22 @@ export default function Home() {
           <Link href="/">
             <Logo size="sm" />
           </Link>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <Link
               href="/consulting"
-              className="px-4 py-2 rounded-lg border border-orange-500/30 bg-orange-500/10 text-orange-400 text-sm font-semibold hover:bg-orange-500/20 transition-colors"
+              className="px-3 py-1.5 rounded-lg border border-orange-500/30 bg-orange-500/10 text-orange-400 text-xs font-semibold hover:bg-orange-500/20 transition-colors whitespace-nowrap"
             >
               Open a Sim Center
             </Link>
             <Link
               href="/login"
-              className="hidden sm:inline-block px-4 py-2 rounded-lg border border-white/30 text-white text-sm font-semibold hover:bg-white/10 transition-colors"
+              className="hidden md:inline-block px-3 py-1.5 rounded-lg border border-white/30 text-white text-xs font-semibold hover:bg-white/10 transition-colors whitespace-nowrap"
             >
               Client Dashboard
             </Link>
             <Link
               href="/book"
-              className="px-5 py-2 rounded-lg bg-red-600 text-white text-sm font-semibold hover:bg-red-700 transition-colors"
+              className="px-3 py-1.5 rounded-lg bg-red-600 text-white text-xs font-semibold hover:bg-red-700 transition-colors whitespace-nowrap"
             >
               Book a Free Call
             </Link>

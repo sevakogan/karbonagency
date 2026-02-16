@@ -86,9 +86,23 @@ export default function ConsultingPage() {
         </div>
       </div>
 
-      {/* Hero */}
-      <section className="px-4 pb-16 overflow-hidden">
-        <ParallaxSection speed={0.12} className="max-w-3xl mx-auto text-center">
+      {/* Hero with Video Background */}
+      <section className="relative px-4 pb-16 overflow-hidden">
+        {/* Background Video */}
+        <div className="absolute inset-0 -top-20 overflow-hidden">
+          <video
+            autoPlay
+            loop
+            muted
+            playsInline
+            className="w-full h-full object-cover opacity-20"
+          >
+            <source src="/sim-racing-bg.mp4" type="video/mp4" />
+          </video>
+          <div className="absolute inset-0 bg-gradient-to-b from-black via-black/60 to-black" />
+        </div>
+
+        <ParallaxSection speed={0.12} className="relative z-10 max-w-3xl mx-auto text-center">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-red-500/30 bg-red-500/10 text-red-400 text-xs font-semibold tracking-wide uppercase mb-6">
             Turnkey Sim Center Buildout
           </div>

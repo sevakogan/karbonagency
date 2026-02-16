@@ -1,10 +1,24 @@
 import { ImageResponse } from "next/og";
 
-export const alt = "Karbon Agency - Meta & Instagram Ads for Sim Racing, F1 Simulators, Drift Racing, and Motorsport Venues";
+export const alt =
+  "Karbon Agency — Meta & Instagram Ads for Sim Racing Businesses";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
 export default function OGImage() {
+  const stats = [
+    { value: "$5.03", label: "Cost per Booking" },
+    { value: "7.7M+", label: "Impressions" },
+    { value: "20,600+", label: "Bookings" },
+  ];
+
+  const services = [
+    "Meta Ads",
+    "Instagram Ads",
+    "Creative Production",
+    "Full Funnel Strategy",
+  ];
+
   return new ImageResponse(
     (
       <div
@@ -15,178 +29,331 @@ export default function OGImage() {
           flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
-          background: "linear-gradient(135deg, #0a0a0a 0%, #1a0505 30%, #0f0a1a 60%, #0a0a0a 100%)",
+          background:
+            "linear-gradient(135deg, #0a0a0a 0%, #1a0505 25%, #0a0a0a 50%, #0f0a1a 75%, #0a0a0a 100%)",
           position: "relative",
+          overflow: "hidden",
         }}
       >
-        {/* Subtle gradient orbs */}
+        {/* Gradient orbs */}
         <div
           style={{
             position: "absolute",
-            top: -100,
-            right: -100,
-            width: 400,
-            height: 400,
+            top: -120,
+            right: -80,
+            width: 500,
+            height: 500,
             borderRadius: "50%",
-            background: "radial-gradient(circle, rgba(239,68,68,0.15) 0%, transparent 70%)",
+            background:
+              "radial-gradient(circle, rgba(239,68,68,0.2) 0%, transparent 70%)",
           }}
         />
         <div
           style={{
             position: "absolute",
-            bottom: -100,
+            bottom: -150,
             left: -100,
-            width: 400,
-            height: 400,
+            width: 500,
+            height: 500,
             borderRadius: "50%",
-            background: "radial-gradient(circle, rgba(249,115,22,0.1) 0%, transparent 70%)",
+            background:
+              "radial-gradient(circle, rgba(249,115,22,0.15) 0%, transparent 70%)",
+          }}
+        />
+        <div
+          style={{
+            position: "absolute",
+            top: 200,
+            left: 400,
+            width: 300,
+            height: 300,
+            borderRadius: "50%",
+            background:
+              "radial-gradient(circle, rgba(239,68,68,0.06) 0%, transparent 70%)",
           }}
         />
 
-        {/* K Logo */}
+        {/* Top bar — logo + badge */}
         <div
           style={{
+            position: "absolute",
+            top: 40,
+            left: 60,
+            right: 60,
             display: "flex",
             alignItems: "center",
-            justifyContent: "center",
-            marginBottom: 32,
+            justifyContent: "space-between",
           }}
         >
-          <svg viewBox="0 0 32 32" fill="none" width="80" height="80">
-            <path
-              d="M16 1L29 8.5V23.5L16 31L3 23.5V8.5L16 1Z"
-              fill="url(#og-grad)"
-              stroke="url(#og-grad)"
-              strokeWidth="0.5"
+          {/* Logo */}
+          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+            <svg viewBox="0 0 32 32" fill="none" width="44" height="44">
+              <path
+                d="M16 1L29 8.5V23.5L16 31L3 23.5V8.5L16 1Z"
+                fill="url(#og-h-grad)"
+                stroke="url(#og-h-grad)"
+                strokeWidth="0.5"
+              />
+              <path
+                d="M11 8V24M11 16L21 8M11 16L21 24"
+                stroke="white"
+                strokeWidth="3"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+              <defs>
+                <linearGradient
+                  id="og-h-grad"
+                  x1="3"
+                  y1="1"
+                  x2="29"
+                  y2="31"
+                  gradientUnits="userSpaceOnUse"
+                >
+                  <stop stopColor="#ef4444" />
+                  <stop offset="1" stopColor="#f97316" />
+                </linearGradient>
+              </defs>
+            </svg>
+            <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
+              <span
+                style={{
+                  fontSize: 24,
+                  fontWeight: 900,
+                  color: "white",
+                  letterSpacing: "-0.01em",
+                }}
+              >
+                KARBON
+              </span>
+              <span
+                style={{
+                  fontSize: 24,
+                  fontWeight: 300,
+                  color: "rgba(255,255,255,0.4)",
+                }}
+              >
+                AGENCY
+              </span>
+            </div>
+          </div>
+
+          {/* Badge */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              padding: "8px 18px",
+              borderRadius: 999,
+              border: "1px solid rgba(239,68,68,0.35)",
+              background: "rgba(239,68,68,0.1)",
+            }}
+          >
+            <div
+              style={{
+                width: 7,
+                height: 7,
+                borderRadius: "50%",
+                background: "#ef4444",
+              }}
             />
-            <path
-              d="M11 8V24M11 16L21 8M11 16L21 24"
-              stroke="white"
-              strokeWidth="3"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-            <defs>
-              <linearGradient id="og-grad" x1="3" y1="1" x2="29" y2="31" gradientUnits="userSpaceOnUse">
-                <stop stopColor="#ef4444" />
-                <stop offset="1" stopColor="#f97316" />
-              </linearGradient>
-            </defs>
-          </svg>
+            <span
+              style={{
+                fontSize: 13,
+                fontWeight: 700,
+                letterSpacing: "0.08em",
+                textTransform: "uppercase" as const,
+                color: "#f87171",
+              }}
+            >
+              The Only Agency of Its Kind
+            </span>
+          </div>
         </div>
 
-        {/* Brand name */}
+        {/* Main headline */}
         <div
           style={{
             display: "flex",
-            alignItems: "baseline",
-            gap: 12,
+            flexDirection: "column",
+            alignItems: "center",
+            marginTop: 10,
+          }}
+        >
+          <h1
+            style={{
+              fontSize: 68,
+              fontWeight: 900,
+              color: "white",
+              textAlign: "center",
+              lineHeight: 1.0,
+              letterSpacing: "-0.03em",
+              margin: 0,
+              marginBottom: 0,
+            }}
+          >
+            We Fill{" "}
+            <span
+              style={{
+                background: "linear-gradient(90deg, #ef4444, #f97316)",
+                backgroundClip: "text",
+                color: "transparent",
+              }}
+            >
+              Sim Racing
+            </span>
+          </h1>
+          <h1
+            style={{
+              fontSize: 68,
+              fontWeight: 900,
+              color: "white",
+              textAlign: "center",
+              lineHeight: 1.0,
+              letterSpacing: "-0.03em",
+              margin: 0,
+              marginBottom: 6,
+            }}
+          >
+            Seats.
+          </h1>
+          <p
+            style={{
+              fontSize: 26,
+              fontWeight: 300,
+              color: "rgba(255,255,255,0.35)",
+              margin: 0,
+              marginBottom: 28,
+              letterSpacing: "-0.01em",
+            }}
+          >
+            That&apos;s All We Do.
+          </p>
+        </div>
+
+        {/* Stats row */}
+        <div
+          style={{
+            display: "flex",
+            gap: 16,
             marginBottom: 24,
           }}
         >
-          <span
-            style={{
-              fontSize: 56,
-              fontWeight: 900,
-              color: "white",
-              letterSpacing: "-0.02em",
-            }}
-          >
-            KARBON
-          </span>
-          <span
-            style={{
-              fontSize: 56,
-              fontWeight: 300,
-              color: "rgba(255,255,255,0.5)",
-              letterSpacing: "-0.02em",
-            }}
-          >
-            AGENCY
-          </span>
+          {stats.map((stat) => (
+            <div
+              key={stat.label}
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                padding: "14px 28px",
+                borderRadius: 16,
+                border: "1px solid rgba(255,255,255,0.08)",
+                background: "rgba(255,255,255,0.03)",
+                minWidth: 160,
+              }}
+            >
+              <span
+                style={{
+                  fontSize: 28,
+                  fontWeight: 900,
+                  background: "linear-gradient(90deg, #ef4444, #f97316)",
+                  backgroundClip: "text",
+                  color: "transparent",
+                  marginBottom: 2,
+                }}
+              >
+                {stat.value}
+              </span>
+              <span
+                style={{
+                  fontSize: 12,
+                  fontWeight: 600,
+                  color: "rgba(255,255,255,0.35)",
+                  textTransform: "uppercase" as const,
+                  letterSpacing: "0.05em",
+                }}
+              >
+                {stat.label}
+              </span>
+            </div>
+          ))}
         </div>
 
-        {/* Tagline */}
+        {/* Service pills */}
         <div
           style={{
             display: "flex",
-            alignItems: "center",
-            gap: 8,
-            padding: "10px 24px",
-            borderRadius: 999,
-            border: "1px solid rgba(239,68,68,0.3)",
-            background: "rgba(239,68,68,0.1)",
-            marginBottom: 32,
+            gap: 10,
           }}
         >
-          <div
-            style={{
-              width: 8,
-              height: 8,
-              borderRadius: "50%",
-              background: "#ef4444",
-            }}
-          />
-          <span
-            style={{
-              fontSize: 18,
-              fontWeight: 700,
-              letterSpacing: "0.08em",
-              textTransform: "uppercase" as const,
-              background: "linear-gradient(90deg, #ef4444, #f97316)",
-              backgroundClip: "text",
-              color: "transparent",
-            }}
-          >
-            The Only Agency of Its Kind
-          </span>
+          {services.map((svc) => (
+            <div
+              key={svc}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                padding: "8px 16px",
+                borderRadius: 10,
+                border: "1px solid rgba(255,255,255,0.06)",
+                background: "rgba(255,255,255,0.02)",
+              }}
+            >
+              <span
+                style={{
+                  fontSize: 13,
+                  fontWeight: 600,
+                  color: "rgba(255,255,255,0.4)",
+                }}
+              >
+                {svc}
+              </span>
+            </div>
+          ))}
         </div>
 
-        {/* Description */}
-        <p
-          style={{
-            fontSize: 22,
-            color: "rgba(255,255,255,0.45)",
-            textAlign: "center",
-            maxWidth: 700,
-            lineHeight: 1.5,
-          }}
-        >
-          Meta & Instagram Ads Built Exclusively for
-          Sim Racing Businesses
-        </p>
-
-        {/* Bottom keyword bar */}
+        {/* Bottom line */}
         <div
           style={{
             position: "absolute",
             bottom: 32,
             display: "flex",
-            gap: 24,
+            gap: 20,
             alignItems: "center",
           }}
         >
-          {["F1 Simulators", "Drift Racing", "Motorsport Venues", "Racing Arcades", "Esports Racing"].map(
-            (tag) => (
-              <span
-                key={tag}
-                style={{
-                  fontSize: 13,
-                  color: "rgba(255,255,255,0.2)",
-                  fontWeight: 600,
-                  letterSpacing: "0.05em",
-                  textTransform: "uppercase" as const,
-                }}
-              >
-                {tag}
-              </span>
-            )
-          )}
+          <span
+            style={{
+              fontSize: 14,
+              color: "rgba(255,255,255,0.2)",
+              fontWeight: 600,
+            }}
+          >
+            karbonagency.com
+          </span>
+          <span
+            style={{
+              width: 4,
+              height: 4,
+              borderRadius: "50%",
+              background: "rgba(255,255,255,0.15)",
+            }}
+          />
+          <span
+            style={{
+              fontSize: 14,
+              color: "rgba(255,255,255,0.2)",
+              fontWeight: 600,
+            }}
+          >
+            Meta &amp; Instagram Ads for Sim Racing Businesses
+          </span>
         </div>
       </div>
     ),
     {
       ...size,
-    }
+    },
   );
 }

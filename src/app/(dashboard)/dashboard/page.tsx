@@ -8,11 +8,18 @@ import { getCampaigns } from "@/lib/actions/campaigns";
 import MetricCard from "@/components/dashboard/metric-card";
 import DailySpendChart from "@/components/dashboard/daily-spend-chart";
 import ConversionsChart from "@/components/dashboard/conversions-chart";
+import DateRangeSelector from "@/components/dashboard/date-range-selector";
 import StatCard from "@/components/dashboard/stat-card";
 import Badge from "@/components/ui/badge";
 import { METRIC_DEFINITIONS } from "@/lib/metric-definitions";
 import { SERVICE_LABELS } from "@/types";
 import type { CampaignService } from "@/types";
+
+const RANGE_OPTIONS = [
+  { label: "30 days", days: 30 },
+  { label: "60 days", days: 60 },
+  { label: "90 days", days: 90 },
+] as const;
 
 function fmt(n: number, decimals = 0): string {
   return n.toLocaleString(undefined, {
@@ -25,7 +32,15 @@ function fmtCurrency(n: number): string {
   return `$${fmt(n, 2)}`;
 }
 
-export default async function DashboardOverview() {
+export default async function DashboardOverview({
+  searchParams,
+}: {
+  searchParams: Promise<{ range?: string }>;
+}) {
+  const params = await searchParams;
+  const rangeDays = [30, 60, 90].includes(Number(params.range))
+    ? Number(params.range)
+    : 90;
   const supabase = await createSupabaseServer();
 
   const {
@@ -150,9 +165,9 @@ export default async function DashboardOverview() {
   }
 
   const now = new Date();
-  const thirtyDaysAgo = new Date(now);
-  thirtyDaysAgo.setDate(now.getDate() - 30);
-  const since = thirtyDaysAgo.toISOString().split("T")[0];
+  const rangeStart = new Date(now);
+  rangeStart.setDate(now.getDate() - rangeDays);
+  const since = rangeStart.toISOString().split("T")[0];
   const until = now.toISOString().split("T")[0];
 
   const [metrics, campaigns] = await Promise.all([
@@ -167,11 +182,17 @@ export default async function DashboardOverview() {
       {/* Header */}
       <div className="mb-8">
         <Breadcrumb items={[{ label: "Overview" }]} />
-        <h1 className="text-2xl font-black text-gray-900 mt-2 mb-1">Dashboard</h1>
+        <div className="flex items-center justify-between mt-2 mb-1">
+          <h1 className="text-2xl font-black text-gray-900">Dashboard</h1>
+          <DateRangeSelector
+            options={RANGE_OPTIONS}
+            currentDays={rangeDays}
+          />
+        </div>
         <p className="text-sm text-gray-500">
           Welcome back
           {profile?.full_name ? `, ${profile.full_name}` : ""} —
-          here&apos;s your advertising performance for the last 30 days.
+          here&apos;s your advertising performance for the last {rangeDays} days.
         </p>
       </div>
 

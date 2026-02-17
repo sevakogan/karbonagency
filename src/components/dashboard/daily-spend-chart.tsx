@@ -1,12 +1,125 @@
 "use client";
 
+import { useState, useMemo, useCallback, useRef } from "react";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  CartesianGrid,
+  Legend,
+  type TooltipProps,
+} from "recharts";
 import type { DailyMetrics } from "@/types";
 
+// ---------------------------------------------------------------------------
+// Constants
+// ---------------------------------------------------------------------------
+
+const VISIBLE_DAYS = 30;
+const DRAG_THRESHOLD = 5; // pixels before considering it a drag
+
+// ---------------------------------------------------------------------------
+// Custom tooltip
+// ---------------------------------------------------------------------------
+
+function SpendTooltip({ active, payload, label }: TooltipProps<number, string>) {
+  if (!active || !payload?.length) return null;
+
+  return (
+    <div className="rounded-lg bg-white border border-gray-200 shadow-lg px-4 py-3 text-xs">
+      <p className="font-semibold text-gray-900 mb-1.5">{label}</p>
+      {payload.map((entry) => (
+        <div key={entry.dataKey} className="flex items-center gap-2 py-0.5">
+          <span
+            className="w-2.5 h-2.5 rounded-sm"
+            style={{ backgroundColor: entry.color }}
+          />
+          <span className="text-gray-600">{entry.name}:</span>
+          <span className="font-medium text-gray-900">
+            {entry.dataKey === "spend"
+              ? `$${(entry.value ?? 0).toLocaleString(undefined, {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}`
+              : (entry.value ?? 0).toLocaleString()}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Component
+// ---------------------------------------------------------------------------
+
 interface Props {
-  metrics: DailyMetrics[];
+  readonly metrics: readonly DailyMetrics[];
 }
 
 export default function DailySpendChart({ metrics }: Props) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const dragStartX = useRef<number | null>(null);
+  const dragStartOffset = useRef(0);
+
+  const chartData = useMemo(
+    () =>
+      metrics.map((m) => ({
+        date: new Date(m.date).toLocaleDateString(undefined, {
+          month: "short",
+          day: "numeric",
+        }),
+        spend: Number(m.spend),
+        clicks: m.clicks,
+      })),
+    [metrics]
+  );
+
+  const maxOffset = Math.max(0, chartData.length - VISIBLE_DAYS);
+  const [offset, setOffset] = useState(maxOffset); // start at most recent
+
+  const visibleData = useMemo(
+    () => chartData.slice(offset, offset + VISIBLE_DAYS),
+    [chartData, offset]
+  );
+
+  const clampOffset = useCallback(
+    (val: number) => Math.max(0, Math.min(val, maxOffset)),
+    [maxOffset]
+  );
+
+  // ── Drag handlers ──
+  const handlePointerDown = useCallback(
+    (e: React.PointerEvent) => {
+      dragStartX.current = e.clientX;
+      dragStartOffset.current = offset;
+      (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
+    },
+    [offset]
+  );
+
+  const handlePointerMove = useCallback(
+    (e: React.PointerEvent) => {
+      if (dragStartX.current === null) return;
+      const dx = e.clientX - dragStartX.current;
+      if (Math.abs(dx) < DRAG_THRESHOLD) return;
+
+      const containerWidth = containerRef.current?.clientWidth ?? 600;
+      const dayWidth = containerWidth / VISIBLE_DAYS;
+      const daysDelta = Math.round(-dx / dayWidth);
+
+      setOffset(clampOffset(dragStartOffset.current + daysDelta));
+    },
+    [clampOffset]
+  );
+
+  const handlePointerUp = useCallback(() => {
+    dragStartX.current = null;
+  }, []);
+
   if (metrics.length === 0) {
     return (
       <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm text-center text-gray-400 text-sm">
@@ -15,45 +128,103 @@ export default function DailySpendChart({ metrics }: Props) {
     );
   }
 
-  const maxSpend = Math.max(...metrics.map((m) => Number(m.spend)), 1);
-  const maxClicks = Math.max(...metrics.map((m) => m.clicks), 1);
+  const canGoBack = offset > 0;
+  const canGoForward = offset < maxOffset;
 
   return (
     <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-      <div className="flex items-end gap-1.5 h-48">
-        {metrics.map((m) => {
-          const spendHeight = (Number(m.spend) / maxSpend) * 100;
-          const clickHeight = (m.clicks / maxClicks) * 100;
-
-          return (
-            <div key={m.id ?? m.date} className="flex-1 flex items-end gap-0.5 group relative min-w-0">
-              <div
-                className="flex-1 bg-red-200 rounded-t transition-all group-hover:bg-red-400"
-                style={{ height: `${Math.max(spendHeight, 3)}%` }}
-                title={`Spend: $${Number(m.spend).toLocaleString(undefined, { minimumFractionDigits: 2 })}`}
-              />
-              <div
-                className="flex-1 bg-blue-200 rounded-t transition-all group-hover:bg-blue-400"
-                style={{ height: `${Math.max(clickHeight, 3)}%` }}
-                title={`Clicks: ${m.clicks.toLocaleString()}`}
-              />
-              <div className="absolute -bottom-6 left-0 right-0 text-center text-[9px] text-gray-400 truncate">
-                {new Date(m.date).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      <div className="flex items-center gap-6 mt-10 text-xs text-gray-500">
-        <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded bg-red-200" />
-          Spend
+      {/* Navigation header */}
+      {chartData.length > VISIBLE_DAYS && (
+        <div className="flex items-center justify-between mb-3">
+          <button
+            type="button"
+            onClick={() => setOffset(clampOffset(offset - VISIBLE_DAYS))}
+            disabled={!canGoBack}
+            className="text-xs text-gray-400 hover:text-gray-700 disabled:opacity-30 disabled:cursor-not-allowed transition-colors px-2 py-1"
+          >
+            ← Earlier
+          </button>
+          <span className="text-[11px] text-gray-400">
+            {visibleData[0]?.date} — {visibleData[visibleData.length - 1]?.date}
+            <span className="text-gray-300 ml-1.5">
+              ({chartData.length} days total · drag to pan)
+            </span>
+          </span>
+          <button
+            type="button"
+            onClick={() => setOffset(clampOffset(offset + VISIBLE_DAYS))}
+            disabled={!canGoForward}
+            className="text-xs text-gray-400 hover:text-gray-700 disabled:opacity-30 disabled:cursor-not-allowed transition-colors px-2 py-1"
+          >
+            Later →
+          </button>
         </div>
-        <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded bg-blue-200" />
-          Clicks
-        </div>
+      )}
+
+      {/* Chart with drag */}
+      <div
+        ref={containerRef}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onPointerLeave={handlePointerUp}
+        className="select-none touch-none"
+        style={{ cursor: chartData.length > VISIBLE_DAYS ? "grab" : "default" }}
+      >
+        <ResponsiveContainer width="100%" height={200}>
+          <BarChart
+            data={visibleData}
+            margin={{ top: 4, right: 4, left: -20, bottom: 0 }}
+          >
+            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
+            <XAxis
+              dataKey="date"
+              tick={{ fontSize: 10, fill: "#9ca3af" }}
+              tickLine={false}
+              axisLine={false}
+              interval="preserveStartEnd"
+            />
+            <YAxis
+              yAxisId="spend"
+              tick={{ fontSize: 10, fill: "#9ca3af" }}
+              tickLine={false}
+              axisLine={false}
+              tickFormatter={(v: number) => `$${v >= 1000 ? `${(v / 1000).toFixed(0)}k` : v}`}
+            />
+            <YAxis
+              yAxisId="clicks"
+              orientation="right"
+              tick={{ fontSize: 10, fill: "#9ca3af" }}
+              tickLine={false}
+              axisLine={false}
+              hide
+            />
+            <Tooltip content={<SpendTooltip />} cursor={{ fill: "rgba(0,0,0,0.04)" }} />
+            <Legend
+              verticalAlign="bottom"
+              height={28}
+              iconType="square"
+              iconSize={10}
+              wrapperStyle={{ fontSize: 11 }}
+            />
+            <Bar
+              yAxisId="spend"
+              dataKey="spend"
+              name="Spend"
+              fill="#fca5a5"
+              activeBar={{ fill: "#ef4444" }}
+              radius={[2, 2, 0, 0]}
+            />
+            <Bar
+              yAxisId="clicks"
+              dataKey="clicks"
+              name="Clicks"
+              fill="#93c5fd"
+              activeBar={{ fill: "#3b82f6" }}
+              radius={[2, 2, 0, 0]}
+            />
+          </BarChart>
+        </ResponsiveContainer>
       </div>
     </div>
   );

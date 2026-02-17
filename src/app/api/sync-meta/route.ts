@@ -211,8 +211,9 @@ async function syncSingleCampaign(
     };
   }
 
-  const baseRow = (day: (typeof insights)[number]) => ({
+  const rows = insights.map((day) => ({
     client_id: clientId,
+    campaign_id: dbCampaignId,
     date: day.date,
     platform: "meta" as const,
     spend: day.spend,
@@ -228,13 +229,6 @@ async function syncSingleCampaign(
     video_views: day.video_views,
     leads: day.leads,
     link_clicks: day.link_clicks,
-  });
-
-  // Try inserting with campaign_id (new schema).
-  // If the column doesn't exist yet, fall back to the old upsert approach.
-  const rowsWithCampaign = insights.map((day) => ({
-    ...baseRow(day),
-    campaign_id: dbCampaignId,
   }));
 
   // Delete existing rows for this client+campaign+date range, then insert fresh.
@@ -254,18 +248,9 @@ async function syncSingleCampaign(
 
   await deleteQuery;
 
-  let { error: insertError } = await supabase
+  const { error: insertError } = await supabase
     .from("daily_metrics")
-    .insert(rowsWithCampaign);
-
-  // Fallback: if campaign_id column doesn't exist yet, use old upsert without it
-  if (insertError?.message?.includes("campaign_id")) {
-    const rowsWithoutCampaign = insights.map(baseRow);
-    const fallbackResult = await supabase
-      .from("daily_metrics")
-      .upsert(rowsWithoutCampaign, { onConflict: "client_id,date,platform" });
-    insertError = fallbackResult.error;
-  }
+    .insert(rows);
 
   if (insertError) {
     return {

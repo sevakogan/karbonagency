@@ -259,8 +259,19 @@ export default function ReportingClient({
           <SpendOverviewChart data={spendData} />
         </section>
 
-        {/* Metric Charts Grid */}
+        {/* Campaign Breakdown */}
         <section className="mb-8">
+          <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3">
+            Campaign Breakdown
+          </h2>
+          <CampaignBreakdownTable campaigns={campaigns} />
+        </section>
+
+        {/* Detailed Metric Charts */}
+        <section className="mb-8">
+          <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3">
+            Detailed Metrics
+          </h2>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {DEFAULT_CHART_ORDER.map((chartId) => {
               const config = CHART_CONFIGS[chartId];
@@ -278,14 +289,6 @@ export default function ReportingClient({
               );
             })}
           </div>
-        </section>
-
-        {/* Campaign Breakdown */}
-        <section className="mb-8">
-          <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3">
-            Campaign Breakdown
-          </h2>
-          <CampaignBreakdownTable campaigns={campaigns} />
         </section>
 
         {/* Demographics & Placements side by side */}

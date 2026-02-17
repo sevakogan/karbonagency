@@ -121,7 +121,18 @@ export default function MetricLineChart({
 
   const hasRightAxis = series.some((s) => s.yAxis === "right");
 
-  if (data.length === 0) return null;
+  if (data.length === 0) {
+    return (
+      <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+        <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-4">
+          {title}
+        </h3>
+        <p className="text-center text-gray-400 text-sm py-8">
+          No data available for this period.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">

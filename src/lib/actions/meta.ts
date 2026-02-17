@@ -170,6 +170,7 @@ export async function syncClientMetrics(
 
   const rows = insights.map((day) => ({
     client_id: clientId,
+    campaign_id: null,
     date: day.date,
     platform: "meta" as const,
     spend: day.spend,
@@ -188,9 +189,20 @@ export async function syncClientMetrics(
   }));
 
   const adminSupabase = getAdminSupabase();
+
+  // Delete existing rows for this client+date range (null campaign_id), then insert fresh.
+  await adminSupabase
+    .from("daily_metrics")
+    .delete()
+    .eq("client_id", clientId)
+    .eq("platform", "meta")
+    .is("campaign_id", null)
+    .gte("date", effectiveSince)
+    .lte("date", effectiveUntil);
+
   const { error: insertError } = await adminSupabase
     .from("daily_metrics")
-    .upsert(rows, { onConflict: "client_id,date,platform" });
+    .insert(rows);
 
   if (insertError) {
     return {

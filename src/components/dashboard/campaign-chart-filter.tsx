@@ -4,6 +4,11 @@ import { useState, useMemo, useCallback } from "react";
 import type { DailyMetrics } from "@/types";
 import DailySpendChart from "./daily-spend-chart";
 import ConversionsChart from "./conversions-chart";
+import MetricLineChart from "./charts/metric-line-chart";
+import {
+  CHART_CONFIGS,
+  DEFAULT_CHART_ORDER,
+} from "./charts/chart-definitions";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -34,48 +39,34 @@ function aggregateByDate(rows: readonly DailyMetrics[]): DailyMetrics[] {
       continue;
     }
 
-    // Sum all additive metrics
+    const totalSpend = Number(existing.spend) + Number(row.spend);
+    const totalImpressions = existing.impressions + row.impressions;
+    const totalClicks = existing.clicks + row.clicks;
+    const totalConversions = existing.conversions + row.conversions;
+
     const merged: DailyMetrics = {
       ...existing,
-      spend: Number(existing.spend) + Number(row.spend),
-      impressions: existing.impressions + row.impressions,
+      spend: totalSpend,
+      impressions: totalImpressions,
       reach: existing.reach + row.reach,
-      clicks: existing.clicks + row.clicks,
-      conversions: existing.conversions + row.conversions,
+      clicks: totalClicks,
+      conversions: totalConversions,
       video_views: existing.video_views + row.video_views,
       leads: existing.leads + row.leads,
       link_clicks: existing.link_clicks + row.link_clicks,
-      // Recalculate derived metrics
-      ctr:
-        existing.impressions + row.impressions > 0
-          ? ((existing.clicks + row.clicks) /
-              (existing.impressions + row.impressions)) *
-            100
-          : 0,
-      cpc:
-        existing.clicks + row.clicks > 0
-          ? (Number(existing.spend) + Number(row.spend)) /
-            (existing.clicks + row.clicks)
-          : 0,
-      cpm:
-        existing.impressions + row.impressions > 0
-          ? ((Number(existing.spend) + Number(row.spend)) /
-              (existing.impressions + row.impressions)) *
-            1000
-          : 0,
+      ctr: totalImpressions > 0 ? (totalClicks / totalImpressions) * 100 : 0,
+      cpc: totalClicks > 0 ? totalSpend / totalClicks : 0,
+      cpm: totalImpressions > 0 ? (totalSpend / totalImpressions) * 1000 : 0,
       cost_per_conversion:
-        existing.conversions + row.conversions > 0
-          ? (Number(existing.spend) + Number(row.spend)) /
-            (existing.conversions + row.conversions)
-          : null,
-      roas: null, // Recalculated below if needed
+        totalConversions > 0 ? totalSpend / totalConversions : null,
+      roas: null,
     };
 
     byDate.set(row.date, merged);
   }
 
-  return Array.from(byDate.values()).sort(
-    (a, b) => a.date.localeCompare(b.date)
+  return Array.from(byDate.values()).sort((a, b) =>
+    a.date.localeCompare(b.date)
   );
 }
 
@@ -116,15 +107,14 @@ export default function CampaignChartFilter({ metrics, campaigns }: Props) {
   }, [campaignIds, campaignMap]);
 
   // All campaigns enabled by default
-  const [enabledCampaigns, setEnabledCampaigns] = useState<Set<string | null>>(
-    () => new Set(filterableCampaigns.map((c) => c.id))
-  );
+  const [enabledCampaigns, setEnabledCampaigns] = useState<
+    Set<string | null>
+  >(() => new Set(filterableCampaigns.map((c) => c.id)));
 
   const toggleCampaign = useCallback((campaignId: string | null) => {
     setEnabledCampaigns((prev) => {
       const next = new Set(prev);
       if (next.has(campaignId)) {
-        // Don't allow unchecking ALL campaigns
         if (next.size <= 1) return prev;
         next.delete(campaignId);
       } else {
@@ -136,7 +126,9 @@ export default function CampaignChartFilter({ metrics, campaigns }: Props) {
 
   // Filter and aggregate metrics based on enabled campaigns
   const filteredMetrics = useMemo(() => {
-    const filtered = metrics.filter((m) => enabledCampaigns.has(m.campaign_id ?? null));
+    const filtered = metrics.filter((m) =>
+      enabledCampaigns.has(m.campaign_id ?? null)
+    );
     return aggregateByDate(filtered);
   }, [metrics, enabledCampaigns]);
 
@@ -177,10 +169,29 @@ export default function CampaignChartFilter({ metrics, campaigns }: Props) {
         </div>
       )}
 
-      {/* Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {/* Primary bar charts — Spend & Conversions */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         <DailySpendChart metrics={filteredMetrics} />
         <ConversionsChart metrics={filteredMetrics} />
+      </div>
+
+      {/* Additional metric area charts */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {DEFAULT_CHART_ORDER.map((chartId) => {
+          const config = CHART_CONFIGS[chartId];
+          if (!config) return null;
+          const chartData = config.getData(filteredMetrics);
+          return (
+            <MetricLineChart
+              key={chartId}
+              title={config.title}
+              data={chartData}
+              series={config.series}
+              yAxisFormat={config.yAxisFormat}
+              height={config.height}
+            />
+          );
+        })}
       </div>
     </div>
   );

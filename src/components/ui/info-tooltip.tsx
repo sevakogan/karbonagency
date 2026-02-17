@@ -23,8 +23,8 @@ export default function InfoTooltip({ text, formula }: InfoTooltipProps) {
         ?
       </button>
       {visible && (
-        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-56 rounded-lg border border-gray-200 bg-white p-3 shadow-lg z-50">
-          <p className="text-xs text-gray-600 leading-relaxed">{text}</p>
+        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-56 rounded-lg border border-gray-200 bg-white p-3 shadow-lg z-50 normal-case">
+          <p className="text-[11px] text-gray-600 leading-relaxed">{text}</p>
           {formula && (
             <p className="text-[10px] text-gray-400 mt-1.5 font-mono bg-gray-50 rounded px-2 py-1">
               {formula}

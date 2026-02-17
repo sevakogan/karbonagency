@@ -6,6 +6,31 @@ import { verifyMetaAdAccount } from "@/lib/actions/meta-connect";
 import { formStyles, buttonStyles } from "@/components/ui/form-styles";
 
 // ---------------------------------------------------------------------------
+// Inline help links (admin-facing)
+// ---------------------------------------------------------------------------
+
+function MetaFieldHelp({
+  href,
+  label,
+}: {
+  readonly href: string;
+  readonly label: string;
+}) {
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="inline-flex items-center gap-1 text-[11px] text-gray-400 hover:text-blue-600 transition-colors ml-1"
+      title={`Open ${label} in Facebook`}
+    >
+      <span>ℹ️</span>
+      <span className="underline">{label}</span>
+    </a>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
@@ -211,7 +236,13 @@ export default function ClientMetaCard({
       <div className="px-6 py-5 space-y-4">
         {/* Ad Account ID + Verify */}
         <div>
-          <label className={formStyles.label}>Ad Account ID</label>
+          <label className={formStyles.label}>
+            Ad Account ID
+            <MetaFieldHelp
+              href="https://business.facebook.com/settings/ad-accounts"
+              label="Find in Business Settings"
+            />
+          </label>
           <div className="flex gap-2">
             <input
               inputMode="numeric"
@@ -269,7 +300,13 @@ export default function ClientMetaCard({
 
         {/* Page ID */}
         <div>
-          <label className={formStyles.label}>Facebook Page ID</label>
+          <label className={formStyles.label}>
+            Facebook Page ID
+            <MetaFieldHelp
+              href="https://business.facebook.com/settings/pages"
+              label="Find in Pages"
+            />
+          </label>
           <input
             inputMode="numeric"
             className={formStyles.input}
@@ -285,7 +322,13 @@ export default function ClientMetaCard({
 
         {/* Pixel ID */}
         <div>
-          <label className={formStyles.label}>Meta Pixel ID</label>
+          <label className={formStyles.label}>
+            Meta Pixel ID
+            <MetaFieldHelp
+              href="https://business.facebook.com/events_manager/overview"
+              label="Find in Events Manager"
+            />
+          </label>
           <input
             inputMode="numeric"
             className={formStyles.input}

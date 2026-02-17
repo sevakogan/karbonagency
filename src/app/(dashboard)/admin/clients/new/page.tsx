@@ -13,53 +13,99 @@ import { formStyles, buttonStyles } from "@/components/ui/form-styles";
 
 function MetaHelpSection() {
   return (
-    <div className="rounded-lg bg-gray-50 border border-gray-200 p-4 space-y-3">
-      <div>
-        <h4 className="text-xs font-semibold text-gray-700 mb-1.5">
-          How to find your Ad Account ID
-        </h4>
-        <ol className="text-xs text-gray-600 space-y-1 list-decimal list-inside">
-          <li>
-            Go to{" "}
-            <span className="font-medium text-blue-600">
-              business.facebook.com
-            </span>
-          </li>
-          <li>
-            Click{" "}
-            <span className="font-medium text-gray-900">
-              Business Settings
-            </span>{" "}
-            (gear icon)
-          </li>
-          <li>
-            Go to{" "}
-            <span className="font-medium text-gray-900">
-              Accounts &gt; Ad Accounts
-            </span>
-          </li>
-          <li>Copy the numeric Ad Account ID</li>
-        </ol>
+    <div className="rounded-lg bg-gray-50 border border-gray-200 p-4 space-y-4">
+      {/* Step 1: Ad Account ID */}
+      <div className="flex gap-3">
+        <span className="flex-shrink-0 flex items-center justify-center w-6 h-6 rounded-full bg-red-600 text-white text-xs font-bold mt-0.5">
+          1
+        </span>
+        <div>
+          <h4 className="text-xs font-semibold text-gray-900 mb-1">
+            Ad Account ID
+          </h4>
+          <p className="text-xs text-gray-600 mb-1">
+            Open your Business Manager and go to Ad Accounts:
+          </p>
+          <a
+            href="https://business.facebook.com/settings/ad-accounts"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 text-xs font-medium text-blue-600 hover:text-blue-800 transition-colors"
+          >
+            ↗ Open Ad Accounts in Business Settings
+          </a>
+          <p className="text-xs text-gray-500 mt-1">
+            Select the client&apos;s ad account → copy the numeric ID (no &quot;act_&quot; prefix).
+          </p>
+        </div>
       </div>
-      <div>
-        <h4 className="text-xs font-semibold text-gray-700 mb-1.5">
-          Page ID &amp; Pixel ID
-        </h4>
-        <ul className="text-xs text-gray-600 space-y-1 list-disc list-inside">
-          <li>
-            <span className="font-medium text-gray-900">Page ID:</span>{" "}
-            Facebook Page → About → Page ID
-          </li>
-          <li>
-            <span className="font-medium text-gray-900">Pixel ID:</span>{" "}
-            Events Manager → Data Sources → select Pixel → Settings
-          </li>
-        </ul>
+
+      {/* Step 2: Page ID */}
+      <div className="flex gap-3">
+        <span className="flex-shrink-0 flex items-center justify-center w-6 h-6 rounded-full bg-red-600 text-white text-xs font-bold mt-0.5">
+          2
+        </span>
+        <div>
+          <h4 className="text-xs font-semibold text-gray-900 mb-1">
+            Facebook Page ID
+          </h4>
+          <p className="text-xs text-gray-600 mb-1">
+            Open Pages in your Business Manager:
+          </p>
+          <a
+            href="https://business.facebook.com/settings/pages"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 text-xs font-medium text-blue-600 hover:text-blue-800 transition-colors"
+          >
+            ↗ Open Pages in Business Settings
+          </a>
+          <p className="text-xs text-gray-500 mt-1">
+            Select the client&apos;s page → the Page ID is shown under the page name.
+          </p>
+        </div>
       </div>
-      <div className="p-2 rounded-lg bg-blue-50 border border-blue-100">
+
+      {/* Step 3: Pixel ID */}
+      <div className="flex gap-3">
+        <span className="flex-shrink-0 flex items-center justify-center w-6 h-6 rounded-full bg-red-600 text-white text-xs font-bold mt-0.5">
+          3
+        </span>
+        <div>
+          <h4 className="text-xs font-semibold text-gray-900 mb-1">
+            Meta Pixel ID
+          </h4>
+          <p className="text-xs text-gray-600 mb-1">
+            Open Events Manager to find the Pixel:
+          </p>
+          <a
+            href="https://business.facebook.com/events_manager/overview"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 text-xs font-medium text-blue-600 hover:text-blue-800 transition-colors"
+          >
+            ↗ Open Events Manager
+          </a>
+          <p className="text-xs text-gray-500 mt-1">
+            Select the client&apos;s pixel from the left sidebar → copy the numeric Pixel ID.
+          </p>
+        </div>
+      </div>
+
+      {/* Tip */}
+      <div className="p-2.5 rounded-lg bg-blue-50 border border-blue-100">
         <p className="text-xs text-blue-700">
-          <span className="font-medium">Tip:</span> All IDs are numbers only.
-          Don&apos;t include prefixes like &quot;act_&quot;.
+          <span className="font-medium">💡 Tip:</span> All IDs are numbers only.
+          Make sure the client&apos;s ad account is assigned to your system user in{" "}
+          <a
+            href="https://business.facebook.com/settings/system-users"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-medium underline hover:text-blue-900"
+          >
+            Business Settings → System Users
+          </a>
+          .
         </p>
       </div>
     </div>
@@ -308,22 +354,10 @@ export default function NewClientPage() {
             <button
               type="button"
               onClick={() => setShowMetaHelp((prev) => !prev)}
-              className="flex items-center gap-1 text-xs text-gray-400 hover:text-blue-600 transition-colors"
+              className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-blue-600 transition-colors"
             >
-              <svg
-                className="w-4 h-4"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth={1.5}
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 5.25h.008v.008H12v-.008z"
-                />
-              </svg>
-              <span>How to find IDs</span>
+              <span className="text-base">ℹ️</span>
+              <span>{showMetaHelp ? "Hide help" : "Where to find IDs"}</span>
             </button>
           </div>
 

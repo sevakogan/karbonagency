@@ -80,11 +80,71 @@ export default async function DashboardOverview() {
   const clientId = profile?.client_id;
   if (!clientId) {
     return (
-      <div className="text-center py-20 text-gray-400">
-        <p className="text-lg font-medium">No client account linked</p>
-        <p className="text-sm mt-1">
-          Contact your account manager to get set up.
-        </p>
+      <div className="max-w-md mx-auto py-16">
+        <div className="rounded-2xl border border-gray-200 bg-white shadow-sm p-8 text-center">
+          <div className="flex justify-center mb-4">
+            <div className="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center">
+              <svg className="w-7 h-7 text-gray-400" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244" />
+              </svg>
+            </div>
+          </div>
+          <h2 className="text-lg font-bold text-gray-900 mb-2">
+            Your account is being set up
+          </h2>
+          <p className="text-sm text-gray-500 mb-6">
+            Your agency team is connecting your ad accounts. Once linked, you&apos;ll
+            see all your campaign performance data here.
+          </p>
+          <div className="rounded-lg bg-gray-50 border border-gray-100 p-4 text-left space-y-2">
+            <p className="text-xs font-semibold text-gray-700 mb-2">
+              What you can do to speed things up:
+            </p>
+            <div className="flex gap-2 text-xs text-gray-600">
+              <span className="text-gray-400 mt-0.5">1.</span>
+              <p>
+                Make sure your agency has{" "}
+                <span className="font-medium text-gray-900">
+                  Partner access
+                </span>{" "}
+                to your Facebook Ad Account and Page in{" "}
+                <a
+                  href="https://business.facebook.com/settings"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-600 hover:text-blue-800 underline"
+                >
+                  Business Settings
+                </a>
+              </p>
+            </div>
+            <div className="flex gap-2 text-xs text-gray-600">
+              <span className="text-gray-400 mt-0.5">2.</span>
+              <p>
+                Send your{" "}
+                <span className="font-medium text-gray-900">
+                  Ad Account ID, Page ID,
+                </span>{" "}
+                and{" "}
+                <span className="font-medium text-gray-900">Pixel ID</span> to your
+                account manager
+              </p>
+            </div>
+            <div className="flex gap-2 text-xs text-gray-600">
+              <span className="text-gray-400 mt-0.5">3.</span>
+              <p>
+                Check your{" "}
+                <Link
+                  href="/dashboard/profile"
+                  className="text-blue-600 hover:text-blue-800 underline"
+                >
+                  profile
+                </Link>{" "}
+                to make sure your contact info is up to date
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
     );
   }

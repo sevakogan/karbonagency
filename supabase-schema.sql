@@ -245,6 +245,7 @@ ALTER TABLE clients ADD COLUMN IF NOT EXISTS meta_page_id TEXT;
 CREATE TABLE IF NOT EXISTS daily_metrics (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   client_id UUID NOT NULL REFERENCES clients(id) ON DELETE CASCADE,
+  campaign_id UUID REFERENCES campaigns(id) ON DELETE CASCADE,
   date DATE NOT NULL,
   platform TEXT NOT NULL DEFAULT 'meta' CHECK (platform IN ('meta', 'google', 'tiktok')),
   spend NUMERIC(12, 2) NOT NULL DEFAULT 0,
@@ -261,7 +262,7 @@ CREATE TABLE IF NOT EXISTS daily_metrics (
   leads INTEGER NOT NULL DEFAULT 0,
   link_clicks INTEGER NOT NULL DEFAULT 0,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  UNIQUE (client_id, date, platform)
+  UNIQUE (client_id, campaign_id, date, platform)
 );
 
 CREATE INDEX IF NOT EXISTS idx_daily_metrics_client_id ON daily_metrics (client_id);

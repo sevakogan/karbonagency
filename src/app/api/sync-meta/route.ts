@@ -140,6 +140,7 @@ async function syncMetaMetrics(
       campaign.id,
       campaign.name,
       campaign.client_id,
+      campaign.id,
       campaign.meta_ad_account_id,
       since,
       until
@@ -147,13 +148,14 @@ async function syncMetaMetrics(
     results.push(result);
   }
 
-  // Sync fallback client-level ad accounts
+  // Sync fallback client-level ad accounts (no campaign_id)
   for (const client of fallbackClients) {
     const result = await syncSingleCampaign(
       supabase,
       client.id,
       client.name,
       client.id,
+      null,
       client.meta_ad_account_id,
       since,
       until
@@ -177,6 +179,7 @@ async function syncSingleCampaign(
   campaignId: string,
   campaignName: string,
   clientId: string,
+  dbCampaignId: string | null,
   metaAdAccountId: string,
   since: string,
   until: string
@@ -208,7 +211,7 @@ async function syncSingleCampaign(
     };
   }
 
-  const rows = insights.map((day) => ({
+  const baseRow = (day: (typeof insights)[number]) => ({
     client_id: clientId,
     date: day.date,
     platform: "meta" as const,
@@ -225,11 +228,44 @@ async function syncSingleCampaign(
     video_views: day.video_views,
     leads: day.leads,
     link_clicks: day.link_clicks,
+  });
+
+  // Try inserting with campaign_id (new schema).
+  // If the column doesn't exist yet, fall back to the old upsert approach.
+  const rowsWithCampaign = insights.map((day) => ({
+    ...baseRow(day),
+    campaign_id: dbCampaignId,
   }));
 
-  const { error: insertError } = await supabase
+  // Delete existing rows for this client+campaign+date range, then insert fresh.
+  let deleteQuery = supabase
     .from("daily_metrics")
-    .upsert(rows, { onConflict: "client_id,date,platform" });
+    .delete()
+    .eq("client_id", clientId)
+    .eq("platform", "meta")
+    .gte("date", since)
+    .lte("date", until);
+
+  if (dbCampaignId !== null) {
+    deleteQuery = deleteQuery.eq("campaign_id", dbCampaignId);
+  } else {
+    deleteQuery = deleteQuery.is("campaign_id", null);
+  }
+
+  await deleteQuery;
+
+  let { error: insertError } = await supabase
+    .from("daily_metrics")
+    .insert(rowsWithCampaign);
+
+  // Fallback: if campaign_id column doesn't exist yet, use old upsert without it
+  if (insertError?.message?.includes("campaign_id")) {
+    const rowsWithoutCampaign = insights.map(baseRow);
+    const fallbackResult = await supabase
+      .from("daily_metrics")
+      .upsert(rowsWithoutCampaign, { onConflict: "client_id,date,platform" });
+    insertError = fallbackResult.error;
+  }
 
   if (insertError) {
     return {

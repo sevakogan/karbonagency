@@ -106,6 +106,7 @@ export interface CampaignMetrics {
 export interface DailyMetrics {
   id: string;
   client_id: string;
+  campaign_id: string | null;
   date: string;
   platform: "meta" | "google" | "tiktok";
   spend: number;

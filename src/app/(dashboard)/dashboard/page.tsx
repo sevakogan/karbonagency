@@ -6,8 +6,7 @@ import { createSupabaseServer } from "@/lib/supabase-server";
 import { getClientMetrics } from "@/lib/actions/metrics";
 import { getCampaigns } from "@/lib/actions/campaigns";
 import MetricCard from "@/components/dashboard/metric-card";
-import DailySpendChart from "@/components/dashboard/daily-spend-chart";
-import ConversionsChart from "@/components/dashboard/conversions-chart";
+import CampaignChartFilter from "@/components/dashboard/campaign-chart-filter";
 import DateRangeSelector from "@/components/dashboard/date-range-selector";
 import SyncMetaButton from "@/components/dashboard/sync-meta-button";
 import StatCard from "@/components/dashboard/stat-card";
@@ -340,10 +339,12 @@ export default async function DashboardOverview({
         </div>
       </div>
 
-      {/* ── Charts ────────────────────────────────────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-        <DailySpendChart metrics={metrics.daily} />
-        <ConversionsChart metrics={metrics.daily} />
+      {/* ── Charts with campaign filter ─────────────── */}
+      <div className="mb-8">
+        <CampaignChartFilter
+          metrics={metrics.daily}
+          campaigns={campaigns.map((c) => ({ id: c.id, name: c.name }))}
+        />
       </div>
 
       {/* ── Active Projects ───────────────────────────── */}

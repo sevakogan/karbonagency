@@ -342,18 +342,8 @@ export default async function DashboardOverview({
 
       {/* ── Charts ────────────────────────────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-        <div>
-          <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3">
-            Daily Spend & Clicks
-          </h2>
-          <DailySpendChart metrics={metrics.daily} />
-        </div>
-        <div>
-          <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3">
-            Daily Conversions & Leads
-          </h2>
-          <ConversionsChart metrics={metrics.daily} />
-        </div>
+        <DailySpendChart metrics={metrics.daily} />
+        <ConversionsChart metrics={metrics.daily} />
       </div>
 
       {/* ── Active Projects ───────────────────────────── */}

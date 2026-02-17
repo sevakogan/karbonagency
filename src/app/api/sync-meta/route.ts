@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminSupabase } from "@/lib/supabase-admin";
-import { fetchAdAccountInsights } from "@/lib/meta-api";
+import { fetchAdAccountInsights, normalizeAdAccountId } from "@/lib/meta-api";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -181,8 +181,9 @@ async function syncSingleCampaign(
   since: string,
   until: string
 ): Promise<SyncResult> {
+  const normalizedId = normalizeAdAccountId(metaAdAccountId);
   const { data: insights, error: metaError } = await fetchAdAccountInsights(
-    metaAdAccountId,
+    normalizedId,
     since,
     until
   );

@@ -38,6 +38,9 @@ export async function createClient(data: {
   contact_email?: string;
   contact_phone?: string;
   ghl_location_id?: string;
+  meta_ad_account_id?: string;
+  meta_pixel_id?: string;
+  meta_page_id?: string;
 }): Promise<{ id: string | null; error: string | null }> {
   const supabase = await createSupabaseServer();
   const { data: row, error } = await supabase
@@ -48,6 +51,9 @@ export async function createClient(data: {
       contact_email: data.contact_email || null,
       contact_phone: data.contact_phone || null,
       ghl_location_id: data.ghl_location_id || null,
+      meta_ad_account_id: data.meta_ad_account_id || null,
+      meta_pixel_id: data.meta_pixel_id || null,
+      meta_page_id: data.meta_page_id || null,
     })
     .select("id")
     .single();

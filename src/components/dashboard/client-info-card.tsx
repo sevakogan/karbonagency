@@ -69,6 +69,25 @@ export default function ClientInfoCard({ client }: ClientInfoCardProps) {
               <Badge variant={client.is_active ? "active" : "lost"}>
                 {client.is_active ? "Active" : "Inactive"}
               </Badge>
+              {/* Meta connection badge */}
+              <span
+                className={`inline-flex items-center gap-1.5 rounded-md border px-2 py-0.5 text-xs font-medium ${
+                  client.meta_ad_account_id
+                    ? "bg-green-50 border-green-200 text-green-700"
+                    : "bg-gray-50 border-gray-200 text-gray-400"
+                }`}
+                title={
+                  client.meta_ad_account_id
+                    ? `Ad Account: ${client.meta_ad_account_id}`
+                    : "Meta not connected"
+                }
+              >
+                <svg className="w-3.5 h-3.5 text-blue-500" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 2.04c-5.5 0-10 4.49-10 10.02 0 5 3.66 9.15 8.44 9.9v-7H7.9v-2.9h2.54V9.85c0-2.52 1.49-3.93 3.78-3.93 1.09 0 2.24.2 2.24.2v2.47h-1.26c-1.24 0-1.63.78-1.63 1.57v1.88h2.78l-.45 2.9h-2.33v7a10 10 0 008.44-9.9c0-5.53-4.5-10.02-10-10.02z" />
+                </svg>
+                <span className={`w-1.5 h-1.5 rounded-full ${client.meta_ad_account_id ? "bg-green-500" : "bg-gray-400"}`} />
+                {client.meta_ad_account_id ? "Meta" : "No Meta"}
+              </span>
             </div>
 
             {client.company_name && (

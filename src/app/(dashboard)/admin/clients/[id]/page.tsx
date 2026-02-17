@@ -6,6 +6,7 @@ import { getCampaigns } from "@/lib/actions/campaigns";
 import Breadcrumb from "@/components/ui/breadcrumb";
 import StatCard from "@/components/dashboard/stat-card";
 import ClientInfoCard from "@/components/dashboard/client-info-card";
+import ClientMetaCard from "@/components/dashboard/client-meta-card";
 import AddProjectButton from "@/components/dashboard/add-project-button";
 import ProjectsListView from "@/components/dashboard/projects-list-view";
 import RenameClientName from "@/components/dashboard/rename-client-name";
@@ -43,6 +44,13 @@ export default async function ClientDetailPage({ params }: Props) {
       </div>
 
       <ClientInfoCard client={client} />
+
+      <ClientMetaCard
+        clientId={id}
+        metaAdAccountId={client.meta_ad_account_id}
+        metaPageId={client.meta_page_id}
+        metaPixelId={client.meta_pixel_id}
+      />
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <StatCard label="Projects" value={campaigns.length} />

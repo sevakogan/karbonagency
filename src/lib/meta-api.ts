@@ -57,9 +57,9 @@ interface MetaInsightRow {
   impressions: string;
   reach: string;
   clicks: string;
-  ctr: string;
-  cpc: string;
-  cpm: string;
+  ctr?: string;
+  cpc?: string;
+  cpm?: string;
   actions?: ReadonlyArray<{ action_type: string; value: string }>;
   video_avg_time_watched_actions?: ReadonlyArray<{
     action_type: string;

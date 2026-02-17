@@ -87,11 +87,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
     setUser(null);
     setProfile(null);
     setSession(null);
-    window.location.href = "/login";
+
+    // Clear client-side session first
+    try {
+      await supabase.auth.signOut({ scope: "local" });
+    } catch {
+      // Ignore — server route handles the real cookie clearing
+    }
+
+    // POST to server-side route to clear cookies properly,
+    // then follow the redirect to /login
+    const form = document.createElement("form");
+    form.method = "POST";
+    form.action = "/auth/signout";
+    document.body.appendChild(form);
+    form.submit();
   };
 
   const updateProfile = async (updates: Partial<Pick<Profile, "full_name" | "phone" | "avatar_url">>) => {

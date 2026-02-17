@@ -86,21 +86,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return { error: error?.message ?? null };
   };
 
-  const signOut = async () => {
-    setUser(null);
-    setProfile(null);
-    setSession(null);
-
-    // Clear client-side session first
-    try {
-      await supabase.auth.signOut({ scope: "local" });
-    } catch {
-      // Ignore — server route handles the real cookie clearing
-    }
-
-    // Navigate to server-side signout route to clear cookies & redirect
+  const signOut = useCallback(() => {
+    // Navigate to server-side signout route immediately.
+    // The server route clears cookies and redirects to /login.
+    // Do NOT await anything or set state before navigating —
+    // that causes re-renders that can unmount the component
+    // before the redirect fires.
     window.location.href = "/auth/signout";
-  };
+  }, []);
 
   const updateProfile = async (updates: Partial<Pick<Profile, "full_name" | "phone" | "avatar_url">>) => {
     if (!user) return { error: "Not authenticated" };

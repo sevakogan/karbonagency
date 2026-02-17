@@ -9,6 +9,7 @@ import MetricCard from "@/components/dashboard/metric-card";
 import DailySpendChart from "@/components/dashboard/daily-spend-chart";
 import ConversionsChart from "@/components/dashboard/conversions-chart";
 import DateRangeSelector from "@/components/dashboard/date-range-selector";
+import SyncMetaButton from "@/components/dashboard/sync-meta-button";
 import StatCard from "@/components/dashboard/stat-card";
 import Badge from "@/components/ui/badge";
 import { METRIC_DEFINITIONS } from "@/lib/metric-definitions";
@@ -86,6 +87,11 @@ export default async function DashboardOverview({
           <StatCard label="New Leads" value={newLeadCount ?? 0} />
           <StatCard label="Projects" value={campaignCount ?? 0} />
           <StatCard label="Total Clients" value={clientCount ?? 0} />
+        </div>
+
+        {/* Meta Sync */}
+        <div className="mt-8">
+          <SyncMetaButton />
         </div>
       </div>
     );

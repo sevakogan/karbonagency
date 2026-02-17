@@ -275,8 +275,14 @@ function extractActionValue(
   return match ? Number(match.value) : 0;
 }
 
+/** Safely convert a value to a finite number, defaulting to 0 for null/undefined/NaN */
+function safeNum(value: unknown): number {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : 0;
+}
+
 function parseInsightRow(row: MetaInsightRow): ParsedDailyMetric {
-  const spend = Number(row.spend);
+  const spend = safeNum(row.spend);
   const conversions =
     extractAction(row.actions, "offsite_conversion.fb_pixel_purchase") +
     extractAction(row.actions, "offsite_conversion.fb_pixel_lead") +
@@ -295,12 +301,12 @@ function parseInsightRow(row: MetaInsightRow): ParsedDailyMetric {
   return {
     date: row.date_start,
     spend,
-    impressions: Number(row.impressions),
-    reach: Number(row.reach),
-    clicks: Number(row.clicks),
-    ctr: Number(row.ctr),
-    cpc: Number(row.cpc),
-    cpm: Number(row.cpm),
+    impressions: safeNum(row.impressions),
+    reach: safeNum(row.reach),
+    clicks: safeNum(row.clicks),
+    ctr: safeNum(row.ctr),
+    cpc: safeNum(row.cpc),
+    cpm: safeNum(row.cpm),
     conversions,
     cost_per_conversion: conversions > 0 ? spend / conversions : null,
     roas,

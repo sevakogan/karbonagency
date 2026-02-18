@@ -23,6 +23,11 @@ import DemographicsChart, {
 import PlacementChart, {
   type PlacementDataPoint,
 } from "@/components/dashboard/reporting/placement-chart";
+import MetricLineChart from "@/components/dashboard/charts/metric-line-chart";
+import {
+  CHART_CONFIGS,
+  DEFAULT_CHART_ORDER,
+} from "@/components/dashboard/charts/chart-definitions";
 import type { DailyMetrics } from "@/types";
 
 // ---------------------------------------------------------------------------
@@ -179,6 +184,7 @@ export default function CampaignReporting({
   initialPlacements,
 }: CampaignReportingProps) {
   const [kpi, setKpi] = useState<ReportingKpiData>(initialKpi);
+  const [dailyMetrics, setDailyMetrics] = useState<readonly DailyMetrics[]>(initialDaily);
   const [spendData, setSpendData] = useState<readonly SpendDataPoint[]>(
     buildSpendData(initialDaily)
   );
@@ -212,6 +218,7 @@ export default function CampaignReporting({
           range.until
         );
         setKpi(snapshot.kpi);
+        setDailyMetrics(snapshot.daily);
         setSpendData(buildSpendData(snapshot.daily));
         setCampaigns(snapshot.campaigns);
         setDemographics(snapshot.demographics);
@@ -287,6 +294,30 @@ export default function CampaignReporting({
             Campaign Breakdown
           </h3>
           <CampaignBreakdownTable campaigns={campaigns} />
+        </section>
+
+        {/* Detailed Metric Charts */}
+        <section className="mb-8">
+          <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3">
+            Detailed Metrics
+          </h3>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {DEFAULT_CHART_ORDER.map((chartId) => {
+              const config = CHART_CONFIGS[chartId];
+              if (!config) return null;
+              const chartData = config.getData(dailyMetrics);
+              return (
+                <MetricLineChart
+                  key={chartId}
+                  title={config.title}
+                  data={chartData}
+                  series={config.series}
+                  yAxisFormat={config.yAxisFormat}
+                  height={config.height}
+                />
+              );
+            })}
+          </div>
         </section>
 
         {/* Demographics & Placements side by side */}

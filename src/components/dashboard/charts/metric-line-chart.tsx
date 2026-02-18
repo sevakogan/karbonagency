@@ -12,6 +12,7 @@ import {
   Legend,
   type TooltipProps,
 } from "recharts";
+import InfoTooltip from "@/components/ui/info-tooltip";
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -42,6 +43,10 @@ interface DataRow {
 
 interface Props {
   readonly title: string;
+  /** Plain-English explanation shown via the info tooltip */
+  readonly description?: string;
+  /** Optional formula shown below the description */
+  readonly formula?: string;
   readonly data: readonly DataRow[];
   readonly series: readonly MetricSeries[];
   /** Format function for the left Y-axis labels */
@@ -93,6 +98,8 @@ function ChartTooltip({
 
 export default function MetricLineChart({
   title,
+  description,
+  formula,
   data,
   series,
   yAxisFormat,
@@ -126,6 +133,7 @@ export default function MetricLineChart({
       <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
         <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-4">
           {title}
+          {description && <InfoTooltip text={description} formula={formula} />}
         </h3>
         <p className="text-center text-gray-400 text-sm py-8">
           No data available for this period.
@@ -140,6 +148,7 @@ export default function MetricLineChart({
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider">
           {title}
+          {description && <InfoTooltip text={description} formula={formula} />}
         </h3>
         <div className="flex items-center gap-0.5 rounded-lg bg-gray-100 p-0.5">
           {CHART_RANGES.map((r) => (

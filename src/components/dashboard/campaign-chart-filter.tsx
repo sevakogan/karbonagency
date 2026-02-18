@@ -185,6 +185,8 @@ export default function CampaignChartFilter({ metrics, campaigns }: Props) {
             <MetricLineChart
               key={chartId}
               title={config.title}
+              description={config.description}
+              formula={config.formula}
               data={chartData}
               series={config.series}
               yAxisFormat={config.yAxisFormat}

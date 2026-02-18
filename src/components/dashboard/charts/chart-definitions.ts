@@ -27,6 +27,10 @@ const fmtCompact = (v: number) =>
 
 export interface ChartConfig {
   readonly title: string;
+  /** Plain-English explanation shown in the info tooltip */
+  readonly description: string;
+  /** Optional formula shown below the description */
+  readonly formula?: string;
   readonly series: readonly MetricSeries[];
   /** Extracts data rows from metrics */
   readonly getData: (metrics: readonly DailyMetrics[]) => readonly { date: string; [key: string]: string | number }[];
@@ -41,6 +45,8 @@ export interface ChartConfig {
 export const CHART_CONFIGS: Record<string, ChartConfig> = {
   impressions_reach: {
     title: "Impressions & Reach",
+    description:
+      "Impressions are the total number of times your ad was shown on screen. Reach is the number of unique people who saw it. If impressions are much higher than reach, the same people are seeing your ad multiple times.",
     series: [
       {
         key: "impressions",
@@ -68,6 +74,9 @@ export const CHART_CONFIGS: Record<string, ChartConfig> = {
 
   ctr_cpc: {
     title: "CTR & CPC",
+    description:
+      "CTR (click-through rate) is the percentage of people who clicked your ad after seeing it — higher means your ad is more compelling. CPC (cost per click) is what you pay each time someone clicks. Ideally you want high CTR and low CPC.",
+    formula: "CTR = (Clicks ÷ Impressions) × 100 · CPC = Spend ÷ Clicks",
     series: [
       {
         key: "ctr",
@@ -96,6 +105,9 @@ export const CHART_CONFIGS: Record<string, ChartConfig> = {
 
   cpm: {
     title: "CPM",
+    description:
+      "Cost per mille — the cost to show your ad 1,000 times. This measures how efficiently your budget generates visibility. Lower CPM means you're reaching more people for less money.",
+    formula: "(Spend ÷ Impressions) × 1,000",
     series: [
       {
         key: "cpm",
@@ -115,6 +127,8 @@ export const CHART_CONFIGS: Record<string, ChartConfig> = {
 
   link_clicks: {
     title: "Link Clicks & Video Views",
+    description:
+      "Link clicks are clicks that took someone to your website, booking page, or contact form — more valuable than general clicks. Video views count when someone watches your video ad for at least 3 seconds.",
     series: [
       {
         key: "link_clicks",
@@ -142,6 +156,9 @@ export const CHART_CONFIGS: Record<string, ChartConfig> = {
 
   cost_per_result: {
     title: "Cost per Conversion",
+    description:
+      "How much you pay for each conversion — a booking, sign-up, or purchase. This is one of the most important metrics because it tells you the real cost of getting a customer. Lower is better.",
+    formula: "Spend ÷ Conversions",
     series: [
       {
         key: "cost_per_conversion",
@@ -161,6 +178,9 @@ export const CHART_CONFIGS: Record<string, ChartConfig> = {
 
   roas: {
     title: "Return on Ad Spend",
+    description:
+      "How much revenue you earn for every dollar spent on ads. A ROAS of 4.0x means you make $4 for every $1 spent. Above 3.0x is generally considered good. Below 1.0x means you're losing money.",
+    formula: "Revenue ÷ Ad Spend",
     series: [
       {
         key: "roas",

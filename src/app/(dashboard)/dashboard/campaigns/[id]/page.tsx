@@ -281,12 +281,38 @@ export default async function CampaignDetailPage({ params }: Props) {
       </p>
 
       <div className="grid grid-cols-2 lg:grid-cols-6 gap-4 mb-8">
-        <StatCard label="Total Spend" value={`$${totalSpend.toLocaleString()}`} />
-        <StatCard label="Impressions" value={totalImpressions.toLocaleString()} />
-        <StatCard label="Clicks" value={totalClicks.toLocaleString()} />
-        <StatCard label="CTR" value={`${ctr.toFixed(2)}%`} />
-        <StatCard label="Bookings" value={totalBookings.toLocaleString()} />
-        <StatCard label="Avg CPB" value={avgCPB > 0 ? `$${avgCPB.toFixed(2)}` : "\u2014"} />
+        <StatCard
+          label="Total Spend"
+          value={`$${totalSpend.toLocaleString()}`}
+          description="The total amount of money spent on this project's advertising campaigns during the selected period."
+        />
+        <StatCard
+          label="Impressions"
+          value={totalImpressions.toLocaleString()}
+          description="The total number of times your ads were displayed on screen. One person can see your ad multiple times, and each view counts as one impression."
+        />
+        <StatCard
+          label="Clicks"
+          value={totalClicks.toLocaleString()}
+          description="The total number of times people clicked on your ads, including clicks on images, headlines, or call-to-action buttons."
+        />
+        <StatCard
+          label="CTR"
+          value={`${ctr.toFixed(2)}%`}
+          description="Click-through rate — the percentage of people who clicked your ad after seeing it. Higher means your ad is more relevant and engaging."
+          formula="(Clicks ÷ Impressions) × 100"
+        />
+        <StatCard
+          label="Bookings"
+          value={totalBookings.toLocaleString()}
+          description="The number of session bookings generated from your advertising campaigns, tracked through your website's booking system."
+        />
+        <StatCard
+          label="Avg CPB"
+          value={avgCPB > 0 ? `$${avgCPB.toFixed(2)}` : "\u2014"}
+          description="Average cost per booking — how much ad spend it takes to generate one booking. This is the key metric for measuring your advertising ROI."
+          formula="Total Spend ÷ Bookings"
+        />
       </div>
 
       <CampaignMetricsChart metrics={metrics} />

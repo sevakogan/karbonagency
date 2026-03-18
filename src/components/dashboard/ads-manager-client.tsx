@@ -794,37 +794,47 @@ export default function AdsManagerClient() {
   const [metaAdAccountId, setMetaAdAccountId] = useState<string | null>(null);
   const [launchNotifications, setLaunchNotifications] = useState<string[]>([]);
 
-  // Get clientId from session / profile, then fetch meta_ad_account_id
+  // Get clientId from session / profile, then fetch meta_ad_account_id.
+  // Admin fallback: if profile has no client_id, auto-pick the first client.
   useEffect(() => {
     if (!session?.user) return;
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     if (!supabaseUrl || !token) return;
 
-    fetch(`${supabaseUrl}/rest/v1/profiles?id=eq.${session.user.id}&select=client_id`, {
-      headers: {
-        apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "",
-        Authorization: `Bearer ${token}`,
-      },
-    })
+    const headers = {
+      apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "",
+      Authorization: `Bearer ${token}`,
+    };
+
+    const resolveClientId = (cid: string) => {
+      setClientId(cid);
+      // Also fetch meta_ad_account_id for the Open Meta deep-link
+      fetch(`${supabaseUrl}/rest/v1/clients?id=eq.${cid}&select=meta_ad_account_id`, { headers })
+        .then((r) => r.json())
+        .then((clientData: unknown) => {
+          const clientRows = clientData as Array<{ meta_ad_account_id: string | null }>;
+          const accountId = clientRows[0]?.meta_ad_account_id;
+          if (accountId) setMetaAdAccountId(accountId);
+        })
+        .catch(console.error);
+    };
+
+    fetch(`${supabaseUrl}/rest/v1/profiles?id=eq.${session.user.id}&select=client_id,role`, { headers })
       .then((r) => r.json())
       .then((data: unknown) => {
-        const rows = data as Array<{ client_id: string | null }>;
+        const rows = data as Array<{ client_id: string | null; role: string | null }>;
         const cid = rows[0]?.client_id;
         if (cid) {
-          setClientId(cid);
-          // Fetch meta_ad_account_id for this client
-          return fetch(`${supabaseUrl}/rest/v1/clients?id=eq.${cid}&select=meta_ad_account_id`, {
-            headers: {
-              apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "",
-              Authorization: `Bearer ${token}`,
-            },
-          })
+          resolveClientId(cid);
+        } else {
+          // Admin with no client_id — auto-pick the first client that has a Meta ad account
+          fetch(`${supabaseUrl}/rest/v1/clients?select=id,meta_ad_account_id&meta_ad_account_id=not.is.null&limit=1`, { headers })
             .then((r) => r.json())
             .then((clientData: unknown) => {
-              const clientRows = clientData as Array<{ meta_ad_account_id: string | null }>;
-              const accountId = clientRows[0]?.meta_ad_account_id;
-              if (accountId) setMetaAdAccountId(accountId);
-            });
+              const clientRows = clientData as Array<{ id: string; meta_ad_account_id: string | null }>;
+              if (clientRows[0]?.id) resolveClientId(clientRows[0].id);
+            })
+            .catch(console.error);
         }
       })
       .catch(console.error);

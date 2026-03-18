@@ -1046,6 +1046,35 @@ function GuideTab() {
 }
 
 // ---------------------------------------------------------------------------
+// Version Footer
+// ---------------------------------------------------------------------------
+
+const BUILD_VERSION = "v2.3";
+const BUILD_DATE = "Mar 18, 2026";
+
+function VersionFooter() {
+  const [loadedAt] = useState(() => {
+    const now = new Date();
+    return now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+  });
+
+  return (
+    <div className="flex items-center justify-between pt-4 mt-2 border-t border-gray-100">
+      <div className="flex items-center gap-2 text-xs text-gray-400">
+        <span className="font-mono bg-gray-100 px-1.5 py-0.5 rounded text-gray-500">{BUILD_VERSION}</span>
+        <span>·</span>
+        <span>Updated {BUILD_DATE}</span>
+        <span>·</span>
+        <span>Loaded at {loadedAt}</span>
+        <span>·</span>
+        <span className="text-gray-300">Meta Marketing API v25.0 · Claude Sonnet 4.6</span>
+      </div>
+      <div className="text-xs text-gray-300">Shift Arcade Miami</div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Main component
 // ---------------------------------------------------------------------------
 
@@ -1415,6 +1444,9 @@ export default function AdsManagerClient() {
       {token && clientId && (
         <FloatingChatBubble token={token} clientId={clientId} />
       )}
+
+      {/* Version footer */}
+      <VersionFooter />
     </div>
   );
 }

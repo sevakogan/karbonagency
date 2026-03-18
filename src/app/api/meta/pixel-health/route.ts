@@ -43,9 +43,10 @@ async function authenticateRequest(request: NextRequest) {
     return { error: NextResponse.json({ error: "No client found" }, { status: 400 }), client: null };
   }
 
+  // Select only the base column first — pixel_id and access_token may not exist yet
   const { data: client } = await supabase
     .from("clients")
-    .select("meta_ad_account_id, meta_pixel_id, meta_access_token")
+    .select("meta_ad_account_id")
     .eq("id", finalClientId)
     .single();
 
@@ -53,7 +54,15 @@ async function authenticateRequest(request: NextRequest) {
     return { error: NextResponse.json({ error: "No Meta Ad Account configured" }, { status: 404 }), client: null };
   }
 
-  return { error: null, client, token };
+  // Try to fetch optional columns separately (they may not exist in older schemas)
+  const { data: clientExtra } = await supabase
+    .from("clients")
+    .select("meta_pixel_id, meta_access_token")
+    .eq("id", finalClientId)
+    .single()
+    .catch(() => ({ data: null }));
+
+  return { error: null, client: { ...client, ...(clientExtra ?? {}) }, token };
 }
 
 // ---------------------------------------------------------------------------

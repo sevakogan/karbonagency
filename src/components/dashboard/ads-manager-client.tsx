@@ -442,10 +442,165 @@ function CampaignCapiBadge({
 }
 
 // ---------------------------------------------------------------------------
-// Campaign Row
+// Ad Set detail type (fetched per campaign, includes targeting)
 // ---------------------------------------------------------------------------
 
-function CampaignRow({
+interface CampaignAdSetDetail {
+  id: string;
+  name: string;
+  status: string;
+  effective_status: string;
+  daily_budget?: string;
+  lifetime_budget?: string;
+  optimization_goal: string;
+  billing_event: string;
+  targeting?: {
+    age_min?: number;
+    age_max?: number;
+    geo_locations?: {
+      cities?: { name: string }[];
+      regions?: { name: string }[];
+      countries?: string[];
+    };
+    flexible_spec?: Array<{ interests?: { id: string; name: string }[] }>;
+  };
+  promoted_object?: { pixel_id?: string; custom_event_type?: string };
+  start_time?: string;
+  end_time?: string;
+}
+
+// ---------------------------------------------------------------------------
+// Ad Set Inline Card (shown when a campaign is expanded)
+// ---------------------------------------------------------------------------
+
+function AdSetInlineCard({ adSet }: { adSet: CampaignAdSetDetail }) {
+  const [editingLocations, setEditingLocations] = useState(false);
+
+  const cities = adSet.targeting?.geo_locations?.cities?.map((c) => c.name) ?? [];
+  const regions = adSet.targeting?.geo_locations?.regions?.map((r) => r.name) ?? [];
+  const countries = adSet.targeting?.geo_locations?.countries ?? [];
+  const locationParts = [...cities, ...regions, ...countries];
+  const locationDisplay = locationParts.join(", ");
+  const [locationText, setLocationText] = useState(locationDisplay);
+
+  const interests = adSet.targeting?.flexible_spec?.[0]?.interests?.map((i) => i.name) ?? [];
+  const ageMin = adSet.targeting?.age_min;
+  const ageMax = adSet.targeting?.age_max;
+  const isActive = adSet.effective_status === "ACTIVE";
+
+  const budgetStr = adSet.daily_budget
+    ? `$${Math.round(parseFloat(adSet.daily_budget) / 100)}/day`
+    : adSet.lifetime_budget
+    ? `$${Math.round(parseFloat(adSet.lifetime_budget) / 100)} total`
+    : "—";
+
+  return (
+    <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+      {/* Header */}
+      <div className="flex items-center gap-2.5 px-4 py-3 bg-gradient-to-r from-gray-50 to-white border-b border-gray-100">
+        <div className={`w-2 h-2 rounded-full flex-shrink-0 ${isActive ? "bg-green-500" : "bg-yellow-400"}`} />
+        <div className="flex-1 min-w-0">
+          <div className="text-xs font-bold text-gray-800 truncate">{adSet.name}</div>
+          <div className="text-[11px] text-gray-400 mt-0.5">
+            {budgetStr} · {adSet.optimization_goal.replace(/_/g, " ")}
+          </div>
+        </div>
+        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+          isActive ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"
+        }`}>
+          {adSet.effective_status}
+        </span>
+      </div>
+
+      {/* Targeting grid */}
+      <div className="p-3 grid grid-cols-2 gap-2">
+        {/* Age */}
+        {(ageMin || ageMax) && (
+          <div className="bg-gray-50 rounded-lg px-3 py-2">
+            <div className="text-[10px] text-gray-400 mb-0.5 font-medium">👤 Age</div>
+            <div className="text-xs font-bold text-gray-800">{ageMin ?? 13}–{ageMax ?? "65+"}</div>
+          </div>
+        )}
+
+        {/* Locations */}
+        <div className={`rounded-lg px-3 py-2 ${locationParts.length > 0 ? "bg-blue-50" : "bg-orange-50"} ${!(ageMin || ageMax) ? "col-span-2" : ""}`}>
+          <div className="flex items-center justify-between mb-0.5">
+            <div className={`text-[10px] font-medium ${locationParts.length > 0 ? "text-blue-500" : "text-orange-500"}`}>📍 Locations</div>
+            <button
+              onClick={() => setEditingLocations(!editingLocations)}
+              className="text-[9px] text-blue-600 hover:underline font-medium"
+            >
+              {editingLocations ? "↩ Cancel" : "✏️ Edit"}
+            </button>
+          </div>
+          {editingLocations ? (
+            <div className="space-y-1.5 mt-1">
+              <input
+                value={locationText}
+                onChange={(e) => setLocationText(e.target.value)}
+                placeholder="Miami, Fort Lauderdale, Boca Raton"
+                className="w-full text-[11px] border border-gray-300 rounded-lg px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              />
+              <div className="flex items-center gap-1">
+                <button className="text-[10px] bg-blue-600 text-white px-2.5 py-0.5 rounded-lg font-bold hover:bg-blue-700">Save</button>
+                <button onClick={() => setEditingLocations(false)} className="text-[10px] text-gray-500 hover:text-gray-700">Cancel</button>
+              </div>
+              <div className="text-[9px] text-amber-600 bg-amber-50 rounded px-2 py-1">
+                💡 Nearby: Miami, Fort Lauderdale, Coral Gables, Brickell, Wynwood
+              </div>
+            </div>
+          ) : (
+            <div className={`text-[11px] font-semibold ${locationParts.length > 0 ? "text-gray-800" : "text-orange-600"}`}>
+              {locationDisplay || "⚠️ No locations set — tap Edit to add"}
+            </div>
+          )}
+        </div>
+
+        {/* Interests */}
+        {interests.length > 0 && (
+          <div className="col-span-2 bg-purple-50 rounded-lg px-3 py-2">
+            <div className="text-[10px] text-purple-500 font-medium mb-1.5">🎯 Interests</div>
+            <div className="flex flex-wrap gap-1">
+              {interests.slice(0, 7).map((interest, i) => (
+                <span key={i} className="text-[10px] bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full font-medium">
+                  {interest}
+                </span>
+              ))}
+              {interests.length > 7 && (
+                <span className="text-[10px] text-purple-400 self-center">+{interests.length - 7} more</span>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Pixel */}
+        {adSet.promoted_object?.pixel_id && (
+          <div className="col-span-2 bg-green-50 rounded-lg px-3 py-2">
+            <div className="text-[10px] text-green-600 font-medium mb-0.5">📡 Pixel Tracking</div>
+            <div className="text-[11px] font-semibold text-gray-800">
+              Pixel {adSet.promoted_object.pixel_id} → {adSet.promoted_object.custom_event_type ?? "Standard Event"}
+            </div>
+          </div>
+        )}
+
+        {/* No targeting at all */}
+        {!ageMin && !ageMax && locationParts.length === 0 && interests.length === 0 && !adSet.promoted_object?.pixel_id && (
+          <div className="col-span-2 text-xs text-gray-400 text-center py-2">
+            No targeting data available. Open Meta Ads Manager for full details.
+          </div>
+        )}
+      </div>
+
+      <LearningPhaseBar effectiveStatus={adSet.effective_status} />
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Campaign Card (replaces CampaignRow — expandable card with inline ad sets)
+// ---------------------------------------------------------------------------
+
+function CampaignCard({
   campaign,
   token,
   clientId,
@@ -460,33 +615,31 @@ function CampaignRow({
   pixelHealth: CapiHealthData | null;
   onViewDetail?: () => void;
 }) {
+  const [expanded, setExpanded] = useState(false);
   const [toggling, setToggling] = useState(false);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
+  const [adSets, setAdSets] = useState<CampaignAdSetDetail[] | null>(null);
+  const [loadingAdSets, setLoadingAdSets] = useState(false);
 
   const isActive = campaign.status === "ACTIVE" || campaign.effective_status === "ACTIVE";
 
   async function handleToggle() {
     setToggling(true);
     const newStatus = isActive ? "PAUSED" : "ACTIVE";
-
     try {
       const res = await fetch(
         `/api/meta/campaigns?client_id=${clientId}&campaign_id=${campaign.id}`,
         {
           method: "PATCH",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
+          headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
           body: JSON.stringify({ action: "toggle", status: newStatus }),
         }
       );
-      const json = (await res.json()) as { data?: unknown; error?: string };
-
+      const json = (await res.json()) as { error?: string };
       if (json.error) {
         setToastMsg(`Error: ${json.error}`);
       } else {
-        setToastMsg(`Campaign ${newStatus === "ACTIVE" ? "activated" : "paused"}`);
+        setToastMsg(newStatus === "ACTIVE" ? "🚀 Activated!" : "⏸ Paused");
         onToggle();
       }
     } catch (err) {
@@ -497,65 +650,167 @@ function CampaignRow({
     }
   }
 
+  async function handleExpand() {
+    const next = !expanded;
+    setExpanded(next);
+    if (next && !adSets) {
+      setLoadingAdSets(true);
+      try {
+        const r = await fetch(
+          `/api/meta/adsets?client_id=${clientId}&campaign_id=${campaign.id}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        const j = (await r.json()) as { data?: CampaignAdSetDetail[] };
+        setAdSets(j.data ?? []);
+      } catch {
+        setAdSets([]);
+      } finally {
+        setLoadingAdSets(false);
+      }
+    }
+  }
+
+  function handleDuplicate() {
+    setToastMsg("📋 Duplicate feature coming soon!");
+    setTimeout(() => setToastMsg(null), 3000);
+  }
+
+  const budgetDollars = campaign.daily_budget
+    ? Math.round(parseFloat(campaign.daily_budget) / 100)
+    : null;
+
   return (
-    <tr className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
-      <td className="py-3 px-4">
-        <div className="flex items-center gap-1 flex-wrap">
-          <div className="font-medium text-sm text-gray-900 max-w-xs truncate" title={campaign.name}>
-            {campaign.name}
+    <div className={`bg-white rounded-2xl shadow-sm border transition-all overflow-hidden ${
+      isActive ? "border-green-200 hover:shadow-md" : "border-gray-200 hover:shadow-sm"
+    }`}>
+      {/* Status stripe */}
+      <div className={`h-0.5 ${isActive ? "bg-green-500" : "bg-yellow-400"}`} />
+
+      <div className="p-5">
+        {/* Main row */}
+        <div className="flex items-start gap-4">
+          {/* Info */}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap mb-2">
+              <span className={`inline-flex items-center gap-1.5 text-xs font-bold px-2.5 py-0.5 rounded-full ${
+                isActive ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"
+              }`}>
+                <span className={`w-1.5 h-1.5 rounded-full ${isActive ? "bg-green-500" : "bg-yellow-400"}`} />
+                {isActive ? "ACTIVE" : "PAUSED"}
+              </span>
+              <span className="text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
+                {objectiveLabel(campaign.objective)}
+              </span>
+              <CampaignCapiBadge objective={campaign.objective} pixelHealth={pixelHealth} />
+            </div>
+
+            <h3 className="text-sm font-bold text-gray-900 leading-tight mb-1" title={campaign.name}>
+              {campaign.name}
+            </h3>
+
+            <div className="text-[11px] text-gray-400">
+              {campaign.created_time
+                ? `Created ${new Date(campaign.created_time).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`
+                : ""}
+              {campaign.bid_strategy && (
+                <span className="ml-2 opacity-60">
+                  · {campaign.bid_strategy.replace("LOWEST_COST_", "").replace(/_/g, " ")}
+                </span>
+              )}
+            </div>
+
+            <LearningPhaseBar effectiveStatus={campaign.effective_status} />
           </div>
-          <CampaignCapiBadge objective={campaign.objective} pixelHealth={pixelHealth} />
+
+          {/* Budget pill */}
+          {budgetDollars !== null && (
+            <div className="flex-shrink-0 text-center bg-gray-50 rounded-xl px-4 py-2 border border-gray-100">
+              <div className="text-xl font-black text-gray-900">${budgetDollars}</div>
+              <div className="text-[10px] text-gray-400 font-medium">/ day</div>
+            </div>
+          )}
         </div>
-        <div className="text-xs text-gray-400 mt-0.5">{campaign.id}</div>
-        <LearningPhaseBar effectiveStatus={campaign.effective_status} />
-      </td>
-      <td className="py-3 px-4">
-        <StatusBadge status={campaign.status} />
-        {toastMsg && (
-          <span className="ml-2 text-xs text-blue-600">{toastMsg}</span>
-        )}
-      </td>
-      <td className="py-3 px-4 text-sm text-gray-600">
-        {objectiveLabel(campaign.objective)}
-      </td>
-      <td className="py-3 px-4 text-sm text-gray-600">
-        {campaign.daily_budget
-          ? fmtBudget(campaign.daily_budget)
-          : campaign.lifetime_budget
-          ? `$${fmt(parseFloat(campaign.lifetime_budget) / 100, 2)} lifetime`
-          : "—"}
-      </td>
-      <td className="py-3 px-4 text-sm text-gray-400">
-        {campaign.created_time ? new Date(campaign.created_time).toLocaleDateString() : "—"}
-      </td>
-      <td className="py-3 px-4">
-        <div className="flex items-center gap-2">
+
+        {/* Actions */}
+        <div className="flex items-center gap-2 mt-4 flex-wrap">
           <button
             onClick={handleToggle}
             disabled={toggling || campaign.status === "DELETED"}
-            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 ${
-              isActive ? "bg-green-500" : "bg-gray-300"
+            className={`flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold rounded-xl transition-all disabled:opacity-50 ${
+              isActive
+                ? "bg-yellow-100 text-yellow-800 hover:bg-yellow-200 border border-yellow-200"
+                : "bg-green-600 text-white hover:bg-green-700 shadow-sm shadow-green-200"
             }`}
-            title={isActive ? "Click to pause" : "Click to activate"}
           >
-            <span
-              className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
-                isActive ? "translate-x-6" : "translate-x-1"
-              }`}
-            />
+            {toggling ? (
+              <><div className="w-3 h-3 animate-spin rounded-full border-2 border-current border-t-transparent" /> Updating…</>
+            ) : isActive ? (
+              <>⏸ Pause</>
+            ) : (
+              <>🚀 Activate</>
+            )}
           </button>
+
           {onViewDetail && (
             <button
               onClick={onViewDetail}
-              className="text-xs text-blue-600 hover:text-blue-800 font-medium hover:underline whitespace-nowrap"
-              title="View ad sets, creatives & details"
+              className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold rounded-xl bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-100 transition-colors"
             >
-              Details →
+              ✏️ Edit Campaign
             </button>
           )}
+
+          <button
+            onClick={handleDuplicate}
+            className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold rounded-xl bg-gray-100 text-gray-600 hover:bg-gray-200 border border-gray-200 transition-colors"
+          >
+            📋 Duplicate
+          </button>
+
+          {toastMsg && (
+            <span className="text-xs font-medium text-green-700 bg-green-50 px-2 py-1 rounded-lg border border-green-100">
+              {toastMsg}
+            </span>
+          )}
+
+          {/* Expand ad sets */}
+          <button
+            onClick={handleExpand}
+            className={`ml-auto flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold rounded-xl transition-colors ${
+              expanded ? "bg-gray-800 text-white" : "bg-gray-900 text-white hover:bg-gray-700"
+            }`}
+          >
+            🎯 Ad Sets {adSets !== null ? `(${adSets.length})` : ""} {expanded ? "▲" : "▼"}
+          </button>
         </div>
-      </td>
-    </tr>
+      </div>
+
+      {/* Expanded ad sets panel */}
+      {expanded && (
+        <div className="border-t border-gray-100 bg-gray-50/80 px-4 pb-4 pt-3">
+          <div className="text-[11px] text-gray-400 font-semibold uppercase tracking-wider mb-3">
+            Ad Sets — click ✏️ Edit Campaign above to edit creative &amp; settings
+          </div>
+          {loadingAdSets ? (
+            <div className="space-y-2">
+              {[1, 2].map((i) => (
+                <div key={i} className="h-28 bg-white rounded-xl animate-pulse border border-gray-100" />
+              ))}
+            </div>
+          ) : !adSets || adSets.length === 0 ? (
+            <div className="text-xs text-gray-400 text-center py-6 bg-white rounded-xl border border-gray-100">
+              No ad sets found for this campaign.
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {adSets.map((adSet) => (
+                <AdSetInlineCard key={adSet.id} adSet={adSet} />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -1210,7 +1465,7 @@ function GuideTab() {
 // Version Footer
 // ---------------------------------------------------------------------------
 
-const BUILD_VERSION = "v3.2";
+const BUILD_VERSION = "v3.3";
 const BUILD_DATE = "Mar 18, 2026";
 
 function VersionFooter() {
@@ -1481,38 +1736,26 @@ export default function AdsManagerClient({ initialClientId }: { initialClientId?
               )}
 
               {campaigns && campaigns.length > 0 && (
-                <table className="w-full">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="text-left px-4 py-2.5 text-xs font-medium text-gray-500">Campaign</th>
-                      <th className="text-left px-4 py-2.5 text-xs font-medium text-gray-500">Status</th>
-                      <th className="text-left px-4 py-2.5 text-xs font-medium text-gray-500">Objective</th>
-                      <th className="text-left px-4 py-2.5 text-xs font-medium text-gray-500">Budget</th>
-                      <th className="text-left px-4 py-2.5 text-xs font-medium text-gray-500">Created</th>
-                      <th className="text-left px-4 py-2.5 text-xs font-medium text-gray-500">Toggle / Details</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {campaigns.map((campaign) => (
-                      <CampaignRow
-                        key={campaign.id}
-                        campaign={campaign}
-                        token={token}
-                        clientId={clientId!}
-                        onToggle={refetchCampaigns}
-                        pixelHealth={pixelHealth}
-                        onViewDetail={() => setDetailCampaign({
-                          id: campaign.id,
-                          name: campaign.name,
-                          status: campaign.effective_status ?? campaign.status,
-                          objective: campaign.objective,
-                          daily_budget: campaign.daily_budget,
-                          bid_strategy: campaign.bid_strategy,
-                        })}
-                      />
-                    ))}
-                  </tbody>
-                </table>
+                <div className="p-4 space-y-3">
+                  {campaigns.map((campaign) => (
+                    <CampaignCard
+                      key={campaign.id}
+                      campaign={campaign}
+                      token={token}
+                      clientId={clientId!}
+                      onToggle={refetchCampaigns}
+                      pixelHealth={pixelHealth}
+                      onViewDetail={() => setDetailCampaign({
+                        id: campaign.id,
+                        name: campaign.name,
+                        status: campaign.effective_status ?? campaign.status,
+                        objective: campaign.objective,
+                        daily_budget: campaign.daily_budget,
+                        bid_strategy: campaign.bid_strategy,
+                      })}
+                    />
+                  ))}
+                </div>
               )}
             </div>
           </div>

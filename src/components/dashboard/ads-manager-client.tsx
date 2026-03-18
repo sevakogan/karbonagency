@@ -791,9 +791,10 @@ export default function AdsManagerClient() {
 
   const [activeTab, setActiveTab] = useState<Tab>("campaigns");
   const [clientId, setClientId] = useState<string | null>(null);
+  const [metaAdAccountId, setMetaAdAccountId] = useState<string | null>(null);
   const [launchNotifications, setLaunchNotifications] = useState<string[]>([]);
 
-  // Get clientId from session / profile
+  // Get clientId from session / profile, then fetch meta_ad_account_id
   useEffect(() => {
     if (!session?.user) return;
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -808,7 +809,23 @@ export default function AdsManagerClient() {
       .then((r) => r.json())
       .then((data: unknown) => {
         const rows = data as Array<{ client_id: string | null }>;
-        if (rows[0]?.client_id) setClientId(rows[0].client_id);
+        const cid = rows[0]?.client_id;
+        if (cid) {
+          setClientId(cid);
+          // Fetch meta_ad_account_id for this client
+          return fetch(`${supabaseUrl}/rest/v1/clients?id=eq.${cid}&select=meta_ad_account_id`, {
+            headers: {
+              apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "",
+              Authorization: `Bearer ${token}`,
+            },
+          })
+            .then((r) => r.json())
+            .then((clientData: unknown) => {
+              const clientRows = clientData as Array<{ meta_ad_account_id: string | null }>;
+              const accountId = clientRows[0]?.meta_ad_account_id;
+              if (accountId) setMetaAdAccountId(accountId);
+            });
+        }
       })
       .catch(console.error);
   }, [session, token]);
@@ -859,7 +876,11 @@ export default function AdsManagerClient() {
             </div>
           )}
           <a
-            href="https://adsmanager.facebook.com"
+            href={
+              metaAdAccountId
+                ? `https://adsmanager.facebook.com/adsmanager/manage/campaigns?act=${metaAdAccountId.replace("act_", "")}`
+                : "https://adsmanager.facebook.com"
+            }
             target="_blank"
             rel="noopener noreferrer"
             className="px-3 py-1.5 text-xs text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"

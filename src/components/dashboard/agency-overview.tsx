@@ -237,7 +237,7 @@ export default function AgencyOverview() {
         </div>
 
         <Link
-          href="/admin/clients/new"
+          href="/dashboard/clients/new"
           className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold bg-red-600 text-white rounded-xl hover:bg-red-700 transition-colors shadow-sm"
         >
           <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">

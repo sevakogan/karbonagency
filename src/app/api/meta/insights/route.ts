@@ -157,14 +157,24 @@ export async function GET(request: NextRequest) {
 
   const url = new URL(request.url);
   const datePreset = url.searchParams.get("date_preset") ?? "last_30d";
+  const since = url.searchParams.get("since") ?? null;
+  const until = url.searchParams.get("until") ?? null;
   const campaignId = url.searchParams.get("campaign_id") ?? null;
 
   // Map date preset to Meta API format
-  const presetMap: Record<string, string> = {
-    last_7d: "last_7_days", last_14d: "last_14_days",
-    last_30d: "last_30_days", last_90d: "last_90_days",
-  };
-  const metaPreset = presetMap[datePreset] ?? "last_30_days";
+  // Meta API uses its own preset format — pass through directly
+  const VALID_PRESETS = new Set([
+    "today","yesterday","last_3d","last_7d","last_14d","last_28d",
+    "last_30d","last_90d","last_month","last_quarter","last_year",
+    "this_month","this_quarter","this_year","lifetime",
+  ]);
+  const metaPreset = VALID_PRESETS.has(datePreset) ? datePreset : "last_30d";
+
+  // For custom date range, build time_range param instead of date_preset
+  const isCustom = datePreset === "custom" && since && until;
+  const dateParam = isCustom
+    ? `&time_range=${encodeURIComponent(JSON.stringify({ since, until }))}`
+    : `&date_preset=${metaPreset}`;
 
   const accountId = adAccountId!.replace(/^act_/, "");
   const baseFields = "campaign_id,campaign_name,spend,impressions,clicks,reach,ctr,cpc,cpm,cpp,frequency,actions,cost_per_action_type";
@@ -177,7 +187,7 @@ export async function GET(request: NextRequest) {
       insightsUrl =
         `${META_GRAPH_URL}/${campaignId}/insights` +
         `?fields=${baseFields},adset_id,adset_name` +
-        `&date_preset=${metaPreset}` +
+        dateParam +
         `&level=adset` +
         `&limit=100` +
         `&access_token=${encodeURIComponent(accessToken!)}`;
@@ -186,7 +196,7 @@ export async function GET(request: NextRequest) {
       insightsUrl =
         `${META_GRAPH_URL}/act_${accountId}/insights` +
         `?fields=${baseFields}` +
-        `&date_preset=${metaPreset}` +
+        dateParam +
         `&level=campaign` +
         `&limit=100` +
         `&access_token=${encodeURIComponent(accessToken!)}`;

@@ -9,6 +9,9 @@ import type {
   MetaCustomAudience,
   ShiftArcadeDraftCampaign,
 } from "@/lib/meta-api-write";
+import {
+  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell,
+} from "recharts";
 import AdPreviewTab from "@/components/dashboard/ad-preview-tab";
 import { AiAssistantTab, FloatingChatBubble } from "@/components/dashboard/meta-chat-widget";
 import CompetitorsTab from "@/components/dashboard/competitors-tab";
@@ -131,10 +134,10 @@ function TabButton({
   return (
     <button
       onClick={onClick}
-      className={`px-4 py-2 text-sm font-medium rounded-t-lg transition-colors ${
+      className={`px-2.5 py-1.5 text-xs font-medium rounded-lg transition-colors whitespace-nowrap ${
         active
-          ? "bg-white border border-gray-200 border-b-white text-gray-900"
-          : "text-gray-500 hover:text-gray-700 hover:bg-gray-100"
+          ? "bg-gray-900 text-white shadow-sm"
+          : "text-gray-500 hover:text-gray-800 hover:bg-gray-100"
       }`}
     >
       {children}
@@ -970,50 +973,121 @@ function AudiencesTab({
         <ErrorAlert message={error} onDismiss={() => {}} />
       )}
       {!loading && !error && (
-        <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-          <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
-            <h3 className="font-semibold text-sm text-gray-900">
-              Custom Audiences ({audiences?.length ?? 0})
-            </h3>
-            <button onClick={refetch} className="text-xs text-blue-600 hover:underline">Refresh</button>
-          </div>
-
+        <div className="space-y-4">
           {!audiences?.length ? (
-            <EmptyState
-              icon="👥"
-              message="No custom audiences found. Create your first audience above to start retargeting visitors and building lookalike audiences."
-            />
+            <div className="bg-white border border-gray-200 rounded-xl">
+              <EmptyState
+                icon="👥"
+                message="No custom audiences yet. Create your first audience above to start retargeting visitors."
+              />
+            </div>
           ) : (
-            <table className="w-full">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="text-left px-4 py-2 text-xs font-medium text-gray-500">Name</th>
-                  <th className="text-left px-4 py-2 text-xs font-medium text-gray-500">Type</th>
-                  <th className="text-left px-4 py-2 text-xs font-medium text-gray-500">Size (lower)</th>
-                  <th className="text-left px-4 py-2 text-xs font-medium text-gray-500">Retention</th>
-                  <th className="text-left px-4 py-2 text-xs font-medium text-gray-500">Created</th>
-                </tr>
-              </thead>
-              <tbody>
-                {audiences.map((aud) => (
-                  <tr key={aud.id} className="border-b border-gray-100 hover:bg-gray-50">
-                    <td className="px-4 py-3 text-sm font-medium text-gray-900 max-w-xs truncate">{aud.name}</td>
-                    <td className="px-4 py-3 text-xs text-gray-500">{aud.subtype}</td>
-                    <td className="px-4 py-3 text-sm text-gray-600">
-                      {aud.approximate_count_lower_bound
-                        ? fmt(aud.approximate_count_lower_bound)
-                        : "< 1,000"}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-600">
-                      {aud.retention_days ? `${aud.retention_days}d` : "—"}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-400">
-                      {new Date(aud.time_created).toLocaleDateString()}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <>
+              {/* Size bar chart */}
+              {audiences.some(a => (a.approximate_count_lower_bound ?? 0) > 0) && (
+                <div className="bg-white border border-gray-200 rounded-xl p-5">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="text-sm font-semibold text-gray-900">Audience Sizes</h3>
+                    <button onClick={refetch} className="text-xs text-blue-600 hover:underline">Refresh</button>
+                  </div>
+                  <ResponsiveContainer width="100%" height={160}>
+                    <BarChart
+                      data={audiences
+                        .filter(a => (a.approximate_count_lower_bound ?? 0) > 0)
+                        .map(a => ({
+                          name: a.name.length > 18 ? a.name.slice(0, 18) + "…" : a.name,
+                          size: Math.round((a.approximate_count_lower_bound ?? 0) / 1000),
+                          subtype: a.subtype,
+                        }))}
+                      margin={{ top: 0, right: 8, left: -10, bottom: 0 }}
+                    >
+                      <XAxis dataKey="name" tick={{ fontSize: 9 }} interval={0} angle={-20} textAnchor="end" height={40} />
+                      <YAxis tick={{ fontSize: 9 }} unit="K" />
+                      <Tooltip formatter={(v: number) => [`${v}K people`, "Size"]} />
+                      <Bar dataKey="size" radius={[4,4,0,0]}>
+                        {audiences.filter(a => (a.approximate_count_lower_bound ?? 0) > 0).map((a, i) => (
+                          <Cell key={i} fill={
+                            a.subtype === "LOOKALIKE" ? "#8b5cf6" :
+                            a.subtype === "WEBSITE" ? "#3b82f6" :
+                            a.subtype === "ENGAGEMENT" ? "#f97316" : "#22c55e"
+                          } />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                  <div className="flex gap-4 mt-2 justify-center flex-wrap">
+                    {[
+                      { color: "#3b82f6", label: "Website" },
+                      { color: "#f97316", label: "Engagement" },
+                      { color: "#8b5cf6", label: "Lookalike" },
+                      { color: "#22c55e", label: "Other" },
+                    ].map(l => (
+                      <div key={l.label} className="flex items-center gap-1">
+                        <div className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: l.color }} />
+                        <span className="text-xs text-gray-500">{l.label}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Audience cards */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {audiences.map((aud) => {
+                  const size = aud.approximate_count_lower_bound ?? 0;
+                  const typeColor: Record<string, string> = {
+                    WEBSITE: "bg-blue-100 text-blue-700",
+                    ENGAGEMENT: "bg-orange-100 text-orange-700",
+                    LOOKALIKE: "bg-purple-100 text-purple-700",
+                    CUSTOM: "bg-green-100 text-green-700",
+                  };
+                  const typeIcon: Record<string, string> = {
+                    WEBSITE: "🌐", ENGAGEMENT: "💬", LOOKALIKE: "🔮", CUSTOM: "📋",
+                  };
+                  const isReady = size >= 1000;
+                  return (
+                    <div key={aud.id} className="bg-white border border-gray-200 rounded-xl p-4 hover:shadow-md transition-shadow">
+                      <div className="flex items-start justify-between gap-2 mb-3">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${typeColor[aud.subtype] ?? "bg-gray-100 text-gray-600"}`}>
+                              {typeIcon[aud.subtype] ?? "👥"} {aud.subtype}
+                            </span>
+                            {aud.retention_days && (
+                              <span className="text-xs text-gray-400">{aud.retention_days}d window</span>
+                            )}
+                          </div>
+                          <h4 className="text-sm font-semibold text-gray-900 leading-tight truncate" title={aud.name}>{aud.name}</h4>
+                          <p className="text-xs text-gray-400 mt-0.5">{new Date(aud.time_created).toLocaleDateString()}</p>
+                        </div>
+                        <div className="text-right flex-shrink-0">
+                          <div className="text-lg font-black text-gray-900">
+                            {size >= 1000 ? `${Math.round(size / 1000)}K` : size > 0 ? size.toLocaleString() : "<1K"}
+                          </div>
+                          <div className="text-[10px] text-gray-400">people</div>
+                        </div>
+                      </div>
+
+                      {/* Size health bar */}
+                      <div className="h-1.5 w-full bg-gray-100 rounded-full overflow-hidden">
+                        <div
+                          className={`h-full rounded-full ${size >= 10000 ? "bg-green-500" : size >= 1000 ? "bg-yellow-400" : "bg-red-300"}`}
+                          style={{ width: `${Math.min(100, (size / 50000) * 100)}%` }}
+                        />
+                      </div>
+                      <div className="flex items-center justify-between mt-1">
+                        <span className={`text-xs ${isReady ? "text-green-600" : "text-orange-500"}`}>
+                          {isReady ? "✅ Ready for targeting" : "⏳ Needs more data (min 1K)"}
+                        </span>
+                        {size >= 100 && aud.subtype === "WEBSITE" && (
+                          <span className="text-xs text-purple-500">🔮 Can build lookalike</span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </>
           )}
         </div>
       )}
@@ -1136,7 +1210,7 @@ function GuideTab() {
 // Version Footer
 // ---------------------------------------------------------------------------
 
-const BUILD_VERSION = "v2.3";
+const BUILD_VERSION = "v2.5";
 const BUILD_DATE = "Mar 18, 2026";
 
 function VersionFooter() {
@@ -1311,8 +1385,8 @@ export default function AdsManagerClient({ initialClientId }: { initialClientId?
         </div>
       ))}
 
-      {/* Tabs */}
-      <div className="border-b border-gray-200 flex gap-1 flex-wrap">
+      {/* Compact scrollable tab bar */}
+      <div className="flex items-center gap-1 overflow-x-auto pb-1 scrollbar-hide">
         <TabButton active={activeTab === "campaigns"} onClick={() => setActiveTab("campaigns")}>
           📊 Campaigns {campaigns ? `(${campaigns.length})` : ""}
         </TabButton>
@@ -1329,17 +1403,27 @@ export default function AdsManagerClient({ initialClientId }: { initialClientId?
           👥 Audiences
         </TabButton>
         <TabButton active={activeTab === "previews"} onClick={() => setActiveTab("previews")}>
-          🖼️ Ad Previews
+          🖼️ Previews
         </TabButton>
         <TabButton active={activeTab === "ai_assistant"} onClick={() => setActiveTab("ai_assistant")}>
-          🤖 AI Assistant
+          🤖 AI
         </TabButton>
         <TabButton active={activeTab === "competitors"} onClick={() => setActiveTab("competitors")}>
           🔍 Competitors
         </TabButton>
         <TabButton active={activeTab === "guide"} onClick={() => setActiveTab("guide")}>
-          📖 Strategy Guide
+          📖 Guide
         </TabButton>
+        <div className="ml-auto flex-shrink-0">
+          {clientId && (
+            <a
+              href={`/dashboard/clients/${clientId}/settings`}
+              className="px-2.5 py-1.5 text-xs font-medium text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors whitespace-nowrap"
+            >
+              ⚙️ Settings
+            </a>
+          )}
+        </div>
       </div>
 
       {/* Tab content */}

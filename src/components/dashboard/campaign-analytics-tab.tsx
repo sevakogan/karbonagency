@@ -28,17 +28,20 @@ interface CampaignInsight {
 }
 
 type SortKey = "spend" | "conversions" | "ctr" | "cpc" | "cpm" | "performance_score";
-type DatePreset = "last_7d" | "last_14d" | "last_30d" | "last_90d";
+type DatePreset = "today" | "last_7d" | "last_14d" | "last_30d" | "last_month" | "last_quarter" | "last_year" | "custom";
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
 const DATE_OPTIONS: { label: string; value: DatePreset }[] = [
-  { label: "7 days", value: "last_7d" },
-  { label: "14 days", value: "last_14d" },
-  { label: "30 days", value: "last_30d" },
-  { label: "90 days", value: "last_90d" },
+  { label: "Today",      value: "today" },
+  { label: "7 days",     value: "last_7d" },
+  { label: "30 days",    value: "last_30d" },
+  { label: "Last month", value: "last_month" },
+  { label: "Quarter",    value: "last_quarter" },
+  { label: "12 months",  value: "last_year" },
+  { label: "Custom",     value: "custom" },
 ];
 
 function scoreColor(score: number): string {
@@ -141,14 +144,26 @@ export default function CampaignAnalyticsTab({ token, clientId, onCampaignClick 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [datePreset, setDatePreset] = useState<DatePreset>("last_30d");
+  const [customSince, setCustomSince] = useState<string>(() => {
+    const d = new Date(); d.setDate(d.getDate() - 30);
+    return d.toISOString().slice(0, 10);
+  });
+  const [customUntil, setCustomUntil] = useState<string>(() => new Date().toISOString().slice(0, 10));
+  const [customApplied, setCustomApplied] = useState(false);
   const [sortKey, setSortKey] = useState<SortKey>("spend");
   const [chartMetric, setChartMetric] = useState<"spend" | "conversions" | "ctr" | "cpc">("spend");
 
   useEffect(() => {
     if (!token || !clientId) return;
+    if (datePreset === "custom" && !customApplied) return; // wait for user to click Apply
     setLoading(true);
     setError(null);
-    fetch(`/api/meta/insights?client_id=${clientId}&date_preset=${datePreset}`, {
+    const params = new URLSearchParams({ client_id: clientId, date_preset: datePreset });
+    if (datePreset === "custom") {
+      params.set("since", customSince);
+      params.set("until", customUntil);
+    }
+    fetch(`/api/meta/insights?${params.toString()}`, {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then((r) => r.json())
@@ -157,8 +172,8 @@ export default function CampaignAnalyticsTab({ token, clientId, onCampaignClick 
         else setInsights(json.data ?? []);
       })
       .catch((e: Error) => setError(e.message))
-      .finally(() => setLoading(false));
-  }, [token, clientId, datePreset]);
+      .finally(() => { setLoading(false); setCustomApplied(false); });
+  }, [token, clientId, datePreset, customApplied]);
 
   const sorted = [...insights].sort((a, b) => {
     if (sortKey === "cpc" || sortKey === "cpm") return a[sortKey] - b[sortKey]; // lower = better
@@ -218,14 +233,14 @@ export default function CampaignAnalyticsTab({ token, clientId, onCampaignClick 
   return (
     <div className="space-y-6">
       {/* Controls */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <h3 className="font-bold text-gray-900">Campaign Performance Comparison</h3>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <div className="flex rounded-xl border border-gray-200 bg-white overflow-hidden shadow-sm">
             {DATE_OPTIONS.map((opt, i) => (
               <button
                 key={opt.value}
-                onClick={() => setDatePreset(opt.value)}
+                onClick={() => { setDatePreset(opt.value); setCustomApplied(false); }}
                 className={`px-3 py-1.5 text-xs font-medium transition-colors ${
                   datePreset === opt.value ? "bg-red-50 text-red-600" : "text-gray-500 hover:bg-gray-50"
                 } ${i > 0 ? "border-l border-gray-200" : ""}`}
@@ -234,6 +249,29 @@ export default function CampaignAnalyticsTab({ token, clientId, onCampaignClick 
               </button>
             ))}
           </div>
+          {datePreset === "custom" && (
+            <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-xl px-3 py-1.5 shadow-sm">
+              <input
+                type="date"
+                value={customSince}
+                onChange={(e) => setCustomSince(e.target.value)}
+                className="text-xs border-none outline-none bg-transparent text-gray-700"
+              />
+              <span className="text-xs text-gray-400">→</span>
+              <input
+                type="date"
+                value={customUntil}
+                onChange={(e) => setCustomUntil(e.target.value)}
+                className="text-xs border-none outline-none bg-transparent text-gray-700"
+              />
+              <button
+                onClick={() => setCustomApplied(true)}
+                className="ml-1 px-2 py-1 bg-red-600 text-white text-xs font-semibold rounded-lg hover:bg-red-700 transition-colors"
+              >
+                Apply
+              </button>
+            </div>
+          )}
         </div>
       </div>
 

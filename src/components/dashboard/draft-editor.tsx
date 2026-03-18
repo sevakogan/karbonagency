@@ -187,6 +187,8 @@ export default function DraftEditor({ draft, token, clientId, onClose, onLaunch 
   const [mediaPreview, setMediaPreview] = useState<string | null>(null);
   const [aiRec, setAiRec] = useState<string | null>(null);
   const [loadingAi, setLoadingAi] = useState(false);
+  const [loadingRotate, setLoadingRotate] = useState(false);
+  const [creativeVariations, setCreativeVariations] = useState<Array<{ headline: string; primaryText: string; label: string }> | null>(null);
   const [launching, setLaunching] = useState(false);
   const [launchResult, setLaunchResult] = useState<{ success: boolean; message: string } | null>(null);
   const [activeSection, setActiveSection] = useState<"campaign" | "creative" | "targeting" | "media">("campaign");
@@ -240,6 +242,51 @@ Be specific to sim racing / Wynwood / South Florida context.`,
       setAiRec("Could not reach AI assistant. Check ANTHROPIC_API_KEY in Vercel.");
     } finally {
       setLoadingAi(false);
+    }
+  };
+
+  const getCreativeRotations = async () => {
+    setLoadingRotate(true);
+    setCreativeVariations(null);
+    try {
+      const res = await fetch("/api/meta/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          client_id: clientId,
+          messages: [{
+            role: "user",
+            content: `Generate 3 different ad creative variations for Shift Arcade Miami (premium sim racing in Wynwood).
+Campaign: "${form.name}" | Objective: ${form.objective} | Budget: $${form.daily_budget_dollars}/day
+
+Current headline: "${form.headline}"
+Current text: "${form.primaryText}"
+
+Return EXACTLY this JSON format (no extra text, just JSON):
+[
+  {"label":"🔥 Urgency","headline":"<max 40 chars>","primaryText":"<max 125 chars>"},
+  {"label":"💡 Curiosity","headline":"<max 40 chars>","primaryText":"<max 125 chars>"},
+  {"label":"🏆 Social proof","headline":"<max 40 chars>","primaryText":"<max 125 chars>"}
+]
+
+Make them specific to sim racing / Wynwood / South Florida. Each should have a completely different angle.`,
+          }],
+        }),
+      });
+      const json = await res.json() as { reply?: string; data?: { message?: string }; error?: string };
+      const raw = json.reply ?? json.data?.message ?? "";
+      // Extract JSON array from response
+      const match = raw.match(/\[[\s\S]*\]/);
+      if (match) {
+        const parsed = JSON.parse(match[0]) as Array<{ headline: string; primaryText: string; label: string }>;
+        setCreativeVariations(parsed);
+      } else {
+        setCreativeVariations([{ label: "AI", headline: "Could not parse", primaryText: raw.slice(0, 125) }]);
+      }
+    } catch (e) {
+      setCreativeVariations([{ label: "Error", headline: "AI unavailable", primaryText: String(e) }]);
+    } finally {
+      setLoadingRotate(false);
     }
   };
 
@@ -403,6 +450,46 @@ Be specific to sim racing / Wynwood / South Florida context.`,
           {/* CREATIVE section */}
           {activeSection === "creative" && (
             <div className="space-y-4">
+              {/* AI Rotate button */}
+              <div className="flex items-center justify-between bg-purple-50 border border-purple-100 rounded-xl px-4 py-3">
+                <div>
+                  <div className="text-xs font-bold text-purple-800">🔄 AI Creative Rotation</div>
+                  <div className="text-xs text-purple-600 mt-0.5">Generate 3 different angles — click any to apply it</div>
+                </div>
+                <button
+                  onClick={getCreativeRotations}
+                  disabled={loadingRotate}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50 shrink-0"
+                >
+                  {loadingRotate ? (
+                    <><div className="h-3 w-3 animate-spin rounded-full border-2 border-white border-t-transparent" /> Generating…</>
+                  ) : (
+                    <>🔄 Generate Variations</>
+                  )}
+                </button>
+              </div>
+
+              {/* Variations picker */}
+              {creativeVariations && (
+                <div className="space-y-2">
+                  {creativeVariations.map((v, i) => (
+                    <button
+                      key={i}
+                      onClick={() => { set("headline", v.headline); set("primaryText", v.primaryText); setCreativeVariations(null); }}
+                      className="w-full text-left border border-purple-200 bg-white hover:bg-purple-50 rounded-xl px-4 py-3 transition-colors group"
+                    >
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-xs font-bold text-purple-700">{v.label}</span>
+                        <span className="text-xs text-purple-400 group-hover:text-purple-600">Tap to apply →</span>
+                      </div>
+                      <div className="text-xs font-semibold text-gray-900">{v.headline}</div>
+                      <div className="text-xs text-gray-500 mt-0.5 line-clamp-2">{v.primaryText}</div>
+                    </button>
+                  ))}
+                  <button onClick={() => setCreativeVariations(null)} className="text-xs text-gray-400 hover:text-gray-600 w-full text-center py-1">✕ Dismiss</button>
+                </div>
+              )}
+
               <div>
                 <label className="block text-xs font-semibold text-gray-700 mb-1">
                   Headline <span className="text-gray-400 font-normal">({form.headline.length}/40 chars)</span>
@@ -503,17 +590,91 @@ Be specific to sim racing / Wynwood / South Florida context.`,
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">Locations</label>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">Locations / Geo Notes</label>
                 <input value={form.locations} onChange={(e) => set("locations", e.target.value)}
                   className="w-full text-sm border border-gray-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500"
                 />
-                <p className="text-xs text-gray-400 mt-1">Geo radius is configured in the ad set targeting. Use the draft notes above to describe targeting intent.</p>
+              </div>
+
+              {/* South Florida targeting map */}
+              <div className="rounded-xl border border-gray-200 overflow-hidden">
+                <div className="px-3 py-2 bg-gray-50 border-b border-gray-100 text-xs font-semibold text-gray-600">🗺️ Targeting Map — South Florida</div>
+                <svg viewBox="0 0 340 280" className="w-full bg-gradient-to-b from-sky-50 to-emerald-50">
+                  {/* Grid */}
+                  {[40,80,120,160,200,240].map(v => (
+                    <line key={`h${v}`} x1="0" y1={v} x2="340" y2={v} stroke="#e2e8f0" strokeWidth="0.5"/>
+                  ))}
+                  {[40,80,120,160,200,240,280,320].map(v => (
+                    <line key={`v${v}`} x1={v} y1="0" x2={v} y2="280" stroke="#e2e8f0" strokeWidth="0.5"/>
+                  ))}
+
+                  {/* Atlantic Ocean */}
+                  <rect x="255" y="0" width="85" height="280" fill="#bfdbfe" opacity="0.5"/>
+                  <text x="275" y="140" fontSize="9" fill="#93c5fd" transform="rotate(90,275,140)" textAnchor="middle">ATLANTIC OCEAN</text>
+
+                  {/* Florida coastline (simplified) */}
+                  <polyline points="255,20 250,60 248,100 244,140 240,180 238,220 235,260" fill="none" stroke="#94a3b8" strokeWidth="1.5"/>
+
+                  {/* Everglades */}
+                  <ellipse cx="100" cy="220" rx="90" ry="40" fill="#bbf7d0" opacity="0.4"/>
+                  <text x="100" y="223" fontSize="8" fill="#6ee7b7" textAnchor="middle">EVERGLADES</text>
+
+                  {/* I-95 highway */}
+                  <polyline points="220,20 218,80 215,140 212,200 210,260" fill="none" stroke="#fbbf24" strokeWidth="2" strokeDasharray="6,3"/>
+                  <text x="224" y="140" fontSize="7" fill="#d97706">I-95</text>
+
+                  {/* West Palm Beach */}
+                  <circle cx="230" cy="45" r="5" fill="#6366f1" opacity="0.7"/>
+                  <text x="170" y="49" fontSize="9" fill="#4f46e5" fontWeight="600">West Palm Beach</text>
+
+                  {/* Fort Lauderdale */}
+                  <circle cx="228" cy="115" r="5" fill="#6366f1" opacity="0.7"/>
+                  <text x="165" y="119" fontSize="9" fill="#4f46e5" fontWeight="600">Fort Lauderdale</text>
+
+                  {/* Wynwood star — home base */}
+                  <circle cx="220" cy="175" r="9" fill="#ef4444" opacity="0.2"/>
+                  <circle cx="220" cy="175" r="6" fill="#ef4444"/>
+                  <text x="220" y="171" fontSize="10" textAnchor="middle" fill="white" fontWeight="bold">★</text>
+                  <text x="155" y="179" fontSize="9" fill="#dc2626" fontWeight="700">WYNWOOD</text>
+                  <text x="155" y="190" fontSize="7" fill="#ef4444">(Shift Arcade)</text>
+
+                  {/* Miami */}
+                  <circle cx="222" cy="210" r="4" fill="#6366f1" opacity="0.7"/>
+                  <text x="165" y="214" fontSize="9" fill="#4f46e5" fontWeight="600">Miami</text>
+
+                  {/* Miami Beach */}
+                  <circle cx="244" cy="195" r="3" fill="#8b5cf6" opacity="0.8"/>
+                  <text x="248" y="199" fontSize="7" fill="#7c3aed">Miami Beach</text>
+
+                  {/* 15-mile radius ring */}
+                  <circle cx="220" cy="175" r="52" fill="none" stroke="#ef4444" strokeWidth="1.5" strokeDasharray="5,3" opacity="0.6"/>
+                  <text x="275" y="133" fontSize="7" fill="#ef4444" opacity="0.8">15mi</text>
+
+                  {/* 30-mile radius ring */}
+                  <circle cx="220" cy="175" r="95" fill="none" stroke="#f97316" strokeWidth="1" strokeDasharray="4,5" opacity="0.35"/>
+                  <text x="316" y="90" fontSize="7" fill="#f97316" opacity="0.6">30mi</text>
+
+                  {/* Legend */}
+                  <rect x="8" y="8" width="130" height="62" rx="6" fill="white" opacity="0.85"/>
+                  <circle cx="18" cy="22" r="5" fill="#ef4444"/>
+                  <text x="28" y="26" fontSize="8" fill="#374151">Venue (Wynwood)</text>
+                  <circle cx="18" cy="37" r="3" fill="none" stroke="#ef4444" strokeWidth="1.5" strokeDasharray="3,2"/>
+                  <text x="28" y="41" fontSize="8" fill="#374151">15mi radius</text>
+                  <circle cx="18" cy="52" r="3" fill="none" stroke="#f97316" strokeWidth="1" strokeDasharray="2,3"/>
+                  <text x="28" y="56" fontSize="8" fill="#374151">30mi radius</text>
+                  <line x1="10" y1="63" x2="25" y2="63" stroke="#fbbf24" strokeWidth="2" strokeDasharray="4,2"/>
+                  <text x="28" y="67" fontSize="8" fill="#374151">I-95 corridor</text>
+                </svg>
+                <div className="px-3 py-2 bg-gray-50 border-t border-gray-100">
+                  <div className="text-xs text-gray-500">Red dot = Shift Arcade Wynwood. Inner ring = 15mi primary target. Outer ring = 30mi extended reach.</div>
+                </div>
               </div>
 
               {/* Targeting summary from draft */}
               <div className="bg-blue-50 border border-blue-100 rounded-xl p-4">
                 <div className="text-xs font-bold text-blue-900 mb-2">🎯 Configured Targeting</div>
                 <div className="text-xs text-blue-800 space-y-1">
+                  <div><span className="font-medium">Age Range:</span> {form.ageMin}–{form.ageMax}</div>
                   <div><span className="font-medium">Interests:</span> Formula One, Racing Games, eSports, Nightlife, Date Night</div>
                   <div><span className="font-medium">Platforms:</span> Facebook + Instagram (Feed, Stories, Reels)</div>
                   <div><span className="font-medium">Attribution:</span> 7-day click, 1-day view</div>

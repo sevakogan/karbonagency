@@ -175,7 +175,7 @@ export async function verifyMetaAdAccount(
     });
 
     const res = await fetch(
-      `https://graph.facebook.com/v21.0/act_${trimmed}?${params}`
+      `https://graph.facebook.com/v25.0/act_${trimmed}?${params}`
     );
 
     const json = await res.json();

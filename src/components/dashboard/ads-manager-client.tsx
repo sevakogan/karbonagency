@@ -9,12 +9,15 @@ import type {
   MetaCustomAudience,
   ShiftArcadeDraftCampaign,
 } from "@/lib/meta-api-write";
+import AdPreviewTab from "@/components/dashboard/ad-preview-tab";
+import { AiAssistantTab, FloatingChatBubble } from "@/components/dashboard/meta-chat-widget";
+import CompetitorsTab from "@/components/dashboard/competitors-tab";
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
-type Tab = "campaigns" | "drafts" | "audiences" | "adsets" | "guide";
+type Tab = "campaigns" | "drafts" | "audiences" | "adsets" | "guide" | "previews" | "ai_assistant" | "competitors";
 
 interface ApiError {
   error: string;
@@ -175,6 +178,151 @@ function ErrorAlert({ message, onDismiss }: { message: string; onDismiss: () => 
 }
 
 // ---------------------------------------------------------------------------
+// Learning Phase Bar
+// ---------------------------------------------------------------------------
+
+function LearningPhaseBar({ effectiveStatus }: { effectiveStatus?: string }) {
+  const isLearning = effectiveStatus === "LEARNING" || effectiveStatus === "LEARNING_LIMITED";
+  const isLimited = effectiveStatus === "LEARNING_LIMITED";
+  const isGraduated = effectiveStatus === "ACTIVE" || effectiveStatus === "ACTIVE_LIMITED";
+
+  if (!effectiveStatus || effectiveStatus === "PAUSED" || effectiveStatus === "DELETED" || effectiveStatus === "ARCHIVED") {
+    return null;
+  }
+
+  return (
+    <div className="mt-1.5">
+      <div className="flex items-center justify-between mb-0.5">
+        <span className={`text-xs font-medium ${isLearning ? (isLimited ? "text-orange-600" : "text-yellow-700") : "text-green-600"}`}>
+          {isLimited ? "⚡ Learning Limited" : isLearning ? "🎓 Learning Phase" : "✅ Graduated"}
+        </span>
+        {isLearning && (
+          <span className="text-xs text-gray-400">Don't pause!</span>
+        )}
+      </div>
+      <div className="h-1.5 w-full bg-gray-200 rounded-full overflow-hidden">
+        {isLearning ? (
+          <div
+            className={`h-full rounded-full animate-pulse ${isLimited ? "bg-orange-400 w-2/3" : "bg-yellow-400 w-1/2"}`}
+            style={{ animation: "learningSlide 2s ease-in-out infinite" }}
+          />
+        ) : (
+          <div className="h-full w-full bg-green-500 rounded-full" />
+        )}
+      </div>
+      <style>{`
+        @keyframes learningSlide {
+          0% { width: 20%; }
+          50% { width: 70%; }
+          100% { width: 20%; }
+        }
+      `}</style>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// CAPI Strength Widget
+// ---------------------------------------------------------------------------
+
+interface CapiHealthData {
+  score: number;
+  maxScore: number;
+  label: string;
+  events: Array<{ name: string; browser: boolean; server: boolean }>;
+  recommendations: string[];
+}
+
+function CapiStrengthWidget({ token, clientId }: { token: string; clientId: string }) {
+  const [health, setHealth] = useState<CapiHealthData | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [expanded, setExpanded] = useState(false);
+
+  useEffect(() => {
+    setLoading(true);
+    fetch(`/api/meta/pixel-health?client_id=${clientId}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((r) => r.json())
+      .then((json: { data?: CapiHealthData }) => {
+        if (json.data) setHealth(json.data);
+      })
+      .catch(console.error)
+      .finally(() => setLoading(false));
+  }, [token, clientId]);
+
+  const score = health?.score ?? 0;
+  const maxScore = health?.maxScore ?? 10;
+  const pct = (score / maxScore) * 100;
+  const scoreColor = score >= 8 ? "text-green-600" : score >= 5 ? "text-yellow-600" : "text-red-600";
+  const barColor = score >= 8 ? "bg-green-500" : score >= 5 ? "bg-yellow-400" : "bg-red-400";
+
+  return (
+    <div className="bg-white border border-gray-200 rounded-xl p-4">
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center gap-2">
+          <span className="text-lg">📡</span>
+          <div>
+            <div className="text-xs font-semibold text-gray-700">CAPI Strength</div>
+            <div className="text-xs text-gray-400">Pixel + Server-Side Event Coverage</div>
+          </div>
+        </div>
+        <div className="text-right">
+          {loading ? (
+            <div className="h-4 w-4 animate-spin rounded-full border-2 border-blue-500 border-t-transparent" />
+          ) : (
+            <span className={`text-2xl font-bold ${scoreColor}`}>{score}<span className="text-sm text-gray-400">/{maxScore}</span></span>
+          )}
+        </div>
+      </div>
+
+      {!loading && health && (
+        <>
+          <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden mb-1">
+            <div className={`h-full rounded-full transition-all duration-700 ${barColor}`} style={{ width: `${pct}%` }} />
+          </div>
+          <div className="flex items-center justify-between">
+            <span className={`text-xs font-medium ${scoreColor}`}>{health.label}</span>
+            <button onClick={() => setExpanded(!expanded)} className="text-xs text-blue-600 hover:underline">
+              {expanded ? "Less ↑" : "Details ↓"}
+            </button>
+          </div>
+
+          {expanded && (
+            <div className="mt-3 space-y-2">
+              <div className="grid grid-cols-3 gap-1 text-center">
+                <div className="text-xs text-gray-400">Event</div>
+                <div className="text-xs text-gray-400">Browser</div>
+                <div className="text-xs text-gray-400">Server (CAPI)</div>
+              </div>
+              {health.events.map((ev) => (
+                <div key={ev.name} className="grid grid-cols-3 gap-1 text-center text-xs">
+                  <div className="text-gray-600 truncate">{ev.name}</div>
+                  <div>{ev.browser ? "✅" : "❌"}</div>
+                  <div>{ev.server ? "✅" : "❌"}</div>
+                </div>
+              ))}
+              {health.recommendations.length > 0 && (
+                <div className="mt-2 pt-2 border-t border-gray-100">
+                  <div className="text-xs font-medium text-gray-700 mb-1">Recommendations:</div>
+                  {health.recommendations.map((r, i) => (
+                    <div key={i} className="text-xs text-orange-700 bg-orange-50 rounded px-2 py-1 mb-1">💡 {r}</div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </>
+      )}
+
+      {!loading && !health && (
+        <p className="text-xs text-gray-400 mt-1">Add META_ACCESS_TOKEN to enable CAPI monitoring.</p>
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Campaign Row
 // ---------------------------------------------------------------------------
 
@@ -233,6 +381,7 @@ function CampaignRow({
           {campaign.name}
         </div>
         <div className="text-xs text-gray-400 mt-0.5">{campaign.id}</div>
+        <LearningPhaseBar effectiveStatus={campaign.effective_status} />
       </td>
       <td className="py-3 px-4">
         <StatusBadge status={campaign.status} />
@@ -486,6 +635,40 @@ function AudiencesTab({
   }>({ type: "website", name: "", retention_days: "30" });
   const [createError, setCreateError] = useState<string | null>(null);
   const [createSuccess, setCreateSuccess] = useState<string | null>(null);
+  const [aiRecommending, setAiRecommending] = useState(false);
+  const [aiRecommendation, setAiRecommendation] = useState<string | null>(null);
+
+  async function handleAiRecommend() {
+    setAiRecommending(true);
+    setAiRecommendation(null);
+    try {
+      const res = await fetch("/api/meta/chat", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          client_id: clientId,
+          messages: [{
+            role: "user",
+            content: `I currently have ${audiences?.length ?? 0} custom audiences. ${
+              audiences?.length
+                ? `They are: ${audiences.map((a) => `${a.name} (${a.subtype}, ${a.retention_days ?? "?"}d)`).join(", ")}.`
+                : "No audiences yet."
+            } Based on Shift Arcade Miami's business (premium sim racing, Wynwood, $45/day budget), recommend the exact audiences I should create next, what order to create them in, and why each one matters for my Meta ad results. Be specific about retention windows, subtypes, and expected impact.`,
+          }],
+        }),
+      });
+      const json = await res.json() as { data?: { message?: string }; error?: string };
+      if (json.data?.message) {
+        setAiRecommendation(json.data.message);
+      } else if (json.error) {
+        setAiRecommendation(`Error: ${json.error}`);
+      }
+    } catch (err) {
+      setAiRecommendation(`Error: ${err instanceof Error ? err.message : "Unknown"}`);
+    } finally {
+      setAiRecommending(false);
+    }
+  }
 
   async function handleCreateWebsiteAudience() {
     if (!createForm.name) {
@@ -539,7 +722,23 @@ function AudiencesTab({
     <div className="space-y-6">
       {/* Recommended audiences for Shift Arcade */}
       <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
-        <h3 className="font-semibold text-amber-800 text-sm mb-2">🎯 Recommended Audiences for Shift Arcade Miami</h3>
+        <div className="flex items-start justify-between gap-3 mb-2">
+          <h3 className="font-semibold text-amber-800 text-sm">🎯 Recommended Audiences for Shift Arcade Miami</h3>
+          <button
+            onClick={handleAiRecommend}
+            disabled={aiRecommending}
+            className="flex-shrink-0 px-3 py-1.5 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-300 text-white text-xs font-semibold rounded-lg transition-colors flex items-center gap-1.5"
+          >
+            {aiRecommending ? (
+              <>
+                <div className="h-3 w-3 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                Thinking…
+              </>
+            ) : (
+              <>🤖 Recommend using AI</>
+            )}
+          </button>
+        </div>
         <div className="space-y-1 text-xs text-amber-700">
           <div>✅ <strong>Website Visitors 30 days</strong> — Everyone who visited shiftarcade.miami (retargeting)</div>
           <div>✅ <strong>Website Visitors 60 days</strong> — Wider retargeting net</div>
@@ -548,6 +747,14 @@ function AudiencesTab({
           <div>✅ <strong>Instagram Engagers 180d</strong> — IG followers who engaged</div>
           <div>⏳ <strong>1% Lookalike — Purchasers</strong> — Requires 100+ purchase events first</div>
         </div>
+        {aiRecommendation && (
+          <div className="mt-3 bg-white border border-purple-200 rounded-lg p-3">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-xs font-semibold text-purple-700">🤖 Claude AI Recommendation</span>
+            </div>
+            <div className="text-xs text-gray-700 whitespace-pre-wrap leading-relaxed">{aiRecommendation}</div>
+          </div>
+        )}
       </div>
 
       {/* Create form */}
@@ -909,7 +1116,7 @@ export default function AdsManagerClient() {
       ))}
 
       {/* Tabs */}
-      <div className="border-b border-gray-200 flex gap-1">
+      <div className="border-b border-gray-200 flex gap-1 flex-wrap">
         <TabButton active={activeTab === "campaigns"} onClick={() => setActiveTab("campaigns")}>
           📊 Campaigns {campaigns ? `(${campaigns.length})` : ""}
         </TabButton>
@@ -917,10 +1124,19 @@ export default function AdsManagerClient() {
           🎯 Ad Sets {adSets ? `(${adSets.length})` : ""}
         </TabButton>
         <TabButton active={activeTab === "drafts"} onClick={() => setActiveTab("drafts")}>
-          🚀 Draft Campaigns ({SHIFT_ARCADE_DRAFT_CAMPAIGNS.length})
+          🚀 Drafts ({SHIFT_ARCADE_DRAFT_CAMPAIGNS.length})
         </TabButton>
         <TabButton active={activeTab === "audiences"} onClick={() => setActiveTab("audiences")}>
           👥 Audiences
+        </TabButton>
+        <TabButton active={activeTab === "previews"} onClick={() => setActiveTab("previews")}>
+          🖼️ Ad Previews
+        </TabButton>
+        <TabButton active={activeTab === "ai_assistant"} onClick={() => setActiveTab("ai_assistant")}>
+          🤖 AI Assistant
+        </TabButton>
+        <TabButton active={activeTab === "competitors"} onClick={() => setActiveTab("competitors")}>
+          🔍 Competitors
         </TabButton>
         <TabButton active={activeTab === "guide"} onClick={() => setActiveTab("guide")}>
           📖 Strategy Guide
@@ -988,9 +1204,9 @@ export default function AdsManagerClient() {
               )}
             </div>
 
-            {/* Summary cards */}
+            {/* Summary cards + CAPI */}
             {campaigns && campaigns.length > 0 && (
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-4 gap-4">
                 <div className="bg-white border border-gray-200 rounded-xl p-4">
                   <div className="text-xs text-gray-400 mb-1">Active Campaigns</div>
                   <div className="text-2xl font-bold text-green-600">{activeCampaigns.length}</div>
@@ -1006,6 +1222,13 @@ export default function AdsManagerClient() {
                   <div className="text-2xl font-bold text-gray-700">{campaigns.length}</div>
                   <div className="text-xs text-gray-400">Across all statuses</div>
                 </div>
+                {clientId && <CapiStrengthWidget token={token} clientId={clientId} />}
+              </div>
+            )}
+            {/* CAPI widget even when no campaigns yet */}
+            {(!campaigns || campaigns.length === 0) && clientId && (
+              <div className="grid grid-cols-1 max-w-sm">
+                <CapiStrengthWidget token={token} clientId={clientId} />
               </div>
             )}
           </div>
@@ -1046,6 +1269,7 @@ export default function AdsManagerClient() {
                       <td className="py-3 px-4">
                         <div className="font-medium text-sm text-gray-900 max-w-xs truncate">{adSet.name}</div>
                         <div className="text-xs text-gray-400">{adSet.id}</div>
+                        <LearningPhaseBar effectiveStatus={adSet.effective_status} />
                       </td>
                       <td className="py-3 px-4"><StatusBadge status={adSet.status} /></td>
                       <td className="py-3 px-4 text-sm text-gray-600">{adSet.optimization_goal}</td>
@@ -1106,9 +1330,29 @@ export default function AdsManagerClient() {
           <AudiencesTab token={token} clientId={clientId} />
         )}
 
+        {/* AD PREVIEWS TAB */}
+        {activeTab === "previews" && token && clientId && (
+          <AdPreviewTab token={token} clientId={clientId} />
+        )}
+
+        {/* AI ASSISTANT TAB */}
+        {activeTab === "ai_assistant" && token && clientId && (
+          <AiAssistantTab token={token} clientId={clientId} />
+        )}
+
+        {/* COMPETITORS TAB */}
+        {activeTab === "competitors" && token && (
+          <CompetitorsTab token={token} />
+        )}
+
         {/* GUIDE TAB */}
         {activeTab === "guide" && <GuideTab />}
       </div>
+
+      {/* Floating AI chat bubble (always visible) */}
+      {token && clientId && (
+        <FloatingChatBubble token={token} clientId={clientId} />
+      )}
     </div>
   );
 }

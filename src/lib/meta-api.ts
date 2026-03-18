@@ -9,7 +9,7 @@
  *   const insights = await fetchAdAccountInsights("act_123456", "2025-01-01", "2025-01-31");
  */
 
-const META_GRAPH_URL = "https://graph.facebook.com/v21.0";
+const META_GRAPH_URL = "https://graph.facebook.com/v25.0"
 
 // ---------------------------------------------------------------------------
 // Error types
@@ -26,7 +26,7 @@ export class MetaApiError extends Error {
     subcode?: number,
     fbTraceId?: string
   ) {
-    super(message);
+    super(message)
     this.name = "MetaApiError";
     this.code = code;
     this.subcode = subcode;

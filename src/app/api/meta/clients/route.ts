@@ -1,6 +1,6 @@
 /**
  * /api/meta/clients
- * POST — create a new client, auto-handles missing optional columns
+ * POST — create a new client, auto-generates slug, handles missing optional columns
  */
 
 import { NextRequest, NextResponse } from "next/server";
@@ -22,15 +22,24 @@ async function auth(request: NextRequest) {
   return { err: null, supabase };
 }
 
-// Try inserting with all provided fields. If a column doesn't exist yet,
-// retry progressively without that column so the user never sees a raw
-// Supabase error about missing columns.
+function toSlug(name: string): string {
+  const base = name
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, "")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "")
+    .slice(0, 40);
+  const suffix = Math.random().toString(36).slice(2, 7);
+  return `${base}-${suffix}`;
+}
+
+// Tries insert with full payload; if a column doesn't exist, strips it and retries
 async function insertWithFallback(
   supabase: SupabaseClient,
   full: Record<string, unknown>
-): Promise<{ id: string; name: string } | null> {
-  // Optional columns that may not exist in older DB schemas
-  const OPTIONAL = ["contact_email", "meta_pixel_id", "company_name", "logo_url", "meta_access_token", "meta_ad_account_id"];
+): Promise<{ id: string; name: string }> {
+  const OPTIONAL = ["slug", "contact_email", "meta_pixel_id", "company_name", "logo_url", "meta_access_token", "meta_ad_account_id"];
 
   const tryInsert = async (payload: Record<string, unknown>) => {
     const { data, error } = await supabase
@@ -41,25 +50,22 @@ async function insertWithFallback(
     return { data, error };
   };
 
-  // First attempt: full payload
   let payload = { ...full };
   let { data, error } = await tryInsert(payload);
   if (!error) return data as { id: string; name: string };
 
-  // If column error, strip optional columns one by one until it works
-  if (error.message?.includes("column") || error.code === "42703") {
+  // Strip optional columns one by one on column errors
+  if (error.message?.includes("column") || error.code === "42703" || error.message?.includes("violates not-null")) {
     for (const col of OPTIONAL) {
       if (payload[col] !== undefined) {
         delete payload[col];
         const result = await tryInsert(payload);
         if (!result.error) return result.data as { id: string; name: string };
         error = result.error;
-        if (!error.message?.includes("column") && error.code !== "42703") break;
       }
     }
   }
 
-  // Re-throw last error
   throw new Error(error.message ?? "Failed to create client");
 }
 
@@ -72,12 +78,17 @@ export async function POST(request: NextRequest) {
   const name = (body.name ?? "").trim();
   if (!name) return NextResponse.json({ error: "Client name is required" }, { status: 400 });
 
-  const full: Record<string, unknown> = { name, is_active: true };
-  if (body.company_name?.trim()) full.company_name = body.company_name.trim();
-  if (body.contact_email?.trim()) full.contact_email = body.contact_email.trim();
-  if (body.logo_url?.trim()) full.logo_url = body.logo_url.trim();
+  const full: Record<string, unknown> = {
+    name,
+    slug: toSlug(name),
+    is_active: true,
+  };
+
+  if (body.company_name?.trim())      full.company_name      = body.company_name.trim();
+  if (body.contact_email?.trim())     full.contact_email     = body.contact_email.trim();
+  if (body.logo_url?.trim())          full.logo_url          = body.logo_url.trim();
   if (body.meta_ad_account_id?.trim()) full.meta_ad_account_id = body.meta_ad_account_id.trim();
-  if (body.meta_pixel_id?.trim()) full.meta_pixel_id = body.meta_pixel_id.trim();
+  if (body.meta_pixel_id?.trim())     full.meta_pixel_id     = body.meta_pixel_id.trim();
   if (body.meta_access_token?.trim()) full.meta_access_token = body.meta_access_token.trim();
 
   try {

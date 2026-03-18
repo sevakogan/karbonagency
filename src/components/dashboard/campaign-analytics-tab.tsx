@@ -222,10 +222,48 @@ export default function CampaignAnalyticsTab({ token, clientId, onCampaignClick 
     );
   }
 
+  // Date picker controls — always rendered
+  const dateControls = (
+    <div className="flex flex-wrap items-center gap-2">
+      <div className="flex rounded-xl border border-gray-200 bg-white overflow-hidden shadow-sm">
+        {DATE_OPTIONS.map((opt, i) => (
+          <button
+            key={opt.value}
+            onClick={() => { setDatePreset(opt.value); setCustomApplied(false); }}
+            className={`px-3 py-1.5 text-xs font-medium transition-colors ${
+              datePreset === opt.value ? "bg-red-50 text-red-600" : "text-gray-500 hover:bg-gray-50"
+            } ${i > 0 ? "border-l border-gray-200" : ""}`}
+          >
+            {opt.label}
+          </button>
+        ))}
+      </div>
+      {datePreset === "custom" && (
+        <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-xl px-3 py-1.5 shadow-sm">
+          <input type="date" value={customSince} onChange={(e) => setCustomSince(e.target.value)}
+            className="text-xs border-none outline-none bg-transparent text-gray-700" />
+          <span className="text-xs text-gray-400">→</span>
+          <input type="date" value={customUntil} onChange={(e) => setCustomUntil(e.target.value)}
+            className="text-xs border-none outline-none bg-transparent text-gray-700" />
+          <button onClick={() => setCustomApplied(true)}
+            className="ml-1 px-2 py-1 bg-red-600 text-white text-xs font-semibold rounded-lg hover:bg-red-700 transition-colors">
+            Apply
+          </button>
+        </div>
+      )}
+    </div>
+  );
+
   if (insights.length === 0) {
     return (
-      <div className="rounded-xl border border-gray-200 bg-white p-8 text-center text-gray-400 text-sm">
-        No campaign data found for this period.
+      <div className="space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h3 className="font-bold text-gray-900">Campaign Performance</h3>
+          {dateControls}
+        </div>
+        <div className="rounded-xl border border-gray-200 bg-white p-8 text-center text-gray-400 text-sm">
+          No campaign data found for this period.
+        </div>
       </div>
     );
   }

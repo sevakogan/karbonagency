@@ -55,14 +55,35 @@ async function authenticateRequest(request: NextRequest) {
   }
 
   // Try to fetch optional columns separately (they may not exist in older schemas)
-  const { data: clientExtra } = await supabase
-    .from("clients")
-    .select("meta_pixel_id, meta_access_token")
-    .eq("id", finalClientId)
-    .single()
-    .catch(() => ({ data: null }));
+  let clientExtra: { meta_pixel_id?: string | null; meta_access_token?: string | null } | null = null;
+  try {
+    const result = await supabase
+      .from("clients")
+      .select("meta_pixel_id, meta_access_token")
+      .eq("id", finalClientId)
+      .single();
+    if (!result.error && result.data) {
+      clientExtra = result.data as { meta_pixel_id?: string | null; meta_access_token?: string | null };
+    }
+  } catch {
+    // column doesn't exist yet — fall through to env var fallback
+  }
 
-  return { error: null, client: { ...client, ...(clientExtra ?? {}) }, token };
+  // Env-var fallback: META_PIXEL_ID / META_ACCESS_TOKEN covers the case where the
+  // Supabase column either doesn't exist or the UPDATE WHERE clause didn't match
+  // (common when meta_ad_account_id is stored with the "act_" prefix).
+  const pixelIdFallback = clientExtra?.meta_pixel_id ?? process.env.META_PIXEL_ID ?? null;
+  const accessTokenFallback = clientExtra?.meta_access_token ?? process.env.META_ACCESS_TOKEN ?? null;
+
+  return {
+    error: null,
+    client: {
+      ...client,
+      meta_pixel_id: pixelIdFallback,
+      meta_access_token: accessTokenFallback,
+    },
+    token,
+  };
 }
 
 // ---------------------------------------------------------------------------

@@ -311,7 +311,7 @@ function CapiStrengthWidget({ token, clientId }: { token: string; clientId: stri
 
           {noPixel && (
             <p className="text-xs text-orange-600 mt-1.5 bg-orange-50 rounded px-2 py-1">
-              ⚠️ No Pixel ID configured. Run the Supabase SQL to add pixel ID <strong>716750330829631</strong>.
+              ⚠️ No Pixel ID configured. Run the Supabase SQL to add pixel ID <strong>1165380555705221</strong>.
             </p>
           )}
 
@@ -352,7 +352,7 @@ function CapiStrengthWidget({ token, clientId }: { token: string; clientId: stri
         <p className="text-xs text-orange-600 mt-1 bg-orange-50 rounded px-2 py-1">
           ⚠️ Run this SQL in Supabase to activate:<br />
           <code className="font-mono text-xs">ALTER TABLE clients ADD COLUMN IF NOT EXISTS meta_pixel_id TEXT;<br />
-          UPDATE clients SET meta_pixel_id = &apos;716750330829631&apos; WHERE meta_ad_account_id = &apos;1957083288453810&apos;;</code>
+          UPDATE clients SET meta_pixel_id = &apos;1165380555705221&apos; WHERE meta_ad_account_id IN (&apos;1957083288453810&apos;, &apos;act_1957083288453810&apos;);</code>
         </p>
       )}
     </div>

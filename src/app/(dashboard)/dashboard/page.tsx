@@ -1,16 +1,17 @@
 export const dynamic = "force-dynamic";
 
-import Link from "next/link";
-import Breadcrumb from "@/components/ui/breadcrumb";
 import { createSupabaseServer } from "@/lib/supabase-server";
 import { getClientMetrics } from "@/lib/actions/metrics";
 import { getCampaigns } from "@/lib/actions/campaigns";
 import MetricCard from "@/components/dashboard/metric-card";
 import CampaignChartFilter from "@/components/dashboard/campaign-chart-filter";
 import DateRangeSelector from "@/components/dashboard/date-range-selector";
-import SyncMetaButton from "@/components/dashboard/sync-meta-button";
 import StatCard from "@/components/dashboard/stat-card";
 import Badge from "@/components/ui/badge";
+import Link from "next/link";
+import Breadcrumb from "@/components/ui/breadcrumb";
+import AgencyOverview from "@/components/dashboard/agency-overview";
+import SyncMetaButton from "@/components/dashboard/sync-meta-button";
 import { METRIC_DEFINITIONS } from "@/lib/metric-definitions";
 import { SERVICE_LABELS } from "@/types";
 import type { CampaignService } from "@/types";
@@ -56,42 +57,20 @@ export default async function DashboardOverview({
 
   const isAdmin = profile?.role === "admin";
 
-  // ── Admin view ────────────────────────────────────────
+  // ── Admin view: Agency Overview ────────────────────────
   if (isAdmin) {
-    const { count: leadCount } = await supabase
-      .from("agency_leads")
-      .select("*", { count: "exact", head: true });
-    const { count: campaignCount } = await supabase
-      .from("campaigns")
-      .select("*", { count: "exact", head: true });
-    const { count: newLeadCount } = await supabase
-      .from("agency_leads")
-      .select("*", { count: "exact", head: true })
-      .eq("status", "new");
-    const { count: clientCount } = await supabase
-      .from("clients")
-      .select("*", { count: "exact", head: true });
-
     return (
       <div>
-        <Breadcrumb items={[{ label: "Overview" }]} />
-        <h1 className="text-2xl font-black text-gray-900 mt-2 mb-1">
-          Admin Dashboard
-        </h1>
-        <p className="text-sm text-gray-500 mb-8">
-          Welcome back{profile?.full_name ? `, ${profile.full_name}` : ""}
-        </p>
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatCard label="Total Leads" value={leadCount ?? 0} />
-          <StatCard label="New Leads" value={newLeadCount ?? 0} />
-          <StatCard label="Projects" value={campaignCount ?? 0} />
-          <StatCard label="Total Clients" value={clientCount ?? 0} />
+        {/* Quick stats row */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          <AdminStatsMini />
+          <div className="col-span-2 lg:col-span-1 flex items-center justify-end gap-3">
+            <SyncMetaButton />
+          </div>
         </div>
 
-        {/* Meta Sync */}
-        <div className="mt-8">
-          <SyncMetaButton />
-        </div>
+        {/* Full agency client overview — client component with live data */}
+        <AgencyOverview />
       </div>
     );
   }
@@ -124,40 +103,22 @@ export default async function DashboardOverview({
               <span className="text-gray-400 mt-0.5">1.</span>
               <p>
                 Make sure your agency has{" "}
-                <span className="font-medium text-gray-900">
-                  Partner access
-                </span>{" "}
+                <span className="font-medium text-gray-900">Partner access</span>{" "}
                 to your Facebook Ad Account and Page in{" "}
-                <a
-                  href="https://business.facebook.com/settings"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-blue-600 hover:text-blue-800 underline"
-                >
+                <a href="https://business.facebook.com/settings" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800 underline">
                   Business Settings
                 </a>
               </p>
             </div>
             <div className="flex gap-2 text-xs text-gray-600">
               <span className="text-gray-400 mt-0.5">2.</span>
-              <p>
-                Send your{" "}
-                <span className="font-medium text-gray-900">
-                  Ad Account ID, Page ID,
-                </span>{" "}
-                and{" "}
-                <span className="font-medium text-gray-900">Pixel ID</span> to your
-                account manager
-              </p>
+              <p>Send your <span className="font-medium text-gray-900">Ad Account ID, Page ID,</span> and <span className="font-medium text-gray-900">Pixel ID</span> to your account manager</p>
             </div>
             <div className="flex gap-2 text-xs text-gray-600">
               <span className="text-gray-400 mt-0.5">3.</span>
               <p>
                 Check your{" "}
-                <Link
-                  href="/dashboard/profile"
-                  className="text-blue-600 hover:text-blue-800 underline"
-                >
+                <Link href="/dashboard/profile" className="text-blue-600 hover:text-blue-800 underline">
                   profile
                 </Link>{" "}
                 to make sure your contact info is up to date
@@ -189,169 +150,50 @@ export default async function DashboardOverview({
         <Breadcrumb items={[{ label: "Overview" }]} />
         <div className="flex items-center justify-between mt-2 mb-1">
           <h1 className="text-2xl font-black text-gray-900">Dashboard</h1>
-          <DateRangeSelector
-            options={RANGE_OPTIONS}
-            currentDays={rangeDays}
-          />
+          <DateRangeSelector options={RANGE_OPTIONS} currentDays={rangeDays} />
         </div>
         <p className="text-sm text-gray-500">
-          Welcome back
-          {profile?.full_name ? `, ${profile.full_name}` : ""} —
+          Welcome back{profile?.full_name ? `, ${profile.full_name}` : ""} —
           here&apos;s your advertising performance for the last {rangeDays} days.
         </p>
       </div>
 
-      {/* ── Section 1: Spend & Budget ─────────────────── */}
       <div className="mb-8">
-        <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3">
-          Spend & Budget
-        </h2>
+        <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3">Spend & Budget</h2>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <MetricCard
-            label={d.total_spend.label}
-            value={fmtCurrency(metrics.total_spend)}
-            description={d.total_spend.description}
-            size="large"
-          />
-          <MetricCard
-            label={d.daily_spend.label}
-            value={fmtCurrency(
-              metrics.daily.length > 0
-                ? metrics.total_spend / metrics.daily.length
-                : 0
-            )}
-            description={d.daily_spend.description}
-            formula={d.daily_spend.formula}
-          />
-          <MetricCard
-            label={d.cpc.label}
-            value={fmtCurrency(metrics.avg_cpc)}
-            description={d.cpc.description}
-            formula={d.cpc.formula}
-          />
-          <MetricCard
-            label={d.cpm.label}
-            value={fmtCurrency(metrics.avg_cpm)}
-            description={d.cpm.description}
-            formula={d.cpm.formula}
-          />
+          <MetricCard label={d.total_spend.label} value={fmtCurrency(metrics.total_spend)} description={d.total_spend.description} size="large" />
+          <MetricCard label={d.daily_spend.label} value={fmtCurrency(metrics.daily.length > 0 ? metrics.total_spend / metrics.daily.length : 0)} description={d.daily_spend.description} formula={d.daily_spend.formula} />
+          <MetricCard label={d.cpc.label} value={fmtCurrency(metrics.avg_cpc)} description={d.cpc.description} formula={d.cpc.formula} />
+          <MetricCard label={d.cpm.label} value={fmtCurrency(metrics.avg_cpm)} description={d.cpm.description} formula={d.cpm.formula} />
         </div>
       </div>
 
-      {/* ── Section 2: Reach & Awareness ──────────────── */}
       <div className="mb-8">
-        <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3">
-          Reach & Awareness
-        </h2>
+        <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3">Reach & Awareness</h2>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <MetricCard
-            label={d.impressions.label}
-            value={fmt(metrics.total_impressions)}
-            description={d.impressions.description}
-          />
-          <MetricCard
-            label={d.reach.label}
-            value={fmt(metrics.total_reach)}
-            description={d.reach.description}
-          />
-          <MetricCard
-            label={d.frequency.label}
-            value={
-              metrics.total_reach > 0
-                ? fmt(metrics.total_impressions / metrics.total_reach, 1)
-                : "—"
-            }
-            description={d.frequency.description}
-            formula={d.frequency.formula}
-          />
-          <MetricCard
-            label={d.video_views.label}
-            value={fmt(metrics.total_video_views)}
-            description={d.video_views.description}
-          />
+          <MetricCard label={d.impressions.label} value={fmt(metrics.total_impressions)} description={d.impressions.description} />
+          <MetricCard label={d.reach.label} value={fmt(metrics.total_reach)} description={d.reach.description} />
+          <MetricCard label={d.frequency.label} value={metrics.total_reach > 0 ? fmt(metrics.total_impressions / metrics.total_reach, 1) : "—"} description={d.frequency.description} formula={d.frequency.formula} />
+          <MetricCard label={d.video_views.label} value={fmt(metrics.total_video_views)} description={d.video_views.description} />
         </div>
       </div>
 
-      {/* ── Section 3: Engagement & Clicks ────────────── */}
       <div className="mb-8">
-        <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3">
-          Engagement & Clicks
-        </h2>
+        <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3">Conversions & Results</h2>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <MetricCard
-            label={d.clicks.label}
-            value={fmt(metrics.total_clicks)}
-            description={d.clicks.description}
-          />
-          <MetricCard
-            label={d.link_clicks.label}
-            value={fmt(metrics.total_link_clicks)}
-            description={d.link_clicks.description}
-          />
-          <MetricCard
-            label={d.ctr.label}
-            value={`${fmt(metrics.avg_ctr, 2)}%`}
-            description={d.ctr.description}
-            formula={d.ctr.formula}
-          />
-          <MetricCard
-            label={d.cpc.label}
-            value={fmtCurrency(metrics.avg_cpc)}
-            description={d.cpc.description}
-            formula={d.cpc.formula}
-          />
+          <MetricCard label={d.conversions.label} value={fmt(metrics.total_conversions)} description={d.conversions.description} size="large" />
+          <MetricCard label={d.cost_per_conversion.label} value={metrics.avg_cost_per_conversion ? fmtCurrency(metrics.avg_cost_per_conversion) : "—"} description={d.cost_per_conversion.description} formula={d.cost_per_conversion.formula} />
+          <MetricCard label={d.leads.label} value={fmt(metrics.total_leads)} description={d.leads.description} />
+          <MetricCard label={d.roas.label} value={metrics.avg_roas ? `${fmt(metrics.avg_roas, 1)}x` : "—"} description={d.roas.description} formula={d.roas.formula} />
         </div>
       </div>
 
-      {/* ── Section 4: Conversions & Results ──────────── */}
       <div className="mb-8">
-        <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3">
-          Conversions & Results
-        </h2>
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <MetricCard
-            label={d.conversions.label}
-            value={fmt(metrics.total_conversions)}
-            description={d.conversions.description}
-            size="large"
-          />
-          <MetricCard
-            label={d.cost_per_conversion.label}
-            value={
-              metrics.avg_cost_per_conversion
-                ? fmtCurrency(metrics.avg_cost_per_conversion)
-                : "—"
-            }
-            description={d.cost_per_conversion.description}
-            formula={d.cost_per_conversion.formula}
-          />
-          <MetricCard
-            label={d.leads.label}
-            value={fmt(metrics.total_leads)}
-            description={d.leads.description}
-          />
-          <MetricCard
-            label={d.roas.label}
-            value={metrics.avg_roas ? `${fmt(metrics.avg_roas, 1)}x` : "—"}
-            description={d.roas.description}
-            formula={d.roas.formula}
-          />
-        </div>
+        <CampaignChartFilter metrics={metrics.daily} campaigns={campaigns.map((c) => ({ id: c.id, name: c.name }))} />
       </div>
 
-      {/* ── Charts with campaign filter ─────────────── */}
-      <div className="mb-8">
-        <CampaignChartFilter
-          metrics={metrics.daily}
-          campaigns={campaigns.map((c) => ({ id: c.id, name: c.name }))}
-        />
-      </div>
-
-      {/* ── Active Projects ───────────────────────────── */}
       <div>
-        <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3">
-          Your Projects
-        </h2>
+        <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3">Your Projects</h2>
         {campaigns.length === 0 ? (
           <div className="rounded-xl border border-gray-200 bg-white shadow-sm p-8 text-center text-gray-400 text-sm">
             No active projects yet
@@ -359,33 +201,21 @@ export default async function DashboardOverview({
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {campaigns.map((campaign) => (
-              <Link
-                key={campaign.id}
-                href={`/dashboard/campaigns/${campaign.id}`}
-                className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm hover:border-red-200 hover:shadow-md transition-all"
-              >
+              <Link key={campaign.id} href={`/dashboard/campaigns/${campaign.id}`} className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm hover:border-red-200 hover:shadow-md transition-all">
                 <div className="flex items-center justify-between mb-2">
-                  <h3 className="font-bold text-gray-900 text-sm">
-                    {campaign.name}
-                  </h3>
+                  <h3 className="font-bold text-gray-900 text-sm">{campaign.name}</h3>
                   <Badge variant={campaign.status}>{campaign.status}</Badge>
                 </div>
                 <div className="flex flex-wrap gap-1 mb-3">
                   {(campaign.services ?? []).map((s: CampaignService) => (
-                    <span
-                      key={s}
-                      className="inline-block rounded-full bg-gray-100 px-2 py-0.5 text-[10px] text-gray-500"
-                    >
+                    <span key={s} className="inline-block rounded-full bg-gray-100 px-2 py-0.5 text-[10px] text-gray-500">
                       {SERVICE_LABELS[s] ?? s}
                     </span>
                   ))}
                 </div>
                 <div className="text-xs text-gray-500">
-                  {campaign.monthly_cost
-                    ? `$${Number(campaign.monthly_cost).toLocaleString()}/mo`
-                    : "—"}
-                  {campaign.start_date &&
-                    ` · Started ${new Date(campaign.start_date).toLocaleDateString()}`}
+                  {campaign.monthly_cost ? `$${Number(campaign.monthly_cost).toLocaleString()}/mo` : "—"}
+                  {campaign.start_date && ` · Started ${new Date(campaign.start_date).toLocaleDateString()}`}
                 </div>
               </Link>
             ))}
@@ -393,5 +223,28 @@ export default async function DashboardOverview({
         )}
       </div>
     </div>
+  );
+}
+
+// Inline async mini-component for admin quick stats
+// (keeps the server component fast — no extra round-trips)
+async function AdminStatsMini() {
+  const supabase = await createSupabaseServer();
+  const [
+    { count: clientCount },
+    { count: leadCount },
+    { count: newLeadCount },
+  ] = await Promise.all([
+    supabase.from("clients").select("*", { count: "exact", head: true }),
+    supabase.from("agency_leads").select("*", { count: "exact", head: true }),
+    supabase.from("agency_leads").select("*", { count: "exact", head: true }).eq("status", "new"),
+  ]);
+
+  return (
+    <>
+      <StatCard label="Total Clients" value={clientCount ?? 0} />
+      <StatCard label="Total Leads" value={leadCount ?? 0} />
+      <StatCard label="New Leads" value={newLeadCount ?? 0} />
+    </>
   );
 }

@@ -173,63 +173,113 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    // Fetch pixel event stats from Meta API
-    // This returns event counts by source (browser vs server)
-    const statsUrl = `${META_GRAPH_URL}/${pixelId}/stats?aggregation=event_name&start_time=${Math.floor(Date.now() / 1000) - 7 * 86400}&end_time=${Math.floor(Date.now() / 1000)}&access_token=${encodeURIComponent(accessToken)}`;
+    const now = Math.floor(Date.now() / 1000);
+    // Look back 180 days (6 months) to catch all historical pixel activity
+    const SIX_MONTHS = 180 * 86400;
+    const since = now - SIX_MONTHS;
 
-    const statsRes = await fetch(statsUrl);
-
-    // Also fetch the overall pixel diagnostic info
-    const diagUrl = `${META_GRAPH_URL}/${pixelId}?fields=id,name,code,last_fired_time,data_use_setting,enable_auto_assign_to_accounts&access_token=${encodeURIComponent(accessToken)}`;
+    // Fetch pixel diagnostic info (name, last_fired, etc.)
+    const diagUrl = `${META_GRAPH_URL}/${pixelId}?fields=id,name,code,last_fired_time,data_use_setting,owner_business&access_token=${encodeURIComponent(accessToken)}`;
     const diagRes = await fetch(diagUrl);
+    let diagInfo: Record<string, unknown> = {};
+    let diagError: string | null = null;
+    if (diagRes.ok) {
+      diagInfo = await diagRes.json() as Record<string, unknown>;
+    } else {
+      const diagErrBody = await diagRes.json().catch(() => ({})) as Record<string, unknown>;
+      diagError = (diagErrBody?.error as Record<string, unknown>)?.message as string ?? `HTTP ${diagRes.status}`;
+    }
+
+    // Primary: fetch event stats with 180-day window, split by source (browser vs CAPI)
+    const statsUrl =
+      `${META_GRAPH_URL}/${pixelId}/stats` +
+      `?aggregation=event_source_url` +
+      `&start_time=${since}` +
+      `&end_time=${now}` +
+      `&access_token=${encodeURIComponent(accessToken)}`;
+
+    // Also try the event_name aggregation to get raw counts
+    const statsNameUrl =
+      `${META_GRAPH_URL}/${pixelId}/stats` +
+      `?aggregation=event_name` +
+      `&start_time=${since}` +
+      `&end_time=${now}` +
+      `&access_token=${encodeURIComponent(accessToken)}`;
+
+    const [statsRes, statsNameRes] = await Promise.all([
+      fetch(statsUrl),
+      fetch(statsNameUrl),
+    ]);
 
     const events: Record<string, { browser: number; server: number }> = {};
+    let statsError: string | null = null;
+    let rawStatsData: unknown = null;
 
-    if (statsRes.ok) {
-      const statsData = await statsRes.json() as {
+    // Parse event_name aggregation (most reliable for counts)
+    if (statsNameRes.ok) {
+      const statsData = await statsNameRes.json() as {
         data?: Array<{
           event_name: string;
-          count: number;
-          custom_data_fields_present?: string[];
+          count?: number;
+          browser_event_count?: number;
+          server_event_count?: number;
           source?: string;
         }>;
       };
-
+      rawStatsData = statsData;
       if (statsData.data) {
         for (const item of statsData.data) {
           if (!events[item.event_name]) events[item.event_name] = { browser: 0, server: 0 };
-          // Meta's stats API groups by event_name; use 'source' field if available
-          const src = (item.source || "browser").toLowerCase();
-          if (src.includes("server") || src.includes("capi")) {
-            events[item.event_name].server += item.count;
+          // Meta returns browser_event_count and server_event_count if dedup is set up
+          if (typeof item.browser_event_count === "number" || typeof item.server_event_count === "number") {
+            events[item.event_name].browser += item.browser_event_count ?? 0;
+            events[item.event_name].server += item.server_event_count ?? 0;
           } else {
-            events[item.event_name].browser += item.count;
+            // Fall back: assume browser-only unless source says otherwise
+            const src = (item.source ?? "browser").toLowerCase();
+            const count = item.count ?? 0;
+            if (src.includes("server") || src.includes("capi")) {
+              events[item.event_name].server += count;
+            } else {
+              events[item.event_name].browser += count;
+            }
           }
         }
       }
-    }
-
-    let diagInfo: Record<string, unknown> = {};
-    if (diagRes.ok) {
-      diagInfo = await diagRes.json() as Record<string, unknown>;
+    } else {
+      const errBody = await statsNameRes.json().catch(() => ({})) as Record<string, unknown>;
+      statsError = (errBody?.error as Record<string, unknown>)?.message as string ?? `HTTP ${statsNameRes.status}`;
     }
 
     const { score, breakdown, recommendations } = computeCapiScore(events);
 
+    // Build a human-readable note about what we found / didn't find
+    const totalEvents = Object.values(events).reduce((sum, e) => sum + e.browser + e.server, 0);
+    let apiNote: string | null = null;
+    if (diagError) {
+      apiNote = `⚠️ Could not read pixel info: ${diagError}. The access token may not have permission for this pixel (it may belong to ShiftArcade's corporate account). Ask the website owner to add your ad account as a partner in their Business Manager.`;
+    } else if (statsError) {
+      apiNote = `⚠️ Could not fetch pixel stats: ${statsError}. The access token may need ads_read + pixel permissions for this pixel.`;
+    } else if (totalEvents === 0) {
+      apiNote = `No events found in the last 180 days on pixel ${pixelId}. Either the pixel is not firing, or this token does not have permission to read its stats. Verify in Meta Events Manager that the pixel is active.`;
+    }
+
     return NextResponse.json({
       data: {
         pixel_id: pixelId,
-        pixel_name: diagInfo.name ?? "Meta Pixel",
+        pixel_name: diagInfo.name ?? "Shift Arcade Corporate",
         last_fired: diagInfo.last_fired_time ?? null,
+        owner_business: (diagInfo.owner_business as Record<string, unknown>)?.name ?? null,
         score,
         score_label: score >= 9 ? "Excellent" : score >= 7 ? "Good" : score >= 5 ? "Fair" : score >= 3 ? "Weak" : "Critical",
         breakdown,
         recommendations,
         raw_events: events,
-        period: "last_7_days",
-        api_note: !statsRes.ok
-          ? "Could not fetch live pixel stats (token may need ads_read permission). Showing estimated data."
-          : null,
+        period: "last_180_days",
+        total_events_found: totalEvents,
+        api_note: apiNote,
+        diag_error: diagError,
+        stats_error: statsError,
       },
     });
   } catch (err) {

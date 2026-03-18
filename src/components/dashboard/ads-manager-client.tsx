@@ -233,6 +233,12 @@ interface CapiHealthData {
   pixel_id?: string | null;
   pixel_name?: string;
   last_fired?: string | null;
+  owner_business?: string | null;
+  period?: string;
+  total_events_found?: number;
+  api_note?: string | null;
+  diag_error?: string | null;
+  stats_error?: string | null;
   events?: Array<{ name: string; browser: boolean; server: boolean }>;
   breakdown?: Array<{ event: string; browser: number; server: number; redundancy: number; status: string }>;
   recommendations: string[];
@@ -312,6 +318,20 @@ function CapiStrengthWidget({ token, clientId }: { token: string; clientId: stri
           {noPixel && (
             <p className="text-xs text-orange-600 mt-1.5 bg-orange-50 rounded px-2 py-1">
               ⚠️ No Pixel ID configured. Run the Supabase SQL to add pixel ID <strong>1165380555705221</strong>.
+            </p>
+          )}
+
+          {/* API permission / diagnostic note */}
+          {!noPixel && health.api_note && (
+            <p className="text-xs text-amber-700 mt-1.5 bg-amber-50 border border-amber-200 rounded px-2 py-1.5 leading-relaxed">
+              {health.api_note}
+            </p>
+          )}
+
+          {/* Period label */}
+          {!noPixel && !health.api_note && (
+            <p className="text-[10px] text-gray-400 mt-1">
+              Scanning last 180 days · {health.total_events_found ?? 0} events found
             </p>
           )}
 
@@ -1119,17 +1139,18 @@ function VersionFooter() {
 // Main component
 // ---------------------------------------------------------------------------
 
-export default function AdsManagerClient() {
+export default function AdsManagerClient({ initialClientId }: { initialClientId?: string } = {}) {
   const { session } = useAuth();
   const token = session?.access_token ?? null;
 
   const [activeTab, setActiveTab] = useState<Tab>("campaigns");
-  const [clientId, setClientId] = useState<string | null>(null);
+  const [clientId, setClientId] = useState<string | null>(initialClientId ?? null);
   const [metaAdAccountId, setMetaAdAccountId] = useState<string | null>(null);
   const [launchNotifications, setLaunchNotifications] = useState<string[]>([]);
   const [pixelHealth, setPixelHealth] = useState<CapiHealthData | null>(null);
 
   // Get clientId from session / profile, then fetch meta_ad_account_id.
+  // If initialClientId is provided (e.g. from the agency overview), skip profile lookup.
   // Admin fallback: if profile has no client_id, auto-pick the first client.
   useEffect(() => {
     if (!session?.user) return;
@@ -1165,6 +1186,12 @@ export default function AdsManagerClient() {
       }
     };
 
+    // If initialClientId was passed (agency overview → client page), use it directly
+    if (initialClientId) {
+      resolveClientId(initialClientId);
+      return;
+    }
+
     fetch(`${supabaseUrl}/rest/v1/profiles?id=eq.${session.user.id}&select=client_id,role`, { headers })
       .then((r) => r.json())
       .then((data: unknown) => {
@@ -1184,7 +1211,7 @@ export default function AdsManagerClient() {
         }
       })
       .catch(console.error);
-  }, [session, token]);
+  }, [session, token, initialClientId]);
 
   const {
     data: campaigns,

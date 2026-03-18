@@ -15,12 +15,14 @@ interface TabItem {
 
 const adminTabs: TabItem[] = [
   { label: "Overview", href: "/dashboard" },
+    { label: "Ads Manager", href: "/dashboard/ads" },
   { label: "CRM", href: "/dashboard/leads" },
   { label: "Clients", href: "/dashboard/campaigns" },
 ];
 
 const clientTabs: TabItem[] = [
   { label: "Overview", href: "/dashboard" },
+    { label: "Ads Manager", href: "/dashboard/ads" },
   { label: "Projects", href: "/dashboard/campaigns" },
 ];
 

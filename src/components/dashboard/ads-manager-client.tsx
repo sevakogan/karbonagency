@@ -1221,6 +1221,26 @@ export default function AdsManagerClient() {
               <ErrorAlert message={campaignsError} onDismiss={() => {}} />
             )}
 
+            {/* Summary cards + CAPI — TOP of campaigns tab */}
+            <div className="grid grid-cols-4 gap-4">
+              <div className="bg-white border border-gray-200 rounded-xl p-4">
+                <div className="text-xs text-gray-400 mb-1">Active Campaigns</div>
+                <div className="text-2xl font-bold text-green-600">{activeCampaigns.length}</div>
+                <div className="text-xs text-gray-400">${totalDailyBudget.toFixed(2)}/day spend</div>
+              </div>
+              <div className="bg-white border border-gray-200 rounded-xl p-4">
+                <div className="text-xs text-gray-400 mb-1">Paused Campaigns</div>
+                <div className="text-2xl font-bold text-yellow-600">{pausedCampaigns.length}</div>
+                <div className="text-xs text-gray-400">No spend</div>
+              </div>
+              <div className="bg-white border border-gray-200 rounded-xl p-4">
+                <div className="text-xs text-gray-400 mb-1">Total Campaigns</div>
+                <div className="text-2xl font-bold text-gray-700">{campaigns?.length ?? 0}</div>
+                <div className="text-xs text-gray-400">Across all statuses</div>
+              </div>
+              {clientId && <CapiStrengthWidget token={token} clientId={clientId} />}
+            </div>
+
             <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
               <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
                 <h2 className="font-semibold text-sm text-gray-900">
@@ -1273,34 +1293,6 @@ export default function AdsManagerClient() {
                 </table>
               )}
             </div>
-
-            {/* Summary cards + CAPI */}
-            {campaigns && campaigns.length > 0 && (
-              <div className="grid grid-cols-4 gap-4">
-                <div className="bg-white border border-gray-200 rounded-xl p-4">
-                  <div className="text-xs text-gray-400 mb-1">Active Campaigns</div>
-                  <div className="text-2xl font-bold text-green-600">{activeCampaigns.length}</div>
-                  <div className="text-xs text-gray-400">${totalDailyBudget.toFixed(2)}/day spend</div>
-                </div>
-                <div className="bg-white border border-gray-200 rounded-xl p-4">
-                  <div className="text-xs text-gray-400 mb-1">Paused Campaigns</div>
-                  <div className="text-2xl font-bold text-yellow-600">{pausedCampaigns.length}</div>
-                  <div className="text-xs text-gray-400">No spend</div>
-                </div>
-                <div className="bg-white border border-gray-200 rounded-xl p-4">
-                  <div className="text-xs text-gray-400 mb-1">Total Campaigns</div>
-                  <div className="text-2xl font-bold text-gray-700">{campaigns.length}</div>
-                  <div className="text-xs text-gray-400">Across all statuses</div>
-                </div>
-                {clientId && <CapiStrengthWidget token={token} clientId={clientId} />}
-              </div>
-            )}
-            {/* CAPI widget even when no campaigns yet */}
-            {(!campaigns || campaigns.length === 0) && clientId && (
-              <div className="grid grid-cols-1 max-w-sm">
-                <CapiStrengthWidget token={token} clientId={clientId} />
-              </div>
-            )}
           </div>
         )}
 

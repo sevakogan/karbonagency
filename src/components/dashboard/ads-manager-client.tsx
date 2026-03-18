@@ -323,6 +323,58 @@ function CapiStrengthWidget({ token, clientId }: { token: string; clientId: stri
 }
 
 // ---------------------------------------------------------------------------
+// Per-campaign CAPI event mapping
+// ---------------------------------------------------------------------------
+
+function objectiveToEvent(objective: string): string {
+  const map: Record<string, string> = {
+    OUTCOME_SALES: "Purchase",
+    OUTCOME_LEADS: "Lead",
+    OUTCOME_TRAFFIC: "PageView",
+    OUTCOME_AWARENESS: "PageView",
+    OUTCOME_ENGAGEMENT: "ViewContent",
+    OUTCOME_APP_PROMOTION: "Purchase",
+  };
+  return map[objective] ?? "Purchase";
+}
+
+function CampaignCapiBadge({
+  objective,
+  pixelHealth,
+}: {
+  objective: string;
+  pixelHealth: CapiHealthData | null;
+}) {
+  if (!pixelHealth) return null;
+  const eventName = objectiveToEvent(objective);
+  const ev = pixelHealth.events.find((e) => e.name === eventName);
+  if (!ev) return null;
+
+  const hasServer = ev.server;
+  const hasBrowser = ev.browser;
+
+  if (hasServer && hasBrowser) {
+    return (
+      <span className="ml-2 inline-flex items-center gap-0.5 text-xs bg-green-50 text-green-700 border border-green-200 px-1.5 py-0.5 rounded" title={`CAPI: ${eventName} tracked browser + server`}>
+        📡 CAPI ✅
+      </span>
+    );
+  }
+  if (hasBrowser && !hasServer) {
+    return (
+      <span className="ml-2 inline-flex items-center gap-0.5 text-xs bg-orange-50 text-orange-700 border border-orange-200 px-1.5 py-0.5 rounded" title={`CAPI: ${eventName} browser only — add server-side`}>
+        📡 Browser only ⚠️
+      </span>
+    );
+  }
+  return (
+    <span className="ml-2 inline-flex items-center gap-0.5 text-xs bg-red-50 text-red-700 border border-red-200 px-1.5 py-0.5 rounded" title={`CAPI: ${eventName} not tracked`}>
+      📡 No tracking ❌
+    </span>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Campaign Row
 // ---------------------------------------------------------------------------
 
@@ -331,11 +383,13 @@ function CampaignRow({
   token,
   clientId,
   onToggle,
+  pixelHealth,
 }: {
   campaign: MetaCampaign;
   token: string;
   clientId: string;
   onToggle: () => void;
+  pixelHealth: CapiHealthData | null;
 }) {
   const [toggling, setToggling] = useState(false);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
@@ -377,8 +431,11 @@ function CampaignRow({
   return (
     <tr className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
       <td className="py-3 px-4">
-        <div className="font-medium text-sm text-gray-900 max-w-xs truncate" title={campaign.name}>
-          {campaign.name}
+        <div className="flex items-center gap-1 flex-wrap">
+          <div className="font-medium text-sm text-gray-900 max-w-xs truncate" title={campaign.name}>
+            {campaign.name}
+          </div>
+          <CampaignCapiBadge objective={campaign.objective} pixelHealth={pixelHealth} />
         </div>
         <div className="text-xs text-gray-400 mt-0.5">{campaign.id}</div>
         <LearningPhaseBar effectiveStatus={campaign.effective_status} />
@@ -1000,6 +1057,7 @@ export default function AdsManagerClient() {
   const [clientId, setClientId] = useState<string | null>(null);
   const [metaAdAccountId, setMetaAdAccountId] = useState<string | null>(null);
   const [launchNotifications, setLaunchNotifications] = useState<string[]>([]);
+  const [pixelHealth, setPixelHealth] = useState<CapiHealthData | null>(null);
 
   // Get clientId from session / profile, then fetch meta_ad_account_id.
   // Admin fallback: if profile has no client_id, auto-pick the first client.
@@ -1024,6 +1082,17 @@ export default function AdsManagerClient() {
           if (accountId) setMetaAdAccountId(accountId);
         })
         .catch(console.error);
+      // Fetch pixel health for per-campaign CAPI badges
+      if (token) {
+        fetch(`/api/meta/pixel-health?client_id=${cid}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        })
+          .then((r) => r.json())
+          .then((json: { data?: CapiHealthData }) => {
+            if (json.data) setPixelHealth(json.data);
+          })
+          .catch(console.error);
+      }
     };
 
     fetch(`${supabaseUrl}/rest/v1/profiles?id=eq.${session.user.id}&select=client_id,role`, { headers })
@@ -1197,6 +1266,7 @@ export default function AdsManagerClient() {
                         token={token}
                         clientId={clientId!}
                         onToggle={refetchCampaigns}
+                        pixelHealth={pixelHealth}
                       />
                     ))}
                   </tbody>

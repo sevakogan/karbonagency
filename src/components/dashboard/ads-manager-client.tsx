@@ -1210,7 +1210,7 @@ function GuideTab() {
 // Version Footer
 // ---------------------------------------------------------------------------
 
-const BUILD_VERSION = "v2.9b";
+const BUILD_VERSION = "v3.0";
 const BUILD_DATE = "Mar 18, 2026";
 
 function VersionFooter() {
@@ -1249,7 +1249,14 @@ export default function AdsManagerClient({ initialClientId }: { initialClientId?
   const [launchNotifications, setLaunchNotifications] = useState<string[]>([]);
   const [pixelHealth, setPixelHealth] = useState<CapiHealthData | null>(null);
   // Campaign detail panel
-  const [detailCampaign, setDetailCampaign] = useState<{ id: string; name: string } | null>(null);
+  const [detailCampaign, setDetailCampaign] = useState<{
+    id: string;
+    name: string;
+    status: string;
+    objective?: string;
+    daily_budget?: string;
+    bid_strategy?: string;
+  } | null>(null);
   // Draft editor
   const [editingDraft, setEditingDraft] = useState<ShiftArcadeDraftCampaign | null>(null);
 
@@ -1494,7 +1501,14 @@ export default function AdsManagerClient({ initialClientId }: { initialClientId?
                         clientId={clientId!}
                         onToggle={refetchCampaigns}
                         pixelHealth={pixelHealth}
-                        onViewDetail={() => setDetailCampaign({ id: campaign.id, name: campaign.name })}
+                        onViewDetail={() => setDetailCampaign({
+                          id: campaign.id,
+                          name: campaign.name,
+                          status: campaign.effective_status ?? campaign.status,
+                          objective: campaign.objective,
+                          daily_budget: campaign.daily_budget,
+                          bid_strategy: campaign.bid_strategy,
+                        })}
                       />
                     ))}
                   </tbody>
@@ -1509,7 +1523,7 @@ export default function AdsManagerClient({ initialClientId }: { initialClientId?
           <CampaignAnalyticsTab
             token={token}
             clientId={clientId}
-            onCampaignClick={(id, name) => setDetailCampaign({ id, name })}
+            onCampaignClick={(id, name) => setDetailCampaign({ id, name, status: "PAUSED" })}
           />
         )}
 
@@ -1641,6 +1655,10 @@ export default function AdsManagerClient({ initialClientId }: { initialClientId?
           clientId={clientId}
           campaignId={detailCampaign.id}
           campaignName={detailCampaign.name}
+          campaignStatus={detailCampaign.status}
+          campaignObjective={detailCampaign.objective}
+          campaignBudgetDaily={detailCampaign.daily_budget}
+          campaignBidStrategy={detailCampaign.bid_strategy}
           onClose={() => setDetailCampaign(null)}
         />
       )}

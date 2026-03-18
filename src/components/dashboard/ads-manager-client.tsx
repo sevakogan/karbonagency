@@ -12,12 +12,15 @@ import type {
 import AdPreviewTab from "@/components/dashboard/ad-preview-tab";
 import { AiAssistantTab, FloatingChatBubble } from "@/components/dashboard/meta-chat-widget";
 import CompetitorsTab from "@/components/dashboard/competitors-tab";
+import CampaignAnalyticsTab from "@/components/dashboard/campaign-analytics-tab";
+import CampaignDetailPanel from "@/components/dashboard/campaign-detail-panel";
+import DraftEditor from "@/components/dashboard/draft-editor";
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
-type Tab = "campaigns" | "drafts" | "audiences" | "adsets" | "guide" | "previews" | "ai_assistant" | "competitors";
+type Tab = "campaigns" | "analytics" | "drafts" | "audiences" | "adsets" | "guide" | "previews" | "ai_assistant" | "competitors";
 
 interface ApiError {
   error: string;
@@ -445,12 +448,14 @@ function CampaignRow({
   clientId,
   onToggle,
   pixelHealth,
+  onViewDetail,
 }: {
   campaign: MetaCampaign;
   token: string;
   clientId: string;
   onToggle: () => void;
   pixelHealth: CapiHealthData | null;
+  onViewDetail?: () => void;
 }) {
   const [toggling, setToggling] = useState(false);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
@@ -521,20 +526,31 @@ function CampaignRow({
         {campaign.created_time ? new Date(campaign.created_time).toLocaleDateString() : "—"}
       </td>
       <td className="py-3 px-4">
-        <button
-          onClick={handleToggle}
-          disabled={toggling || campaign.status === "DELETED"}
-          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 ${
-            isActive ? "bg-green-500" : "bg-gray-300"
-          }`}
-          title={isActive ? "Click to pause" : "Click to activate"}
-        >
-          <span
-            className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
-              isActive ? "translate-x-6" : "translate-x-1"
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleToggle}
+            disabled={toggling || campaign.status === "DELETED"}
+            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 ${
+              isActive ? "bg-green-500" : "bg-gray-300"
             }`}
-          />
-        </button>
+            title={isActive ? "Click to pause" : "Click to activate"}
+          >
+            <span
+              className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
+                isActive ? "translate-x-6" : "translate-x-1"
+              }`}
+            />
+          </button>
+          {onViewDetail && (
+            <button
+              onClick={onViewDetail}
+              className="text-xs text-blue-600 hover:text-blue-800 font-medium hover:underline whitespace-nowrap"
+              title="View ad sets, creatives & details"
+            >
+              Details →
+            </button>
+          )}
+        </div>
       </td>
     </tr>
   );
@@ -549,11 +565,13 @@ function DraftCard({
   token,
   clientId,
   onLaunch,
+  onEdit,
 }: {
   draft: ShiftArcadeDraftCampaign;
   token: string;
   clientId: string;
   onLaunch: (campaignId: string, adSetId: string) => void;
+  onEdit?: () => void;
 }) {
   const [launching, setLaunching] = useState(false);
   const [launched, setLaunched] = useState(false);
@@ -696,10 +714,18 @@ function DraftCard({
           </div>
         )}
 
-        {/* Launch button */}
-        <div className="mt-4">
+        {/* Action buttons */}
+        <div className="mt-4 flex gap-2">
+          {onEdit && (
+            <button
+              onClick={onEdit}
+              className="flex-shrink-0 py-2 px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium rounded-lg transition-colors flex items-center justify-center gap-1.5"
+            >
+              ✏️ Edit
+            </button>
+          )}
           {launched ? (
-            <div className="flex items-center gap-2 text-green-600 text-sm font-medium">
+            <div className="flex-1 flex items-center gap-2 text-green-600 text-sm font-medium">
               <span>✅</span>
               <span>Pushed to Meta as PAUSED draft! Check Campaigns tab.</span>
             </div>
@@ -707,7 +733,7 @@ function DraftCard({
             <button
               onClick={handleLaunchDraft}
               disabled={launching}
-              className="w-full py-2 px-4 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white text-sm font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
+              className="flex-1 py-2 px-4 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white text-sm font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
             >
               {launching ? (
                 <>
@@ -1148,6 +1174,10 @@ export default function AdsManagerClient({ initialClientId }: { initialClientId?
   const [metaAdAccountId, setMetaAdAccountId] = useState<string | null>(null);
   const [launchNotifications, setLaunchNotifications] = useState<string[]>([]);
   const [pixelHealth, setPixelHealth] = useState<CapiHealthData | null>(null);
+  // Campaign detail panel
+  const [detailCampaign, setDetailCampaign] = useState<{ id: string; name: string } | null>(null);
+  // Draft editor
+  const [editingDraft, setEditingDraft] = useState<ShiftArcadeDraftCampaign | null>(null);
 
   // Get clientId from session / profile, then fetch meta_ad_account_id.
   // If initialClientId is provided (e.g. from the agency overview), skip profile lookup.
@@ -1286,6 +1316,9 @@ export default function AdsManagerClient({ initialClientId }: { initialClientId?
         <TabButton active={activeTab === "campaigns"} onClick={() => setActiveTab("campaigns")}>
           📊 Campaigns {campaigns ? `(${campaigns.length})` : ""}
         </TabButton>
+        <TabButton active={activeTab === "analytics"} onClick={() => setActiveTab("analytics")}>
+          📈 Analytics
+        </TabButton>
         <TabButton active={activeTab === "adsets"} onClick={() => setActiveTab("adsets")}>
           🎯 Ad Sets {adSets ? `(${adSets.length})` : ""}
         </TabButton>
@@ -1372,7 +1405,7 @@ export default function AdsManagerClient({ initialClientId }: { initialClientId?
                       <th className="text-left px-4 py-2.5 text-xs font-medium text-gray-500">Objective</th>
                       <th className="text-left px-4 py-2.5 text-xs font-medium text-gray-500">Budget</th>
                       <th className="text-left px-4 py-2.5 text-xs font-medium text-gray-500">Created</th>
-                      <th className="text-left px-4 py-2.5 text-xs font-medium text-gray-500">Toggle</th>
+                      <th className="text-left px-4 py-2.5 text-xs font-medium text-gray-500">Toggle / Details</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1384,6 +1417,7 @@ export default function AdsManagerClient({ initialClientId }: { initialClientId?
                         clientId={clientId!}
                         onToggle={refetchCampaigns}
                         pixelHealth={pixelHealth}
+                        onViewDetail={() => setDetailCampaign({ id: campaign.id, name: campaign.name })}
                       />
                     ))}
                   </tbody>
@@ -1391,6 +1425,15 @@ export default function AdsManagerClient({ initialClientId }: { initialClientId?
               )}
             </div>
           </div>
+        )}
+
+        {/* ANALYTICS TAB */}
+        {activeTab === "analytics" && token && clientId && (
+          <CampaignAnalyticsTab
+            token={token}
+            clientId={clientId}
+            onCampaignClick={(id, name) => setDetailCampaign({ id, name })}
+          />
         )}
 
         {/* AD SETS TAB */}
@@ -1468,6 +1511,7 @@ export default function AdsManagerClient({ initialClientId }: { initialClientId?
                     draft={draft}
                     token={token}
                     clientId={clientId}
+                    onEdit={() => setEditingDraft(draft)}
                     onLaunch={(cid, asid) => {
                       setLaunchNotifications((prev) => [
                         ...prev,
@@ -1511,6 +1555,27 @@ export default function AdsManagerClient({ initialClientId }: { initialClientId?
       {/* Floating AI chat bubble (always visible) */}
       {token && clientId && (
         <FloatingChatBubble token={token} clientId={clientId} />
+      )}
+
+      {/* Campaign Detail Panel modal */}
+      {detailCampaign && token && clientId && (
+        <CampaignDetailPanel
+          token={token}
+          clientId={clientId}
+          campaignId={detailCampaign.id}
+          campaignName={detailCampaign.name}
+          onClose={() => setDetailCampaign(null)}
+        />
+      )}
+
+      {/* Draft Editor modal */}
+      {editingDraft && token && clientId && (
+        <DraftEditor
+          draft={editingDraft}
+          token={token}
+          clientId={clientId}
+          onClose={() => setEditingDraft(null)}
+        />
       )}
 
       {/* Version footer */}

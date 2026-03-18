@@ -1210,7 +1210,7 @@ function GuideTab() {
 // Version Footer
 // ---------------------------------------------------------------------------
 
-const BUILD_VERSION = "v2.6";
+const BUILD_VERSION = "v2.7";
 const BUILD_DATE = "Mar 18, 2026";
 
 function VersionFooter() {
@@ -1347,15 +1347,8 @@ export default function AdsManagerClient({ initialClientId }: { initialClientId?
 
   return (
     <div className="space-y-5">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Meta Ads Manager</h1>
-          <p className="text-sm text-gray-500 mt-0.5">
-            Full campaign management · Read & write · Powered by Meta Marketing API v25.0
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
+      {/* Header — stats + Open Meta only (title lives in page breadcrumb) */}
+      <div className="flex items-center justify-end gap-3">
           {campaigns && (
             <div className="text-right">
               <div className="text-sm font-semibold text-gray-900">{activeCampaigns.length} active / {pausedCampaigns.length} paused</div>
@@ -1374,7 +1367,7 @@ export default function AdsManagerClient({ initialClientId }: { initialClientId?
           >
             Open Meta ↗
           </a>
-        </div>
+
       </div>
 
       {/* Launch notifications */}

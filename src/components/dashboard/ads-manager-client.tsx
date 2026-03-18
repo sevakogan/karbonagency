@@ -227,9 +227,14 @@ function LearningPhaseBar({ effectiveStatus }: { effectiveStatus?: string }) {
 
 interface CapiHealthData {
   score: number;
-  maxScore: number;
-  label: string;
-  events: Array<{ name: string; browser: boolean; server: boolean }>;
+  maxScore?: number;
+  label?: string;
+  score_label?: string;
+  pixel_id?: string | null;
+  pixel_name?: string;
+  last_fired?: string | null;
+  events?: Array<{ name: string; browser: boolean; server: boolean }>;
+  breakdown?: Array<{ event: string; browser: number; server: number; redundancy: number; status: string }>;
   recommendations: string[];
 }
 
@@ -256,6 +261,16 @@ function CapiStrengthWidget({ token, clientId }: { token: string; clientId: stri
   const pct = (score / maxScore) * 100;
   const scoreColor = score >= 8 ? "text-green-600" : score >= 5 ? "text-yellow-600" : "text-red-600";
   const barColor = score >= 8 ? "bg-green-500" : score >= 5 ? "bg-yellow-400" : "bg-red-400";
+  const scoreLabel = health?.score_label ?? health?.label ?? (score === 0 ? "Not configured" : "");
+
+  // Normalize breakdown → events array for display
+  const eventRows = health?.breakdown?.map((b) => ({
+    name: b.event,
+    browser: b.browser > 0,
+    server: b.server > 0,
+  })) ?? health?.events ?? [];
+
+  const noPixel = health && !health.pixel_id;
 
   return (
     <div className="bg-white border border-gray-200 rounded-xl p-4">
@@ -264,14 +279,18 @@ function CapiStrengthWidget({ token, clientId }: { token: string; clientId: stri
           <span className="text-lg">📡</span>
           <div>
             <div className="text-xs font-semibold text-gray-700">CAPI Strength</div>
-            <div className="text-xs text-gray-400">Pixel + Server-Side Event Coverage</div>
+            <div className="text-xs text-gray-400">
+              {health?.pixel_name ?? "Pixel + Server-Side Events"}
+            </div>
           </div>
         </div>
         <div className="text-right">
           {loading ? (
             <div className="h-4 w-4 animate-spin rounded-full border-2 border-blue-500 border-t-transparent" />
           ) : (
-            <span className={`text-2xl font-bold ${scoreColor}`}>{score}<span className="text-sm text-gray-400">/{maxScore}</span></span>
+            <span className={`text-2xl font-bold ${scoreColor}`}>
+              {score}<span className="text-sm text-gray-400">/{maxScore}</span>
+            </span>
           )}
         </div>
       </div>
@@ -282,31 +301,45 @@ function CapiStrengthWidget({ token, clientId }: { token: string; clientId: stri
             <div className={`h-full rounded-full transition-all duration-700 ${barColor}`} style={{ width: `${pct}%` }} />
           </div>
           <div className="flex items-center justify-between">
-            <span className={`text-xs font-medium ${scoreColor}`}>{health.label}</span>
-            <button onClick={() => setExpanded(!expanded)} className="text-xs text-blue-600 hover:underline">
-              {expanded ? "Less ↑" : "Details ↓"}
-            </button>
+            <span className={`text-xs font-medium ${scoreColor}`}>{scoreLabel}</span>
+            {!noPixel && (
+              <button onClick={() => setExpanded(!expanded)} className="text-xs text-blue-600 hover:underline">
+                {expanded ? "Less ↑" : "Details ↓"}
+              </button>
+            )}
           </div>
 
-          {expanded && (
+          {noPixel && (
+            <p className="text-xs text-orange-600 mt-1.5 bg-orange-50 rounded px-2 py-1">
+              ⚠️ No Pixel ID configured. Run the Supabase SQL to add pixel ID <strong>716750330829631</strong>.
+            </p>
+          )}
+
+          {expanded && !noPixel && (
             <div className="mt-3 space-y-2">
-              <div className="grid grid-cols-3 gap-1 text-center">
-                <div className="text-xs text-gray-400">Event</div>
-                <div className="text-xs text-gray-400">Browser</div>
-                <div className="text-xs text-gray-400">Server (CAPI)</div>
-              </div>
-              {health.events.map((ev) => (
-                <div key={ev.name} className="grid grid-cols-3 gap-1 text-center text-xs">
-                  <div className="text-gray-600 truncate">{ev.name}</div>
-                  <div>{ev.browser ? "✅" : "❌"}</div>
-                  <div>{ev.server ? "✅" : "❌"}</div>
-                </div>
-              ))}
+              {eventRows.length > 0 && (
+                <>
+                  <div className="grid grid-cols-3 gap-1 text-center">
+                    <div className="text-xs text-gray-400">Event</div>
+                    <div className="text-xs text-gray-400">Browser</div>
+                    <div className="text-xs text-gray-400">Server (CAPI)</div>
+                  </div>
+                  {eventRows.map((ev) => (
+                    <div key={ev.name} className="grid grid-cols-3 gap-1 text-center text-xs">
+                      <div className="text-gray-600 truncate">{ev.name}</div>
+                      <div>{ev.browser ? "✅" : "❌"}</div>
+                      <div>{ev.server ? "✅" : "❌"}</div>
+                    </div>
+                  ))}
+                </>
+              )}
               {health.recommendations.length > 0 && (
                 <div className="mt-2 pt-2 border-t border-gray-100">
-                  <div className="text-xs font-medium text-gray-700 mb-1">Recommendations:</div>
-                  {health.recommendations.map((r, i) => (
-                    <div key={i} className="text-xs text-orange-700 bg-orange-50 rounded px-2 py-1 mb-1">💡 {r}</div>
+                  <div className="text-xs font-medium text-gray-700 mb-1">How to reach 10/10:</div>
+                  {health.recommendations.slice(0, 3).map((r, i) => (
+                    <div key={i} className="text-xs text-orange-700 bg-orange-50 rounded px-2 py-1 mb-1">
+                      {r.replace(/\*\*/g, "")}
+                    </div>
                   ))}
                 </div>
               )}
@@ -316,7 +349,11 @@ function CapiStrengthWidget({ token, clientId }: { token: string; clientId: stri
       )}
 
       {!loading && !health && (
-        <p className="text-xs text-gray-400 mt-1">Add META_ACCESS_TOKEN to enable CAPI monitoring.</p>
+        <p className="text-xs text-orange-600 mt-1 bg-orange-50 rounded px-2 py-1">
+          ⚠️ Run this SQL in Supabase to activate:<br />
+          <code className="font-mono text-xs">ALTER TABLE clients ADD COLUMN IF NOT EXISTS meta_pixel_id TEXT;<br />
+          UPDATE clients SET meta_pixel_id = &apos;716750330829631&apos; WHERE meta_ad_account_id = &apos;1957083288453810&apos;;</code>
+        </p>
       )}
     </div>
   );
@@ -347,11 +384,15 @@ function CampaignCapiBadge({
 }) {
   if (!pixelHealth) return null;
   const eventName = objectiveToEvent(objective);
-  const ev = pixelHealth.events.find((e) => e.name === eventName);
-  if (!ev) return null;
 
-  const hasServer = ev.server;
-  const hasBrowser = ev.browser;
+  // Support both breakdown (API format) and events (legacy format)
+  const br = pixelHealth.breakdown?.find((b) => b.event === eventName);
+  const ev = pixelHealth.events?.find((e) => e.name === eventName);
+
+  const hasServer = br ? br.server > 0 : (ev?.server ?? false);
+  const hasBrowser = br ? br.browser > 0 : (ev?.browser ?? false);
+
+  if (!br && !ev) return null;
 
   if (hasServer && hasBrowser) {
     return (

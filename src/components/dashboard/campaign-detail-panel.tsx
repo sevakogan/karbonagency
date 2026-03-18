@@ -291,6 +291,19 @@ export default function CampaignDetailPanel({
   const [bidStrategy, setBidStrategy] = useState(campaignBidStrategy ?? "LOWEST_COST_WITHOUT_CAP");
   const [liveStatus, setLiveStatus] = useState(campaignStatus);
 
+  // Date range for performance tab
+  type DatePreset = "today" | "last_7d" | "last_30d" | "last_month" | "last_quarter" | "last_year";
+  const DATE_PRESETS: { key: DatePreset; label: string }[] = [
+    { key: "today", label: "Today" },
+    { key: "last_7d", label: "7d" },
+    { key: "last_30d", label: "30d" },
+    { key: "last_month", label: "Last Month" },
+    { key: "last_quarter", label: "Quarter" },
+    { key: "last_year", label: "12 Months" },
+  ];
+  const [datePreset, setDatePreset] = useState<DatePreset>("last_30d");
+  const [loadingInsight, setLoadingInsight] = useState(false);
+
   // Meta data
   const [adSets, setAdSets] = useState<AdSet[]>([]);
   const [ads, setAds] = useState<Ad[]>([]);
@@ -324,7 +337,7 @@ export default function CampaignDetailPanel({
 
     Promise.all([
       fetch(`/api/meta/adsets?client_id=${clientId}&campaign_id=${campaignId}`, { headers }),
-      fetch(`/api/meta/insights?client_id=${clientId}&campaign_id=${campaignId}&date_preset=last_30d`, { headers }),
+      fetch(`/api/meta/insights?client_id=${clientId}&campaign_id=${campaignId}&date_preset=${datePreset}`, { headers }),
     ])
       .then(([r1, r2]) => Promise.all([r1.json(), r2.json()]))
       .then(async ([setsJson, insJson]: [{ data?: AdSet[] }, { data?: InsightRow[] }]) => {
@@ -378,6 +391,32 @@ export default function CampaignDetailPanel({
       .finally(() => setLoading(false));
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [campaignId, clientId, token]);
+
+  // ── Re-fetch insights when date range changes (after initial load) ─────────
+
+  useEffect(() => {
+    if (loading) return; // don't double-fetch on mount
+    setLoadingInsight(true);
+    setInsight(null);
+    fetch(`/api/meta/insights?client_id=${clientId}&campaign_id=${campaignId}&date_preset=${datePreset}`, { headers })
+      .then((r) => r.json())
+      .then((insJson: { data?: InsightRow[] }) => {
+        const rows = insJson.data ?? [];
+        if (rows.length > 0) {
+          const rolled = rows.reduce(
+            (acc, r) => ({ ...acc, spend: acc.spend + r.spend, impressions: acc.impressions + r.impressions, clicks: acc.clicks + r.clicks, conversions: acc.conversions + r.conversions }),
+            { spend: 0, impressions: 0, clicks: 0, conversions: 0, ctr: 0, cpc: 0, cpa: 0, campaign_id: campaignId, performance_score: 0 }
+          );
+          rolled.ctr = rolled.impressions > 0 ? (rolled.clicks / rolled.impressions) * 100 : 0;
+          rolled.cpc = rolled.clicks > 0 ? rolled.spend / rolled.clicks : 0;
+          rolled.cpa = rolled.conversions > 0 ? rolled.spend / rolled.conversions : 0;
+          setInsight(rolled as InsightRow);
+        }
+      })
+      .catch(console.error)
+      .finally(() => setLoadingInsight(false));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [datePreset]);
 
   // ── Save handlers ──────────────────────────────────────────────────────────
 
@@ -755,9 +794,34 @@ Make them specific to Shift Arcade Miami (sim racing venue in Wynwood). Each sho
               {/* ── 📊 PERFORMANCE ── */}
               {section === "performance" && (
                 <div className="space-y-4">
+                  {/* Date range pills */}
+                  <div className="flex gap-1.5 flex-wrap">
+                    {DATE_PRESETS.map((p) => (
+                      <button
+                        key={p.key}
+                        onClick={() => setDatePreset(p.key)}
+                        className={`px-3 py-1 text-xs font-semibold rounded-full border transition-colors ${
+                          datePreset === p.key
+                            ? "bg-red-600 text-white border-red-600"
+                            : "bg-white text-gray-600 border-gray-200 hover:border-red-300 hover:text-red-600"
+                        }`}
+                      >
+                        {p.label}
+                      </button>
+                    ))}
+                  </div>
+
                   <div>
-                    <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Last 30 Days — Actual</div>
-                    <ActualKpis insight={insight} />
+                    <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
+                      {DATE_PRESETS.find((p) => p.key === datePreset)?.label} — Actual
+                    </div>
+                    {loadingInsight ? (
+                      <div className="grid grid-cols-4 lg:grid-cols-7 gap-2">
+                        {[...Array(7)].map((_, i) => <div key={i} className="h-12 bg-gray-100 rounded-xl animate-pulse" />)}
+                      </div>
+                    ) : (
+                      <ActualKpis insight={insight} />
+                    )}
                   </div>
 
                   {insight && insight.spend > 0 && (

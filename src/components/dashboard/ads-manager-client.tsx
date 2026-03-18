@@ -1210,7 +1210,7 @@ function GuideTab() {
 // Version Footer
 // ---------------------------------------------------------------------------
 
-const BUILD_VERSION = "v3.1";
+const BUILD_VERSION = "v3.2";
 const BUILD_DATE = "Mar 18, 2026";
 
 function VersionFooter() {

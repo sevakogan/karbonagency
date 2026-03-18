@@ -307,6 +307,19 @@ const PLAIN_TEXT = (clientName: string, karbonBizId: string) =>
 To get your campaigns live in our dashboard, please complete these 3 steps in Meta Business Manager (takes ~5 minutes):
 
 ━━━━━━━━━━━━━━━━━━━━━━
+⚠️ BEFORE YOU START — Add an email to your Business Manager
+━━━━━━━━━━━━━━━━━━━━━━
+Meta requires a verified email on your Business Manager account before you can connect partners or set up tracking. If you haven't done this yet:
+
+1. Open: https://business.facebook.com/settings
+2. Click "Business info" — it's the FIRST item at the very top of the left sidebar
+3. Scroll down to "Business contact info"
+4. Add your email address and click Save
+5. Check your inbox and click the verification link Meta sends you
+
+Once your email is verified, continue with the steps below.
+
+━━━━━━━━━━━━━━━━━━━━━━
 STEP 1 — Add Karbon Agency as a Partner
 ━━━━━━━━━━━━━━━━━━━━━━
 1. Open: https://business.facebook.com/settings/partners

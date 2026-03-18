@@ -89,6 +89,25 @@ function InviteContent() {
       <div className="max-w-2xl mx-auto px-6 pb-16">
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 space-y-0">
 
+          {/* Pre-check */}
+          <div className="mb-6 rounded-2xl bg-amber-50 border border-amber-200 p-5">
+            <div className="flex items-start gap-3">
+              <span className="text-xl flex-shrink-0">⚠️</span>
+              <div>
+                <p className="text-sm font-bold text-amber-900 mb-1">Do this first — verify your email in Meta Business Manager</p>
+                <p className="text-xs text-amber-700 mb-3">Meta requires a verified email on your Business Manager account before you can connect partners or set up tracking. If you skip this, you&apos;ll see an error on Step 1.</p>
+                <ol className="text-xs text-amber-800 space-y-1.5 list-decimal list-inside">
+                  <li>Open: <ExLink href="https://business.facebook.com/settings">business.facebook.com/settings</ExLink></li>
+                  <li>Click <strong>&ldquo;Business info&rdquo;</strong> — it&apos;s the <strong>very first item</strong> at the top of the left sidebar</li>
+                  <li>Scroll down to <strong>&ldquo;Business contact info&rdquo;</strong></li>
+                  <li>Add your email address and click <strong>Save</strong></li>
+                  <li>Check your inbox and click the verification link Meta sends you</li>
+                </ol>
+                <p className="text-xs text-amber-600 mt-2 font-medium">✅ Once your email is verified, continue with Step 1 below.</p>
+              </div>
+            </div>
+          </div>
+
           {/* Step 1 */}
           <Step n={1} title="Add Karbon Agency as a Partner in Meta Business Manager">
             <p>This gives us read-only access to manage your ads. You stay in full control.</p>

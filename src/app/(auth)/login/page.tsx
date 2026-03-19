@@ -11,8 +11,8 @@ type AuthMode = "password" | "magic-link";
 export default function LoginPage() {
   const router = useRouter();
   const [mode, setMode] = useState<AuthMode>("password");
-  const [email, setEmail] = useState("admin@karbonagency.com");
-  const [password, setPassword] = useState("admin123");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [status, setStatus] = useState<"idle" | "loading" | "magic-sent" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState("");
 

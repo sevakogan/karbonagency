@@ -17,10 +17,16 @@ export function encrypt(plaintext: string): string {
 }
 
 export function decrypt(stored: string): string {
+  if (!stored || !stored.includes(':')) return '';
   const [ivB64, tagB64, dataB64] = stored.split(':');
+  if (!ivB64 || !tagB64 || !dataB64) return '';
   const decipher = createDecipheriv(ALGORITHM, getKey(), Buffer.from(ivB64, 'base64'));
   decipher.setAuthTag(Buffer.from(tagB64, 'base64'));
-  return decipher.update(Buffer.from(dataB64, 'base64')) + decipher.final('utf8');
+  const decrypted = Buffer.concat([
+    decipher.update(Buffer.from(dataB64, 'base64')),
+    decipher.final(),
+  ]);
+  return decrypted.toString('utf8');
 }
 
 export function encryptCredentials(credentials: Record<string, string>): Record<string, string> {

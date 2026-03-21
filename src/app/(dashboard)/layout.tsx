@@ -26,12 +26,12 @@ export default async function DashboardLayout({
           style={{ background: "var(--bg-base)", color: "var(--text-primary)" }}
         >
           <TopNav clients={clients} />
-          <main className="mx-auto max-w-7xl px-4 py-5 sm:px-6">{children}</main>
+          <main className="mx-auto max-w-7xl px-4 py-5 sm:px-6 pb-12">{children}</main>
           <footer
-            className="fixed bottom-0 left-0 px-3 py-1.5"
-            style={{ fontSize: '9px', color: 'var(--text-quaternary)', fontFamily: 'var(--font-mono)' }}
+            className="w-full py-4 text-center"
+            style={{ fontSize: '10px', color: 'var(--text-quaternary)', fontFamily: 'var(--font-mono)' }}
           >
-            v2.0.0 · {new Date().toISOString().split('T')[0]}
+            v2.1.0 · Built {new Date().toISOString().split('T')[0]}
           </footer>
         </div>
       </ThemeProvider>

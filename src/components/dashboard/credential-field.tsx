@@ -6,6 +6,32 @@ import { ChevronRight, Eye, EyeOff, ExternalLink, Check } from 'lucide-react';
 import { expandVariants } from '@/lib/animations';
 import type { CredentialField as CredentialFieldType } from '@/types';
 
+/** Turn URLs in step text into clickable links */
+function linkifyStep(text: string) {
+  const urlRegex = /(https?:\/\/[^\s,)]+|[a-z0-9-]+\.[a-z]{2,}(?:\/[^\s,)]*)?)/gi;
+  const parts = text.split(urlRegex);
+  if (parts.length === 1) return text;
+
+  return parts.map((part, i) => {
+    if (urlRegex.test(part)) {
+      urlRegex.lastIndex = 0; // reset
+      const href = part.startsWith('http') ? part : `https://${part}`;
+      return (
+        <a
+          key={i}
+          href={href}
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{ color: 'var(--system-blue)', textDecoration: 'none', fontWeight: 500 }}
+        >
+          {part}
+        </a>
+      );
+    }
+    return part;
+  });
+}
+
 interface CredentialFieldProps {
   field: CredentialFieldType;
   value: string;
@@ -132,7 +158,7 @@ export function CredentialField({ field, value, onChange }: CredentialFieldProps
                         >
                           {i + 1}
                         </span>
-                        <span>{step}</span>
+                        <span>{linkifyStep(step)}</span>
                       </li>
                     ))}
                   </ol>
@@ -141,10 +167,17 @@ export function CredentialField({ field, value, onChange }: CredentialFieldProps
                       href={field.walkthrough.direct_link}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center gap-0.5 mt-1.5"
-                      style={{ fontSize: '10px', color: 'var(--system-blue)', fontWeight: 500, textDecoration: 'none' }}
+                      className="inline-flex items-center gap-1 mt-2 px-2 py-1"
+                      style={{
+                        fontSize: '10px',
+                        color: 'var(--system-blue)',
+                        fontWeight: 500,
+                        textDecoration: 'none',
+                        background: 'color-mix(in srgb, var(--system-blue) 10%, transparent)',
+                        borderRadius: '6px',
+                      }}
                     >
-                      Open <ExternalLink size={9} />
+                      Go to {new URL(field.walkthrough.direct_link).hostname.replace('www.', '')} <ExternalLink size={9} />
                     </a>
                   )}
                 </div>

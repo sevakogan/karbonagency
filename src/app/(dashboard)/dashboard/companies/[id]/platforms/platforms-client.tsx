@@ -3,7 +3,7 @@
 import { useState, useCallback, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowLeft } from 'lucide-react';
-import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { pageVariants, staggerContainer, staggerItem } from '@/lib/animations';
 import { IntegrationCard } from '@/components/dashboard/integration-card';
 import { CredentialSheet } from '@/components/dashboard/credential-sheet';
@@ -25,6 +25,7 @@ const categoryLabels: Record<string, string> = {
 };
 
 export function PlatformsClient({ company, platforms, integrations: initialIntegrations }: Props) {
+  const router = useRouter();
   const [integrations, setIntegrations] = useState(initialIntegrations);
   const [selectedPlatform, setSelectedPlatform] = useState<PlatformCatalogEntry | null>(null);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
@@ -69,17 +70,19 @@ export function PlatformsClient({ company, platforms, integrations: initialInteg
     >
       {/* Header */}
       <div className="flex items-center gap-3 mb-5">
-        <Link
-          href={`/dashboard/companies/${company.id}`}
+        <button
+          onClick={() => router.back()}
           className="flex items-center justify-center w-7 h-7"
           style={{
             background: 'var(--fill-quaternary)',
             borderRadius: 'var(--radius-full)',
             color: 'var(--text-secondary)',
+            border: 'none',
+            cursor: 'pointer',
           }}
         >
           <ArrowLeft size={14} />
-        </Link>
+        </button>
         <div>
           <h1 className="font-semibold" style={{ fontSize: '16px', color: 'var(--text-primary)' }}>
             Platforms

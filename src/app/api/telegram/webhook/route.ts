@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { sendTelegramMessage, type TelegramUpdate } from '@/lib/telegram';
 import { askClaude, generateAdInsight } from '@/lib/ai-summary';
 import { getAdminSupabase } from '@/lib/supabase-admin';
-import { getMiamiNewReservations, getMiamiNewUsers, getMiamiTotalUsers } from '@/lib/shiftos/client';
 
 export async function POST(request: NextRequest) {
   try {
@@ -82,54 +81,41 @@ async function getMetricsContext(): Promise<string> {
 
   if (!metrics || metrics.length === 0) return 'No ad data available yet.';
 
-  // Pull ShiftOS data in parallel (fail gracefully)
-  const todayStart = `${today}T00:00:00`;
-  let shiftosContext = '';
-  try {
-    const [todayBookings, todayUsers, totalUsers] = await Promise.all([
-      getMiamiNewReservations(todayStart),
-      getMiamiNewUsers(todayStart),
-      getMiamiTotalUsers(),
-    ]);
+  // Build ShiftOS + ad platform breakdown from Supabase (already synced by cron)
+  const todayRows = (metrics ?? []).filter((r) => r.date === today);
+  const shiftosRows = todayRows.filter((r) => r.platform === 'shiftos');
+  const adRows = todayRows.filter((r) => r.platform !== 'shiftos');
 
-    // Attribution: compare reservation timestamps to ad click timestamps
-    const adPlatforms = [...new Set((metrics ?? []).filter(r => r.date === today).map(r => r.platform))];
-    const todayAdSpend: Record<string, number> = {};
-    for (const row of (metrics ?? []).filter(r => r.date === today)) {
-      todayAdSpend[row.platform] = (todayAdSpend[row.platform] ?? 0) + Number(row.spend);
-    }
+  const todayReservations = shiftosRows.reduce((s, r) => s + Number(r.conversions), 0);
+  const todaySignups = shiftosRows.reduce((s, r) => s + Number(r.clicks), 0);
+  const todayTotalUsers = shiftosRows.reduce((s, r) => s + Number(r.reach), 0);
 
-    const platformBreakdown = Object.entries(todayAdSpend)
-      .map(([p, s]) => `  • ${p}: $${s.toFixed(2)}`)
-      .join('\n');
+  const todayAdSpend: Record<string, number> = {};
+  for (const row of adRows) {
+    todayAdSpend[row.platform] = (todayAdSpend[row.platform] ?? 0) + Number(row.spend);
+  }
+  const totalAdSpendToday = Object.values(todayAdSpend).reduce((a, b) => a + b, 0);
+  const platformBreakdown = Object.entries(todayAdSpend)
+    .map(([p, s]) => `  • ${p}: $${s.toFixed(2)}`)
+    .join('\n');
+  const adPlatforms = Object.keys(todayAdSpend);
 
-    const totalAdSpendToday = Object.values(todayAdSpend).reduce((a, b) => a + b, 0);
-
-    shiftosContext = `\nSHIFT ARCADE BOOKINGS (LIVE from ShiftOS):
-- Reservations made today: ${todayBookings.count}
-- New user signups today: ${todayUsers.count}
-- Total Miami users: ${totalUsers.toLocaleString()}
-${todayBookings.reservations.slice(0, 10).map(r =>
-  `  • ${r.readonly_values.user_display_name} → ${r.readonly_values.calendar_name} at ${new Date(r.time).toLocaleTimeString('en-US', { timeZone: 'America/New_York', hour: '2-digit', minute: '2-digit' })}`
-).join('\n')}
+  const shiftosContext = `\nSHIFT ARCADE BOOKINGS (from Karbon Agency):
+- Reservations made today: ${todayReservations}
+- New user signups today: ${todaySignups}
+- Total Miami users: ${todayTotalUsers.toLocaleString()}
 
 AD SPEND BY PLATFORM TODAY:
 ${platformBreakdown || '  No ad data yet'}
-- Est. cost per reservation: $${todayBookings.count > 0 ? (totalAdSpendToday / todayBookings.count).toFixed(2) : 'N/A'}
-- Est. cost per signup: $${todayUsers.count > 0 ? (totalAdSpendToday / todayUsers.count).toFixed(2) : 'N/A'}
+- Est. cost per reservation: $${todayReservations > 0 ? (totalAdSpendToday / todayReservations).toFixed(2) : 'N/A'}
+- Est. cost per signup: $${todaySignups > 0 ? (totalAdSpendToday / todaySignups).toFixed(2) : 'N/A'}
+- Active ad platforms: ${adPlatforms.join(', ') || 'None'}`;
 
-RESERVATION ATTRIBUTION:
-When a reservation is made within 24 hours of ad clicks, it's likely ad-driven.
-Active ad platforms: ${adPlatforms.join(', ') || 'None'}`;
-  } catch (err) {
-    console.error('ShiftOS data unavailable for Q&A:', err);
-    shiftosContext = '\nShiftOS booking data: temporarily unavailable';
-  }
-
-  // Build context string
+  // Build context string (exclude shiftos from ad summaries to avoid double-counting)
   const rows = metrics;
-  const todayRows = rows.filter((r) => r.date === today);
-  const weekRows = rows.filter((r) => r.date >= sevenDaysAgo);
+  const allAdRows = rows.filter((r) => r.platform !== 'shiftos');
+  const todayAdSummary = allAdRows.filter((r) => r.date === today);
+  const weekRows = allAdRows.filter((r) => r.date >= sevenDaysAgo);
 
   const sumRows = (rs: typeof rows) => ({
     spend: rs.reduce((s, r) => s + Number(r.spend), 0),
@@ -139,9 +125,9 @@ Active ad platforms: ${adPlatforms.join(', ') || 'None'}`;
     reach: rs.reduce((s, r) => s + Number(r.reach), 0),
   });
 
-  const todaySum = sumRows(todayRows);
+  const todaySum = sumRows(todayAdSummary);
   const weekSum = sumRows(weekRows);
-  const monthSum = sumRows(rows);
+  const monthSum = sumRows(allAdRows);
 
   const companyNames = (companies ?? []).map((c) => c.name).join(', ');
 

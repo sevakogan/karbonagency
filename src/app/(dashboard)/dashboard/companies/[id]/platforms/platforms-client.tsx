@@ -116,28 +116,37 @@ export function PlatformsClient({ company, platforms, integrations: initialInteg
       </div>
 
       {/* Platform pills grouped by category */}
-      <div style={{ maxWidth: 600, margin: '0 auto' }}>
+      <div style={{ maxWidth: 640, margin: '0 auto' }}>
         {categoryOrder.map((cat) => {
           const items = grouped[cat];
           if (!items) return null;
           const color = categoryColors[cat];
           return (
-            <div key={cat} style={{ marginBottom: 24 }}>
-              <p style={{
-                fontSize: '11px',
-                fontWeight: 600,
-                color: 'var(--text-tertiary)',
-                textTransform: 'uppercase',
-                letterSpacing: '0.8px',
-                marginBottom: 8,
-                textAlign: 'center',
-              }}>
-                {categoryLabels[cat]}
-              </p>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, justifyContent: 'center' }}>
+            <div key={cat} style={{ marginBottom: 28 }}>
+              {/* Category header with colored line */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+                <div style={{ flex: 1, height: 1, background: 'var(--separator)' }} />
+                <span style={{
+                  fontSize: '10px',
+                  fontWeight: 700,
+                  color,
+                  textTransform: 'uppercase',
+                  letterSpacing: '1.2px',
+                }}>
+                  {categoryLabels[cat]}
+                </span>
+                <div style={{ flex: 1, height: 1, background: 'var(--separator)' }} />
+              </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, justifyContent: 'center' }}>
                 {items.map((p) => {
                   const integration = getIntegration(p.slug);
                   const isConnected = integration?.status === 'connected';
+                  const isError = integration?.status === 'error';
+                  // Short name for pills
+                  const shortName = p.display_name
+                    .replace(' (Facebook + Instagram)', '')
+                    .replace('Microsoft/', '')
+                    .replace(' (Twitter)', '');
                   return (
                     <button
                       key={p.slug}
@@ -145,28 +154,36 @@ export function PlatformsClient({ company, platforms, integrations: initialInteg
                       style={{
                         display: 'inline-flex',
                         alignItems: 'center',
-                        gap: 6,
-                        padding: '6px 14px',
-                        borderRadius: 20,
-                        border: `1px solid ${isConnected ? color : 'var(--separator-opaque)'}`,
-                        background: isConnected ? `color-mix(in srgb, ${color} 10%, transparent)` : 'var(--bg-elevated)',
-                        color: isConnected ? color : 'var(--text-primary)',
+                        gap: 7,
+                        padding: '8px 16px',
+                        borderRadius: 24,
+                        border: 'none',
+                        background: isConnected
+                          ? `linear-gradient(135deg, color-mix(in srgb, ${color} 15%, transparent), color-mix(in srgb, ${color} 8%, transparent))`
+                          : 'var(--fill-quaternary)',
+                        color: isConnected ? color : 'var(--text-secondary)',
                         fontSize: '13px',
-                        fontWeight: 500,
+                        fontWeight: isConnected ? 600 : 400,
                         cursor: 'pointer',
-                        transition: 'all 0.15s ease',
+                        transition: 'all 0.2s ease',
+                        boxShadow: isConnected ? `0 0 0 1px color-mix(in srgb, ${color} 25%, transparent)` : 'none',
                       }}
                     >
+                      {/* Icon dot with glow for connected */}
                       <span
                         style={{
-                          width: 6,
-                          height: 6,
+                          width: 8,
+                          height: 8,
                           borderRadius: '50%',
-                          background: isConnected ? color : 'var(--text-quaternary)',
+                          background: isConnected ? color : isError ? 'var(--system-red)' : 'var(--text-quaternary)',
                           flexShrink: 0,
+                          boxShadow: isConnected ? `0 0 6px ${color}` : 'none',
                         }}
                       />
-                      {p.display_name}
+                      {shortName}
+                      {isConnected && (
+                        <span style={{ fontSize: '10px', opacity: 0.7 }}>✓</span>
+                      )}
                     </button>
                   );
                 })}

@@ -27,6 +27,12 @@ export default async function DashboardLayout({
         >
           <TopNav clients={clients} />
           <main className="mx-auto max-w-7xl px-4 py-5 sm:px-6">{children}</main>
+          <footer
+            className="fixed bottom-0 left-0 px-3 py-1.5"
+            style={{ fontSize: '9px', color: 'var(--text-quaternary)', fontFamily: 'var(--font-mono)' }}
+          >
+            v2.0.0 · {new Date().toISOString().split('T')[0]}
+          </footer>
         </div>
       </ThemeProvider>
     </AuthProvider>

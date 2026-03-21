@@ -116,13 +116,15 @@ export function CompanyDashboard({ company, integrations, dailyMetrics }: Props)
           <HealthScoreRing context={dashData.kpis._context} />
         </BentoCard>
 
-        {/* Section: Performance Overview */}
+        {/* Section: Performance Overview — 6 compact cards */}
         <SectionHeader icon="📊" title="Performance Overview" />
 
-        <KpiCard label="Ad Spend" value={dashData.kpis.spend.value} format="currency" d={dashData.kpis.spend.delta} colSpan={3} />
-        <KpiCard label="Impressions" value={dashData.kpis.impressions.value} format="number" d={dashData.kpis.impressions.delta} colSpan={3} />
-        <KpiCard label="Clicks" value={dashData.kpis.clicks.value} format="number" d={dashData.kpis.clicks.delta} colSpan={3} />
-        <KpiCard label="Conversions" value={dashData.kpis.conversions.value} format="number" d={dashData.kpis.conversions.delta} colSpan={3} />
+        <KpiCard label="Ad Spend" value={dashData.kpis.spend.value} format="currency" d={dashData.kpis.spend.delta} colSpan={2} />
+        <KpiCard label="Impressions" value={dashData.kpis.impressions.value} format="number" d={dashData.kpis.impressions.delta} colSpan={2} />
+        <KpiCard label="Clicks" value={dashData.kpis.clicks.value} format="number" d={dashData.kpis.clicks.delta} colSpan={2} />
+        <KpiCard label="Conversions" value={dashData.kpis.conversions.value} format="number" d={dashData.kpis.conversions.delta} colSpan={2} />
+        <KpiCard label="CTR" value={dashData.kpis.ctr.value} format="pct" d={dashData.kpis.ctr.delta} scoreKey="ctr" colSpan={2} context={dashData.kpis._context} />
+        <KpiCard label="CPC" value={dashData.kpis.cpc.value} format="currency" d={dashData.kpis.cpc.delta} scoreKey="cpc" colSpan={2} context={dashData.kpis._context} />
 
         {/* Section: Trends */}
         <SectionHeader icon="📈" title="Trends" />
@@ -135,9 +137,6 @@ export function CompanyDashboard({ company, integrations, dailyMetrics }: Props)
           <PlatformDonut breakdown={dashData.platformBreakdown} />
         </BentoCard>
 
-        <KpiCard label="CTR" value={dashData.kpis.ctr.value} format="pct" d={dashData.kpis.ctr.delta} scoreKey="ctr" colSpan={3} context={dashData.kpis._context} />
-        <KpiCard label="CPC" value={dashData.kpis.cpc.value} format="currency" d={dashData.kpis.cpc.delta} scoreKey="cpc" colSpan={3} context={dashData.kpis._context} />
-
         <BentoCard colSpan={6}>
           <ClicksConversionsChart
             chartData={dashData.chartData}
@@ -146,6 +145,10 @@ export function CompanyDashboard({ company, integrations, dailyMetrics }: Props)
             activeColor={activeColor}
             conversionScore={scoreMetric('conversion_rate', 0, dashData.kpis._context)}
           />
+        </BentoCard>
+
+        <BentoCard colSpan={6}>
+          <WeeklySpendBars data={dashData.weeklySpend} />
         </BentoCard>
 
         {/* Section: Efficiency & ROI */}
@@ -177,13 +180,6 @@ export function CompanyDashboard({ company, integrations, dailyMetrics }: Props)
           </p>
           <p className="text-[9px] mt-0.5" style={{ color: 'var(--text-quaternary)' }}>avg views per person</p>
           <ScoreBadge score={scoreMetric('reach_efficiency', 0, dashData.kpis._context)} />
-        </BentoCard>
-
-        {/* Section: Reach & Awareness */}
-        <SectionHeader icon="👁️" title="Reach & Awareness" />
-
-        <BentoCard colSpan={4}>
-          <WeeklySpendBars data={dashData.weeklySpend} />
         </BentoCard>
 
         {/* Instagram Section */}
@@ -229,7 +225,7 @@ interface KpiCardProps {
   format: 'currency' | 'number' | 'pct';
   d: { value: number; isUp: boolean };
   scoreKey?: string;
-  colSpan?: 2 | 3;
+  colSpan?: 2 | 3 | 4;
   context?: { spend: number; impressions: number; clicks: number; conversions: number };
 }
 

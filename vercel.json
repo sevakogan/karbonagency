@@ -11,6 +11,10 @@
     {
       "path": "/api/cron/hourly-report",
       "schedule": "0 * * * *"
+    },
+    {
+      "path": "/api/cron/vm-watchdog",
+      "schedule": "*/30 * * * *"
     }
   ]
 }

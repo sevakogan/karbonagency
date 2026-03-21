@@ -34,7 +34,7 @@ interface Props {
   dailyMetrics: DailyRow[];
 }
 
-type DateRange = '7d' | '30d' | 'mtd' | '90d';
+type DateRange = 'today' | '3d' | '7d' | '30d' | 'mtd' | '90d';
 type PlatformFilter = 'all' | string;
 
 const platformNames: Record<string, string> = {
@@ -74,7 +74,7 @@ function delta(current: number, previous: number): { value: number; isUp: boolea
 
 export function CompanyOverviewClient({ company, integrations, dailyMetrics }: Props) {
   const router = useRouter();
-  const [dateRange, setDateRange] = useState<DateRange>('30d');
+  const [dateRange, setDateRange] = useState<DateRange>('today');
   const [platformFilter, setPlatformFilter] = useState<PlatformFilter>('all');
   const [refreshing, setRefreshing] = useState(false);
 
@@ -97,6 +97,8 @@ export function CompanyOverviewClient({ company, integrations, dailyMetrics }: P
     let days: number;
     let cutoff: Date;
     switch (dateRange) {
+      case 'today': days = 1; cutoff = new Date(now.getFullYear(), now.getMonth(), now.getDate()); break;
+      case '3d': days = 3; cutoff = new Date(now.getTime() - 3 * 86400000); break;
       case '7d': days = 7; cutoff = new Date(now.getTime() - 7 * 86400000); break;
       case '30d': days = 30; cutoff = new Date(now.getTime() - 30 * 86400000); break;
       case 'mtd': cutoff = new Date(now.getFullYear(), now.getMonth(), 1); days = Math.ceil((now.getTime() - cutoff.getTime()) / 86400000); break;
@@ -200,6 +202,7 @@ export function CompanyOverviewClient({ company, integrations, dailyMetrics }: P
   };
 
   const ranges: Array<{ key: DateRange; label: string }> = [
+    { key: 'today', label: 'Today' }, { key: '3d', label: '3D' },
     { key: '7d', label: '7D' }, { key: '30d', label: '30D' },
     { key: 'mtd', label: 'MTD' }, { key: '90d', label: '90D' },
   ];

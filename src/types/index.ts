@@ -131,3 +131,152 @@ export interface MetricInfo {
   description: string;
   formula?: string;
 }
+
+// ============================================================
+// Platform Integration Types (Redesign)
+// ============================================================
+
+export type PlatformSlug =
+  | 'meta_ads'
+  | 'google_analytics'
+  | 'google_ads'
+  | 'google_business'
+  | 'google_search_console'
+  | 'tiktok_ads'
+  | 'x_ads'
+  | 'pinterest_ads'
+  | 'linkedin_ads'
+  | 'yelp'
+  | 'bing_ads'
+  | 'snapchat_ads';
+
+export type PlatformCategory = 'ads' | 'analytics' | 'reviews' | 'seo';
+
+export type IntegrationStatus = 'disconnected' | 'connected' | 'error' | 'syncing';
+
+export interface CredentialFieldWalkthrough {
+  title: string;
+  steps: string[];
+  direct_link?: string;
+}
+
+export interface CredentialField {
+  key: string;
+  label: string;
+  type: 'text' | 'secret';
+  required: boolean;
+  placeholder?: string;
+  help?: string;
+  walkthrough?: CredentialFieldWalkthrough;
+}
+
+export interface PlatformCatalogEntry {
+  id: string;
+  slug: PlatformSlug;
+  display_name: string;
+  category: PlatformCategory;
+  credential_fields: CredentialField[];
+  test_connection_endpoint: string | null;
+  icon_url: string | null;
+  can_run_ads: boolean;
+  sync_enabled: boolean;
+  is_active: boolean;
+  sort_order: number;
+  created_at: string;
+}
+
+export interface CompanyIntegration {
+  id: string;
+  company_id: string;
+  platform_slug: PlatformSlug;
+  credentials: Record<string, string>;
+  is_enabled: boolean;
+  status: IntegrationStatus;
+  status_detail: string | null;
+  last_synced_at: string | null;
+  last_sync_duration_ms: number | null;
+  error_message: string | null;
+  created_at: string;
+  updated_at: string;
+  // Joined from platform_catalog
+  platform?: PlatformCatalogEntry;
+}
+
+export interface ApiKey {
+  id: string;
+  name: string;
+  key_prefix: string;
+  permissions: string[];
+  is_active: boolean;
+  last_used_at: string | null;
+  created_at: string;
+  expires_at: string | null;
+}
+
+// ============================================================
+// Company Wizard Types
+// ============================================================
+
+export interface WizardSetupData {
+  selected_platforms?: PlatformSlug[];
+  partial_credentials?: Record<PlatformSlug, Record<string, string>>;
+}
+
+// Extended Client type for redesign
+export interface Company extends Client {
+  website_url: string | null;
+  description: string | null;
+  setup_step: number | null;
+  setup_data: WizardSetupData;
+}
+
+// ============================================================
+// Sync Types
+// ============================================================
+
+export interface SyncResult {
+  success: boolean;
+  rowsUpserted: number;
+  error?: string;
+  durationMs: number;
+}
+
+export interface TestConnectionResult {
+  success: boolean;
+  accountName?: string;
+  error?: string;
+}
+
+// ============================================================
+// Dashboard Aggregation Types
+// ============================================================
+
+export interface CompanyKpiSummary {
+  companyId: string;
+  companyName: string;
+  totalSpend: number;
+  totalImpressions: number;
+  totalClicks: number;
+  totalConversions: number;
+  avgCtr: number;
+  avgCpc: number;
+  avgRoas: number;
+  connectedPlatforms: number;
+  totalPlatforms: number;
+  lastSyncedAt: string | null;
+  syncStatus: IntegrationStatus;
+  sparklineData: number[];
+}
+
+export interface GlobalKpiData {
+  totalSpend: number;
+  totalImpressions: number;
+  totalClicks: number;
+  totalConversions: number;
+  avgRoas: number;
+  avgCpc: number;
+  spendDelta: number;
+  impressionsDelta: number;
+  clicksDelta: number;
+  conversionsDelta: number;
+}

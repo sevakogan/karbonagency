@@ -17,8 +17,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body className={`${inter.className} antialiased`}>
+    <html lang="en" data-theme="dark" suppressHydrationWarning>
+      <body className={`${inter.className} antialiased`} style={{ background: 'var(--bg-base)' }}>
         {children}
       </body>
     </html>

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { AuthProvider } from "@/components/auth/auth-provider";
+import { ThemeProvider } from "@/lib/theme-provider";
 import TopNav from "@/components/dashboard/top-nav";
 import { getClients } from "@/lib/actions/clients";
 
@@ -19,10 +20,15 @@ export default async function DashboardLayout({
 
   return (
     <AuthProvider>
-      <div className="min-h-screen bg-gray-50 text-gray-900">
-        <TopNav clients={clients} />
-        <main className="mx-auto max-w-7xl px-6 py-8">{children}</main>
-      </div>
+      <ThemeProvider>
+        <div
+          className="min-h-screen"
+          style={{ background: "var(--bg-base)", color: "var(--text-primary)" }}
+        >
+          <TopNav clients={clients} />
+          <main className="mx-auto max-w-7xl px-6 py-8">{children}</main>
+        </div>
+      </ThemeProvider>
     </AuthProvider>
   );
 }

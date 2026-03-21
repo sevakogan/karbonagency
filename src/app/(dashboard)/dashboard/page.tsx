@@ -3,6 +3,7 @@ export const dynamic = "force-dynamic";
 import { createSupabaseServer } from "@/lib/supabase-server";
 import { getClientMetrics } from "@/lib/actions/metrics";
 import { getCampaigns } from "@/lib/actions/campaigns";
+import { getCompanies } from "@/lib/actions/companies";
 import MetricCard from "@/components/dashboard/metric-card";
 import CampaignChartFilter from "@/components/dashboard/campaign-chart-filter";
 import DateRangeSelector from "@/components/dashboard/date-range-selector";
@@ -10,11 +11,11 @@ import StatCard from "@/components/dashboard/stat-card";
 import Badge from "@/components/ui/badge";
 import Link from "next/link";
 import Breadcrumb from "@/components/ui/breadcrumb";
-import AgencyOverview from "@/components/dashboard/agency-overview";
 import SyncMetaButton from "@/components/dashboard/sync-meta-button";
+import { GodView } from "@/components/dashboard/god-view";
 import { METRIC_DEFINITIONS } from "@/lib/metric-definitions";
 import { SERVICE_LABELS } from "@/types";
-import type { CampaignService } from "@/types";
+import type { CampaignService, Company, IntegrationStatus } from "@/types";
 
 const RANGE_OPTIONS = [
   { label: "30 days", days: 30 },
@@ -57,21 +58,61 @@ export default async function DashboardOverview({
 
   const isAdmin = profile?.role === "admin";
 
-  // ── Admin view: Agency Overview ────────────────────────
+  // ── Admin view — God View ───────────────────────────────
   if (isAdmin) {
-    return (
-      <div>
-        {/* Quick stats row */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          <AdminStatsMini />
-          <div className="col-span-2 lg:col-span-1 flex items-center justify-end gap-3">
-            <SyncMetaButton />
-          </div>
-        </div>
+    const companies = await getCompanies();
 
-        {/* Full agency client overview — client component with live data */}
-        <AgencyOverview />
-      </div>
+    // Get integration counts per company
+    const { data: allIntegrations } = await supabase
+      .from("company_integrations")
+      .select("company_id, status, is_enabled");
+
+    const integrationsByCompany = (allIntegrations ?? []).reduce(
+      (acc, i) => {
+        const list = acc[i.company_id] ?? [];
+        list.push(i);
+        acc[i.company_id] = list;
+        return acc;
+      },
+      {} as Record<string, Array<{ company_id: string; status: string; is_enabled: boolean }>>
+    );
+
+    const companiesWithMetrics = companies.map((company: Company) => {
+      const companyIntegrations = integrationsByCompany[company.id] ?? [];
+      const connectedCount = companyIntegrations.filter(
+        (i) => i.status === "connected"
+      ).length;
+      const hasError = companyIntegrations.some((i) => i.status === "error");
+      const syncStatus: IntegrationStatus = hasError
+        ? "error"
+        : connectedCount > 0
+          ? "connected"
+          : "disconnected";
+
+      return {
+        company,
+        totalSpend: 0,
+        totalImpressions: 0,
+        totalConversions: 0,
+        connectedPlatforms: connectedCount,
+        syncStatus,
+        sparklineData: [] as number[],
+      };
+    });
+
+    return (
+      <GodView
+        companies={companiesWithMetrics}
+        globalKpis={{
+          totalSpend: 0,
+          totalImpressions: 0,
+          totalClicks: 0,
+          totalConversions: 0,
+          avgRoas: 0,
+          avgCpc: 0,
+        }}
+        userName={profile?.full_name ?? undefined}
+      />
     );
   }
 

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAdminSupabase } from '@/lib/supabase-admin';
 import { getSyncFunction } from '@/lib/sync/registry';
-import { decryptCredentials } from '@/lib/encryption';
+
 import type { PlatformSlug } from '@/types';
 
 export async function GET(request: NextRequest) {
@@ -44,7 +44,7 @@ export async function GET(request: NextRequest) {
     if (!syncFn) continue;
 
     try {
-      const decrypted = decryptCredentials(
+      const decrypted = (
         integration.credentials as Record<string, string>
       );
 

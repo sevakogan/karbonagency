@@ -60,12 +60,19 @@ export default async function DashboardOverview({
 
   // ── Admin view — God View ───────────────────────────────
   if (isAdmin) {
+    const { getAdminSupabase } = await import("@/lib/supabase-admin");
+    const adminDb = getAdminSupabase();
     const companies = await getCompanies();
 
-    // Get integration counts per company
-    const { data: allIntegrations } = await supabase
-      .from("company_integrations")
-      .select("company_id, status, is_enabled");
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    const since = thirtyDaysAgo.toISOString().split("T")[0];
+
+    // Get integrations + metrics in parallel
+    const [{ data: allIntegrations }, { data: allMetrics }] = await Promise.all([
+      adminDb.from("company_integrations").select("company_id, status, is_enabled"),
+      adminDb.from("daily_metrics").select("client_id, spend, impressions, clicks, conversions").gte("date", since),
+    ]);
 
     const integrationsByCompany = (allIntegrations ?? []).reduce(
       (acc, i) => {
@@ -77,23 +84,38 @@ export default async function DashboardOverview({
       {} as Record<string, Array<{ company_id: string; status: string; is_enabled: boolean }>>
     );
 
+    const metricsByCompany = (allMetrics ?? []).reduce(
+      (acc, m) => {
+        const agg = acc[m.client_id] ?? { spend: 0, impressions: 0, clicks: 0, conversions: 0 };
+        agg.spend += Number(m.spend) || 0;
+        agg.impressions += Number(m.impressions) || 0;
+        agg.clicks += Number(m.clicks) || 0;
+        agg.conversions += Number(m.conversions) || 0;
+        acc[m.client_id] = agg;
+        return acc;
+      },
+      {} as Record<string, { spend: number; impressions: number; clicks: number; conversions: number }>
+    );
+
+    let globalSpend = 0, globalImpressions = 0, globalClicks = 0, globalConversions = 0;
+
     const companiesWithMetrics = companies.map((company: Company) => {
       const companyIntegrations = integrationsByCompany[company.id] ?? [];
-      const connectedCount = companyIntegrations.filter(
-        (i) => i.status === "connected"
-      ).length;
+      const connectedCount = companyIntegrations.filter((i) => i.status === "connected").length;
       const hasError = companyIntegrations.some((i) => i.status === "error");
-      const syncStatus: IntegrationStatus = hasError
-        ? "error"
-        : connectedCount > 0
-          ? "connected"
-          : "disconnected";
+      const syncStatus: IntegrationStatus = hasError ? "error" : connectedCount > 0 ? "connected" : "disconnected";
+
+      const m = metricsByCompany[company.id] ?? { spend: 0, impressions: 0, clicks: 0, conversions: 0 };
+      globalSpend += m.spend;
+      globalImpressions += m.impressions;
+      globalClicks += m.clicks;
+      globalConversions += m.conversions;
 
       return {
         company,
-        totalSpend: 0,
-        totalImpressions: 0,
-        totalConversions: 0,
+        totalSpend: m.spend,
+        totalImpressions: m.impressions,
+        totalConversions: m.conversions,
         connectedPlatforms: connectedCount,
         syncStatus,
         sparklineData: [] as number[],
@@ -104,12 +126,12 @@ export default async function DashboardOverview({
       <GodView
         companies={companiesWithMetrics}
         globalKpis={{
-          totalSpend: 0,
-          totalImpressions: 0,
-          totalClicks: 0,
-          totalConversions: 0,
+          totalSpend: globalSpend,
+          totalImpressions: globalImpressions,
+          totalClicks: globalClicks,
+          totalConversions: globalConversions,
           avgRoas: 0,
-          avgCpc: 0,
+          avgCpc: globalClicks > 0 ? globalSpend / globalClicks : 0,
         }}
         userName={profile?.full_name ?? undefined}
       />

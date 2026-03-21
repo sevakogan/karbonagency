@@ -43,18 +43,12 @@ export async function getIntegrationWithCredentials(
   if (error) return { data: null, error: error.message };
   if (!data) return { data: null, error: null };
 
-  try {
-    const decrypted = decryptCredentials(data.credentials as Record<string, string>);
-    return {
-      data: { ...data, credentials: decrypted } as CompanyIntegration,
-      error: null,
-    };
-  } catch {
-    return {
-      data: { ...data, credentials: {} } as CompanyIntegration,
-      error: 'Failed to decrypt credentials',
-    };
-  }
+  // Credentials are stored as plain JSONB — return as-is
+  const creds = (data.credentials ?? {}) as Record<string, string>;
+  return {
+    data: { ...data, credentials: creds } as CompanyIntegration,
+    error: null,
+  };
 }
 
 export async function saveIntegrationCredentials(
@@ -69,16 +63,15 @@ export async function saveIntegrationCredentials(
   error: string | null;
 }> {
   const adminSupabase = getAdminSupabase();
-  const encrypted = encryptCredentials(credentials);
 
-  // Upsert the integration
+  // Upsert the integration (stored as plain JSONB)
   const { error: upsertError } = await adminSupabase
     .from('company_integrations')
     .upsert(
       {
         company_id: companyId,
         platform_slug: platformSlug,
-        credentials: encrypted,
+        credentials: credentials,
         is_enabled: true,
         updated_at: new Date().toISOString(),
       },

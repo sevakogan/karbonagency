@@ -183,7 +183,7 @@ export function PlatformFilterBar({
             <ChevronLeft size={14} />
           </button>
 
-          <div ref={scrollRef} className="flex items-center gap-0.5 overflow-x-auto flex-1 scrollbar-hide">
+          <div ref={scrollRef} className="flex items-center gap-1 overflow-x-auto flex-1 scrollbar-hide">
             {calendarDays.map((d, idx) => {
               const dateStr = toDateStr(d);
               const isToday = isSameDay(d, today);
@@ -192,35 +192,42 @@ export function PlatformFilterBar({
               const prevDate = idx > 0 ? calendarDays[idx - 1] : null;
               const showMonthDivider = prevDate && prevDate.getMonth() !== d.getMonth();
 
-              // Highlight logic: dragging range OR committed custom range
+              // Highlight logic
               const inDragRange = dragStart ? isInRange(dateStr, dragStart, dragEnd ?? dragStart) : false;
               const inCustomRange = dateRange === 'custom' && !dragStart && isInRange(dateStr, customStart, customEnd);
               const isSelected = inDragRange || inCustomRange;
               const isRangeEnd = dateStr === activeStart || dateStr === activeEnd;
 
-              let bg = 'transparent';
-              let textColor = 'var(--text-tertiary)';
+              // Tile styles
+              let bg = 'var(--fill-quaternary)';
+              let textColor = 'var(--text-secondary)';
+              let border = '1.5px solid transparent';
+              let shadow = 'none';
 
               if (isSelected && isRangeEnd) {
                 bg = 'var(--accent)';
                 textColor = 'white';
+                shadow = '0 2px 8px color-mix(in srgb, var(--accent) 40%, transparent)';
               } else if (isSelected) {
-                bg = 'color-mix(in srgb, var(--accent) 20%, transparent)';
+                bg = 'color-mix(in srgb, var(--accent) 18%, var(--fill-quaternary))';
                 textColor = 'var(--text-primary)';
               }
 
-              // Today always gets a visible ring
-              const todayRing = isToday && !isSelected
-                ? '2px solid var(--accent)'
-                : isToday
-                  ? '2px solid white'
-                  : '2px solid transparent';
+              // Today ring — always visible
+              if (isToday) {
+                border = isSelected
+                  ? '1.5px solid rgba(255,255,255,0.6)'
+                  : '1.5px solid var(--accent)';
+                if (!isSelected) {
+                  shadow = '0 0 0 1px var(--accent), 0 0 8px color-mix(in srgb, var(--accent) 25%, transparent)';
+                }
+              }
 
               return (
                 <span key={dateStr} className="flex items-center">
                   {showMonthDivider && (
                     <span
-                      className="flex-shrink-0 mx-1 px-1.5 py-3 text-[8px] font-bold uppercase"
+                      className="flex-shrink-0 mx-1.5 px-1 py-3 text-[8px] font-bold uppercase"
                       style={{ color: 'var(--text-quaternary)' }}
                     >
                       {MONTHS[d.getMonth()]}
@@ -229,17 +236,20 @@ export function PlatformFilterBar({
                   <button
                     onMouseDown={() => handleDayMouseDown(dateStr)}
                     onMouseEnter={() => handleDayMouseEnter(dateStr)}
-                    className="flex flex-col items-center gap-0.5 py-1 rounded-xl transition-colors flex-shrink-0 cursor-pointer"
+                    className="flex flex-col items-center justify-center gap-0.5 flex-shrink-0 cursor-pointer transition-all duration-150"
                     style={{
                       background: bg,
                       color: textColor,
-                      border: todayRing,
-                      width: 38,
-                      minWidth: 38,
+                      border,
+                      boxShadow: shadow,
+                      width: 40,
+                      height: 44,
+                      minWidth: 40,
+                      borderRadius: 10,
                     }}
                   >
-                    <span className="text-[7px] font-medium uppercase leading-none">{DAYS_SHORT[d.getDay()]}</span>
-                    <span className="text-xs font-bold leading-none">{d.getDate()}</span>
+                    <span className="text-[7px] font-medium uppercase leading-none opacity-70">{DAYS_SHORT[d.getDay()]}</span>
+                    <span className="text-[13px] font-bold leading-none">{d.getDate()}</span>
                   </button>
                 </span>
               );

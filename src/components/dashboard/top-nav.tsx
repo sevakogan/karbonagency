@@ -21,7 +21,6 @@ const adminTabs: TabItem[] = [
 
 const clientTabs: TabItem[] = [
   { label: "Overview", href: "/dashboard" },
-  { label: "Projects", href: "/dashboard/campaigns" },
 ];
 
 interface TopNavProps {

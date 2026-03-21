@@ -29,9 +29,9 @@ export default async function DashboardLayout({
           <main className="mx-auto max-w-7xl px-4 py-5 sm:px-6 pb-12">{children}</main>
           <footer
             className="w-full py-4 text-center"
-            style={{ fontSize: '10px', color: 'var(--text-quaternary)', fontFamily: 'var(--font-mono)' }}
+            style={{ fontSize: '10px', color: '#555', fontFamily: 'var(--font-mono)' }}
           >
-            v2.1.0 · Built {new Date().toISOString().split('T')[0]}
+            v2.1.0 · {new Date().toISOString().replace('T', ' ').substring(0, 19)}
           </footer>
         </div>
       </ThemeProvider>

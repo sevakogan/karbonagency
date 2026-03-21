@@ -6,11 +6,7 @@
     },
     {
       "path": "/api/cron/sync-all",
-      "schedule": "0 6 * * *"
-    },
-    {
-      "path": "/api/cron/hourly-report",
-      "schedule": "0 * * * *"
+      "schedule": "0 13 * * *"
     },
     {
       "path": "/api/cron/vm-watchdog",
@@ -18,7 +14,11 @@
     },
     {
       "path": "/api/cron/shiftos-monitor",
-      "schedule": "0 */3 * * *"
+      "schedule": "0 16,19,22,1 * * *"
+    },
+    {
+      "path": "/api/cron/shiftos-users",
+      "schedule": "0 16,22 * * *"
     }
   ]
 }

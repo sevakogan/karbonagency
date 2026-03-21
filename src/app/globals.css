@@ -270,6 +270,27 @@
               box-shadow var(--duration-theme) ease;
 }
 
+/* Credential inputs */
+.cred-input {
+  background: var(--bg-grouped);
+  border: 1px solid var(--separator-opaque);
+  border-radius: 8px;
+  color: var(--text-primary);
+  font-size: 13px;
+  padding: 8px 10px;
+  outline: none;
+  width: 100%;
+  -webkit-appearance: none;
+  appearance: none;
+}
+.cred-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-muted);
+}
+.cred-input::placeholder {
+  color: var(--text-quaternary);
+}
+
 /* Skeleton shimmer */
 @keyframes shimmer {
   0% { background-position: -200% 0; }

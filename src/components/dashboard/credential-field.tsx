@@ -38,16 +38,7 @@ interface CredentialFieldProps {
   onChange: (value: string) => void;
 }
 
-const inputStyle = {
-  background: 'var(--bg-elevated)',
-  border: '1px solid var(--separator-opaque)',
-  borderRadius: '8px',
-  color: 'var(--text-primary)',
-  fontSize: '13px',
-  padding: '8px 10px',
-  outline: 'none',
-  width: '100%',
-} as const;
+// Uses .cred-input CSS class from globals.css for proper focus/placeholder states
 
 export function CredentialField({ field, value, onChange }: CredentialFieldProps) {
   const [showSecret, setShowSecret] = useState(false);
@@ -82,7 +73,7 @@ export function CredentialField({ field, value, onChange }: CredentialFieldProps
             onChange={(e) => onChange(e.target.value)}
             placeholder={field.placeholder}
             rows={3}
-            style={{ ...inputStyle, fontFamily: 'var(--font-mono)', fontSize: '11px', resize: 'vertical' }}
+            className="cred-input" style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', resize: 'vertical' }}
           />
         ) : (
           <input
@@ -90,7 +81,7 @@ export function CredentialField({ field, value, onChange }: CredentialFieldProps
             value={value}
             onChange={(e) => onChange(e.target.value)}
             placeholder={field.placeholder}
-            style={{ ...inputStyle, paddingRight: isSecret ? '32px' : '10px' }}
+            className="cred-input" style={{ paddingRight: isSecret ? '32px' : '10px' }}
           />
         )}
 

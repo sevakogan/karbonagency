@@ -8,12 +8,11 @@ interface BentoCardProps {
 }
 
 export function BentoCard({ children, className = '', colSpan, platformColor }: BentoCardProps) {
-  const spanClass = colSpan ? `col-span-${colSpan}` : '';
-
   return (
     <div
-      className={`relative overflow-hidden rounded-2xl p-3.5 backdrop-blur-xl ${spanClass} ${className}`}
+      className={`relative overflow-hidden rounded-2xl p-3.5 backdrop-blur-xl ${className}`}
       style={{
+        gridColumn: colSpan ? `span ${colSpan}` : undefined,
         background: 'var(--glass-bg)',
         backdropFilter: 'blur(var(--glass-blur)) saturate(var(--glass-saturate))',
         WebkitBackdropFilter: 'blur(var(--glass-blur)) saturate(var(--glass-saturate))',

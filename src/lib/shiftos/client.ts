@@ -82,3 +82,8 @@ export async function getMiamiTotalReservations(): Promise<number> {
   // we'd need to filter by calendar. For total count, this is approximate.
   return data.count;
 }
+
+export async function getUserById(userId: number): Promise<ShiftUser> {
+  const data = await apiGet(`/users/${userId}/`) as ShiftUser;
+  return data;
+}

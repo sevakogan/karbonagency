@@ -23,6 +23,10 @@
     {
       "path": "/api/cron/shiftos-sync",
       "schedule": "0 14,17,20,23,2 * * *"
+    },
+    {
+      "path": "/api/cron/shiftos-analytics",
+      "schedule": "*/5 * * * *"
     }
   ]
 }

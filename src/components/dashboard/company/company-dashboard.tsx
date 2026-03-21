@@ -26,6 +26,8 @@ import { AreaChartSvg } from './area-chart-svg';
 import { CustomerJourney } from './customer-journey';
 import { RecentTransactions } from './recent-transactions';
 import { DailyBreakdownTable } from './daily-breakdown-table';
+import { ShiftOSToggle } from './shiftos-toggle';
+import { ShiftOSAnalyticsPanel } from './shiftos-analytics-panel';
 import { InstagramSection } from '@/components/dashboard/instagram-section';
 
 interface Props {
@@ -42,6 +44,7 @@ export function CompanyDashboard({ company, integrations, dailyMetrics }: Props)
   const [selectedPlatforms, setSelectedPlatforms] = useState<Set<string>>(new Set());
   const [refreshing, setRefreshing] = useState(false);
   const [sessionToken, setSessionToken] = useState<string | null>(null);
+  const [shiftosAnalytics, setShiftosAnalytics] = useState(true); // default ON
 
   // Fetch session token for Instagram API calls
   useEffect(() => {
@@ -255,6 +258,11 @@ export function CompanyDashboard({ company, integrations, dailyMetrics }: Props)
         }, null as string | null)}
       />
 
+      {/* ShiftOS Analytics toggle */}
+      <div className="flex justify-end mb-2">
+        <ShiftOSToggle enabled={shiftosAnalytics} onToggle={() => setShiftosAnalytics(prev => !prev)} />
+      </div>
+
       {/* 2. Platform filter bar + calendar */}
       <PlatformFilterBar
         connectedPlatforms={connectedPlatforms}
@@ -297,6 +305,11 @@ export function CompanyDashboard({ company, integrations, dailyMetrics }: Props)
           <KpiStripCard label="CPC" value={`$${fmt(dashData.kpis.cpc.value)}`} d={dashData.kpis.cpc.delta} />
           <KpiStripCard label="Bookings" value={fmt(dashData.kpis.conversions.value)} d={dashData.kpis.conversions.delta} />
         </div>
+
+        {/* 4b. SHIFTOS ANALYTICS PANEL (toggle-able) */}
+        {shiftosAnalytics && (
+          <ShiftOSAnalyticsPanel companyId={company.id} />
+        )}
 
         {/* 5. SECTION: Channel Performance */}
         <section>

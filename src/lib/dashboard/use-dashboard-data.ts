@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { normSlug, PLATFORM_NAMES, PLATFORM_COLORS } from './platform-config';
 import { fmtDate, delta } from './format-utils';
 
-export type DateRange = 'today' | '3d' | '7d' | '30d' | 'mtd' | '90d';
+export type DateRange = 'today' | '3d' | '7d' | '30d' | 'mtd' | 'ytd' | '90d' | 'custom';
 
 export interface DailyRow {
   date: string;
@@ -44,6 +44,7 @@ export function useDashboardData({ dailyMetrics, dateRange, selectedPlatforms, c
       case '7d': days = 7; cutoff = new Date(now.getTime() - 7 * 86400000); break;
       case '30d': days = 30; cutoff = new Date(now.getTime() - 30 * 86400000); break;
       case 'mtd': cutoff = new Date(now.getFullYear(), now.getMonth(), 1); days = Math.ceil((now.getTime() - cutoff.getTime()) / 86400000); break;
+      case 'ytd': cutoff = new Date(now.getFullYear(), 0, 1); days = Math.ceil((now.getTime() - cutoff.getTime()) / 86400000); break;
       default: days = 90; cutoff = new Date(now.getTime() - 90 * 86400000);
     }
     const cutoffStr = cutoff.toISOString().split('T')[0];

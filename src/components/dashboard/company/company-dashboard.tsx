@@ -111,67 +111,58 @@ export function CompanyDashboard({ company, integrations, dailyMetrics }: Props)
       />
 
       {/* 12-column bento grid */}
-      <div className="grid grid-cols-12 gap-2.5">
-        {/* Health Score Ring */}
-        <BentoCard colSpan={12}>
-          <HealthScoreRing context={dashData.kpis._context} />
+      <div className="grid grid-cols-12 gap-2">
+        {/* Row 1: Health score + KPIs in one compact strip */}
+        <BentoCard colSpan={12} className="py-2 px-3">
+          <div className="flex items-center gap-4">
+            <HealthScoreRing context={dashData.kpis._context} />
+            <div className="h-8 w-px" style={{ background: 'var(--separator)' }} />
+            <div className="grid grid-cols-6 gap-3 flex-1">
+              <KpiInline label="Ad Spend" value={`$${fmt(dashData.kpis.spend.value)}`} d={dashData.kpis.spend.delta} />
+              <KpiInline label="Impressions" value={fmt(dashData.kpis.impressions.value)} d={dashData.kpis.impressions.delta} />
+              <KpiInline label="Clicks" value={fmt(dashData.kpis.clicks.value)} d={dashData.kpis.clicks.delta} />
+              <KpiInline label="Conversions" value={fmt(dashData.kpis.conversions.value)} d={dashData.kpis.conversions.delta} />
+              <KpiInline label="CTR" value={`${dashData.kpis.ctr.value.toFixed(1)}%`} d={dashData.kpis.ctr.delta} />
+              <KpiInline label="CPC" value={`$${fmt(dashData.kpis.cpc.value)}`} d={dashData.kpis.cpc.delta} />
+            </div>
+          </div>
         </BentoCard>
 
-        {/* Section: Performance Overview — 6 compact mini cards */}
-        <SectionHeader icon="📊" title="Performance Overview" />
+        {/* Row 2: Bookings Attribution (col-4) + Spend Trend (col-8) */}
+        <BentoCard colSpan={4}>
+          <BookingsAttribution
+            reservations={dashData.kpis.conversions.value}
+            platformMetrics={dashData.platformBreakdown.map((p) => ({
+              platform: p.slug,
+              clicks: p.clicks,
+              conversions: p.conversions,
+              spend: p.spend,
+            }))}
+          />
+        </BentoCard>
 
-        <KpiCardMini label="Ad Spend" value={dashData.kpis.spend.value} format="currency" d={dashData.kpis.spend.delta} />
-        <KpiCardMini label="Impressions" value={dashData.kpis.impressions.value} format="number" d={dashData.kpis.impressions.delta} />
-        <KpiCardMini label="Clicks" value={dashData.kpis.clicks.value} format="number" d={dashData.kpis.clicks.delta} />
-        <KpiCardMini label="Conversions" value={dashData.kpis.conversions.value} format="number" d={dashData.kpis.conversions.delta} />
-        <KpiCardMini label="CTR" value={dashData.kpis.ctr.value} format="pct" d={dashData.kpis.ctr.delta} />
-        <KpiCardMini label="CPC" value={dashData.kpis.cpc.value} format="currency" d={dashData.kpis.cpc.delta} />
+        <BentoCard colSpan={8}>
+          <SpendTrendChart chartData={dashData.chartData} activePlatforms={dashData.activePlatforms} showOverlay={dashData.showOverlay} activeColor={activeColor} />
+        </BentoCard>
 
-        {/* Section: Trends (left col-8) + Bookings Attribution (right col-4, spans 2 rows) */}
-        <SectionHeader icon="📈" title="Trends & Attribution" />
+        {/* Row 3: Donut + Clicks/Conv + Efficiency — all in one row */}
+        <BentoCard colSpan={4}>
+          <PlatformDonut breakdown={dashData.platformBreakdown} />
+        </BentoCard>
 
-        {/* Left column: stacked charts */}
-        <div style={{ gridColumn: 'span 8', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-          {/* Spend trend — full width of left column */}
-          <BentoCard colSpan={2}>
-            <SpendTrendChart chartData={dashData.chartData} activePlatforms={dashData.activePlatforms} showOverlay={dashData.showOverlay} activeColor={activeColor} />
-          </BentoCard>
+        <BentoCard colSpan={4}>
+          <ClicksConversionsChart
+            chartData={dashData.chartData}
+            activePlatforms={dashData.activePlatforms}
+            showOverlay={dashData.showOverlay}
+            activeColor={activeColor}
+            conversionScore={scoreMetric('conversion_rate', 0, dashData.kpis._context)}
+          />
+        </BentoCard>
 
-          {/* Second row: donut + clicks/conv side by side */}
-          <BentoCard>
-            <PlatformDonut breakdown={dashData.platformBreakdown} />
-          </BentoCard>
-
-          <BentoCard>
-            <ClicksConversionsChart
-              chartData={dashData.chartData}
-              activePlatforms={dashData.activePlatforms}
-              showOverlay={dashData.showOverlay}
-              activeColor={activeColor}
-              conversionScore={scoreMetric('conversion_rate', 0, dashData.kpis._context)}
-            />
-          </BentoCard>
-        </div>
-
-        {/* Right column: Bookings Attribution — tall square spanning both rows */}
-        <div style={{ gridColumn: 'span 4', gridRow: 'span 1' }}>
-          <BentoCard className="h-full">
-            <BookingsAttribution
-              reservations={dashData.kpis.conversions.value}
-              platformMetrics={dashData.platformBreakdown.map((p) => ({
-                platform: p.slug,
-                clicks: p.clicks,
-                conversions: p.conversions,
-                spend: p.spend,
-              }))}
-            />
-          </BentoCard>
-        </div>
-
-        {/* Section: Efficiency & ROI — single compact card */}
-        <BentoCard colSpan={12} className="py-2.5">
-          <p className="text-[9px] font-semibold uppercase tracking-wider mb-2" style={{ color: 'var(--text-tertiary)' }}>💰 Efficiency & ROI</p>
-          <div className="grid grid-cols-4 gap-4">
+        <BentoCard colSpan={4} className="py-2.5">
+          <p className="text-[9px] font-semibold uppercase tracking-wider mb-2" style={{ color: 'var(--text-tertiary)' }}>💰 Efficiency</p>
+          <div className="space-y-2">
             <EfficiencyStat label="Reach" value={fmt(dashData.kpis.reach.value)} d={dashData.kpis.reach.delta} />
             <EfficiencyStat
               label="Cost / Conv"
@@ -221,6 +212,23 @@ function SectionHeader({ icon, title }: { icon: string; title: string }) {
     <div className="col-span-12 flex items-center gap-1.5 pt-2">
       <span className="text-sm">{icon}</span>
       <h3 className="text-[12px] font-bold uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>{title}</h3>
+    </div>
+  );
+}
+
+function KpiInline({ label, value, d }: {
+  label: string; value: string; d: { value: number; isUp: boolean };
+}) {
+  return (
+    <div>
+      <p className="text-[8px] font-semibold uppercase tracking-wider" style={{ color: 'var(--text-quaternary)' }}>{label}</p>
+      <p className="text-sm font-bold tabular-nums leading-tight" style={{ color: 'var(--text-primary)' }}>{value}</p>
+      {d.value > 0 && (
+        <span className="text-[8px] font-semibold inline-flex items-center gap-0.5" style={{ color: d.isUp ? 'var(--system-green)' : 'var(--system-red)' }}>
+          {d.isUp ? <TrendingUp size={7} /> : <TrendingDown size={7} />}
+          {d.value.toFixed(1)}%
+        </span>
+      )}
     </div>
   );
 }
@@ -279,15 +287,16 @@ function EfficiencyStat({ label, value, d }: {
   label: string; value: string; d?: { value: number; isUp: boolean };
 }) {
   return (
-    <div>
-      <p className="text-[9px] font-semibold uppercase tracking-wider" style={{ color: 'var(--text-tertiary)' }}>{label}</p>
-      <p className="text-sm font-bold tabular-nums mt-0.5" style={{ color: 'var(--text-primary)' }}>{value}</p>
-      {d && d.value > 0 && (
-        <span className="text-[9px] font-semibold inline-flex items-center gap-0.5" style={{ color: d.isUp ? 'var(--system-green)' : 'var(--system-red)' }}>
-          {d.isUp ? <TrendingUp size={8} /> : <TrendingDown size={8} />}
-          {d.value.toFixed(1)}%
-        </span>
-      )}
+    <div className="flex items-center justify-between">
+      <span className="text-[10px]" style={{ color: 'var(--text-tertiary)' }}>{label}</span>
+      <div className="flex items-center gap-1.5">
+        <span className="text-xs font-bold tabular-nums" style={{ color: 'var(--text-primary)' }}>{value}</span>
+        {d && d.value > 0 && (
+          <span className="text-[8px] font-semibold" style={{ color: d.isUp ? 'var(--system-green)' : 'var(--system-red)' }}>
+            {d.isUp ? '↑' : '↓'}{d.value.toFixed(0)}%
+          </span>
+        )}
+      </div>
     </div>
   );
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { ArrowLeft } from 'lucide-react';
@@ -49,23 +49,49 @@ function formatDate(d: string) {
   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
-export function PlatformDeepDive({ companyId, companyName, platformName, kpis, dailyData }: Props) {
+export function PlatformDeepDive({ companyId, companyName, platformName, dailyData }: Props) {
   const router = useRouter();
   const [dateRange, setDateRange] = useState<'7d' | '30d' | 'mtd' | 'custom'>('30d');
   const [selectedMetric, setSelectedMetric] = useState<string>('spend');
 
+  // Filter data by selected date range
+  const filteredData = useMemo(() => {
+    const now = new Date();
+    let cutoff: Date;
+    switch (dateRange) {
+      case '7d':
+        cutoff = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        break;
+      case '30d':
+        cutoff = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+        break;
+      case 'mtd':
+        cutoff = new Date(now.getFullYear(), now.getMonth(), 1);
+        break;
+      default:
+        cutoff = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+    }
+    const cutoffStr = cutoff.toISOString().split('T')[0];
+    return dailyData.filter((d) => d.date >= cutoffStr);
+  }, [dailyData, dateRange]);
+
+  // Recalculate KPIs from filtered data
+  const totalSpend = filteredData.reduce((s, r) => s + r.spend, 0);
+  const totalImpressions = filteredData.reduce((s, r) => s + r.impressions, 0);
+  const totalClicks = filteredData.reduce((s, r) => s + r.clicks, 0);
+  const totalConversions = filteredData.reduce((s, r) => s + r.conversions, 0);
+
   const kpiItems = [
-    { metricKey: 'spend', label: 'Spend', value: kpis.totalSpend, format: 'currency' as const },
-    { metricKey: 'impressions', label: 'Impressions', value: kpis.totalImpressions, format: 'number' as const },
-    { metricKey: 'reach', label: 'Reach', value: kpis.totalReach, format: 'number' as const },
-    { metricKey: 'clicks', label: 'Clicks', value: kpis.totalClicks, format: 'number' as const },
-    { metricKey: 'ctr', label: 'CTR', value: kpis.avgCtr, format: 'percentage' as const },
-    { metricKey: 'cpc', label: 'CPC', value: kpis.avgCpc, format: 'currency' as const },
-    { metricKey: 'cpm', label: 'CPM', value: kpis.avgCpm, format: 'currency' as const },
-    { metricKey: 'conversions', label: 'Conversions', value: kpis.totalConversions, format: 'number' as const },
+    { metricKey: 'spend', label: 'Spend', value: totalSpend, format: 'currency' as const },
+    { metricKey: 'impressions', label: 'Impressions', value: totalImpressions, format: 'number' as const },
+    { metricKey: 'clicks', label: 'Clicks', value: totalClicks, format: 'number' as const },
+    { metricKey: 'ctr', label: 'CTR', value: totalImpressions > 0 ? (totalClicks / totalImpressions) * 100 : 0, format: 'percentage' as const },
+    { metricKey: 'cpc', label: 'CPC', value: totalClicks > 0 ? totalSpend / totalClicks : 0, format: 'currency' as const },
+    { metricKey: 'cpm', label: 'CPM', value: totalImpressions > 0 ? (totalSpend / totalImpressions) * 1000 : 0, format: 'currency' as const },
+    { metricKey: 'conversions', label: 'Conversions', value: totalConversions, format: 'number' as const },
   ];
 
-  const chartData = dailyData.map((d) => ({
+  const chartData = filteredData.map((d) => ({
     date: formatDate(d.date),
     value: (d as Record<string, number>)[selectedMetric] ?? d.spend,
     ...d,
@@ -114,7 +140,7 @@ export function PlatformDeepDive({ companyId, companyName, platformName, kpis, d
       </div>
 
       {/* Chart */}
-      {dailyData.length > 0 ? (
+      {filteredData.length > 0 ? (
         <div className="glass-card p-4 mb-5">
           <h3
             className="font-medium mb-3"
@@ -172,7 +198,7 @@ export function PlatformDeepDive({ companyId, companyName, platformName, kpis, d
       )}
 
       {/* Daily breakdown table */}
-      {dailyData.length > 0 && (
+      {filteredData.length > 0 && (
         <div className="glass-card overflow-hidden">
           <table className="w-full" style={{ fontSize: '12px' }}>
             <thead>
@@ -189,7 +215,7 @@ export function PlatformDeepDive({ companyId, companyName, platformName, kpis, d
               </tr>
             </thead>
             <tbody>
-              {[...dailyData].reverse().slice(0, 30).map((row) => (
+              {[...filteredData].reverse().slice(0, 30).map((row) => (
                 <tr key={row.date} style={{ borderBottom: '1px solid var(--separator)' }}>
                   <td className="px-3 py-2" style={{ color: 'var(--text-primary)', fontVariantNumeric: 'tabular-nums' }}>
                     {formatDate(row.date)}

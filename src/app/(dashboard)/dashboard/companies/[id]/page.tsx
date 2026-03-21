@@ -1,8 +1,8 @@
 import { notFound } from 'next/navigation';
 import { getCompanyById } from '@/lib/actions/companies';
-import { getCompanyIntegrations } from '@/lib/actions/integrations';
 import { getAdminSupabase } from '@/lib/supabase-admin';
 import { CompanyOverviewClient } from './company-overview-client';
+import type { CompanyIntegration } from '@/types';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,41 +15,48 @@ export default async function CompanyDetailPage({
   const company = await getCompanyById(id);
   if (!company) notFound();
 
-  const { data: integrations } = await getCompanyIntegrations(id);
-
-  // Fetch aggregated metrics from daily_metrics (admin client to bypass RLS)
   const supabase = getAdminSupabase();
-  const thirtyDaysAgo = new Date();
-  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-  const since = thirtyDaysAgo.toISOString().split('T')[0];
 
-  const { data: metrics } = await supabase
-    .from('daily_metrics')
-    .select('spend, impressions, clicks, conversions, cpc, roas')
-    .eq('client_id', id)
-    .gte('date', since);
+  // Fetch 90 days of raw daily_metrics with platform column
+  const ninetyDaysAgo = new Date();
+  ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+  const since = ninetyDaysAgo.toISOString().split('T')[0];
 
-  const rows = metrics ?? [];
-  const totalSpend = rows.reduce((s, r) => s + (Number(r.spend) || 0), 0);
-  const totalImpressions = rows.reduce((s, r) => s + (Number(r.impressions) || 0), 0);
-  const totalClicks = rows.reduce((s, r) => s + (Number(r.clicks) || 0), 0);
-  const totalConversions = rows.reduce((s, r) => s + (Number(r.conversions) || 0), 0);
-  const avgCpc = totalClicks > 0 ? totalSpend / totalClicks : 0;
-  const roasValues = rows.map((r) => Number(r.roas)).filter((v) => v > 0);
-  const avgRoas = roasValues.length > 0 ? roasValues.reduce((a, b) => a + b, 0) / roasValues.length : 0;
+  const [{ data: dailyRows }, { data: integrations }] = await Promise.all([
+    supabase
+      .from('daily_metrics')
+      .select('date, platform, spend, impressions, reach, clicks, ctr, cpc, cpm, conversions, cost_per_conversion, roas, video_views, leads, link_clicks')
+      .eq('client_id', id)
+      .gte('date', since)
+      .order('date', { ascending: true }),
+    supabase
+      .from('company_integrations')
+      .select('*')
+      .eq('company_id', id)
+      .order('created_at', { ascending: true }),
+  ]);
 
   return (
     <CompanyOverviewClient
       company={company}
-      integrations={integrations}
-      metrics={{
-        totalSpend,
-        totalImpressions,
-        totalClicks,
-        totalConversions,
-        avgCpc,
-        avgRoas,
-      }}
+      integrations={(integrations ?? []) as CompanyIntegration[]}
+      dailyMetrics={(dailyRows ?? []).map((r) => ({
+        date: r.date as string,
+        platform: r.platform as string,
+        spend: Number(r.spend) || 0,
+        impressions: Number(r.impressions) || 0,
+        reach: Number(r.reach) || 0,
+        clicks: Number(r.clicks) || 0,
+        ctr: Number(r.ctr) || 0,
+        cpc: Number(r.cpc) || 0,
+        cpm: Number(r.cpm) || 0,
+        conversions: Number(r.conversions) || 0,
+        costPerConversion: Number(r.cost_per_conversion) || 0,
+        roas: Number(r.roas) || 0,
+        videoViews: Number(r.video_views) || 0,
+        leads: Number(r.leads) || 0,
+        linkClicks: Number(r.link_clicks) || 0,
+      }))}
     />
   );
 }

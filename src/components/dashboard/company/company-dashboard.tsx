@@ -168,35 +168,24 @@ export function CompanyDashboard({ company, integrations, dailyMetrics }: Props)
           </BentoCard>
         </div>
 
-        {/* Section: Efficiency & ROI */}
-        <SectionHeader icon="💰" title="Efficiency & ROI" />
-
-        <KpiCard label="Reach" value={dashData.kpis.reach.value} format="number" d={dashData.kpis.reach.delta} scoreKey="reach_efficiency" colSpan={3} context={dashData.kpis._context} />
-
-        <BentoCard colSpan={3}>
-          <p className="text-[10px] font-semibold uppercase tracking-wider mb-1" style={{ color: 'var(--text-tertiary)' }}>Cost / Conversion</p>
-          <p className="text-[22px] font-bold tabular-nums" style={{ color: 'var(--text-primary)' }}>
-            {dashData.kpis.conversions.value > 0 ? `$${(dashData.kpis.spend.value / dashData.kpis.conversions.value).toFixed(2)}` : '—'}
-          </p>
-          <p className="text-[9px] mt-0.5" style={{ color: 'var(--text-quaternary)' }}>per conversion</p>
-        </BentoCard>
-
-        <BentoCard colSpan={3}>
-          <p className="text-[10px] font-semibold uppercase tracking-wider mb-1" style={{ color: 'var(--text-tertiary)' }}>CPM</p>
-          <p className="text-[22px] font-bold tabular-nums" style={{ color: 'var(--text-primary)' }}>
-            ${dashData.kpis.impressions.value > 0 ? ((dashData.kpis.spend.value / dashData.kpis.impressions.value) * 1000).toFixed(2) : '0.00'}
-          </p>
-          <p className="text-[9px] mt-0.5" style={{ color: 'var(--text-quaternary)' }}>per 1,000 impressions</p>
-          <ScoreBadge score={scoreMetric('cpm', 0, dashData.kpis._context)} />
-        </BentoCard>
-
-        <BentoCard colSpan={3}>
-          <p className="text-[10px] font-semibold uppercase tracking-wider mb-1" style={{ color: 'var(--text-tertiary)' }}>Frequency</p>
-          <p className="text-[22px] font-bold tabular-nums" style={{ color: 'var(--text-primary)' }}>
-            {dashData.kpis.reach.value > 0 ? (dashData.kpis.impressions.value / dashData.kpis.reach.value).toFixed(1) : '—'}
-          </p>
-          <p className="text-[9px] mt-0.5" style={{ color: 'var(--text-quaternary)' }}>avg views per person</p>
-          <ScoreBadge score={scoreMetric('reach_efficiency', 0, dashData.kpis._context)} />
+        {/* Section: Efficiency & ROI — single compact card */}
+        <BentoCard colSpan={12} className="py-2.5">
+          <p className="text-[9px] font-semibold uppercase tracking-wider mb-2" style={{ color: 'var(--text-tertiary)' }}>💰 Efficiency & ROI</p>
+          <div className="grid grid-cols-4 gap-4">
+            <EfficiencyStat label="Reach" value={fmt(dashData.kpis.reach.value)} d={dashData.kpis.reach.delta} />
+            <EfficiencyStat
+              label="Cost / Conv"
+              value={dashData.kpis.conversions.value > 0 ? `$${(dashData.kpis.spend.value / dashData.kpis.conversions.value).toFixed(2)}` : '—'}
+            />
+            <EfficiencyStat
+              label="CPM"
+              value={`$${dashData.kpis.impressions.value > 0 ? ((dashData.kpis.spend.value / dashData.kpis.impressions.value) * 1000).toFixed(2) : '0.00'}`}
+            />
+            <EfficiencyStat
+              label="Frequency"
+              value={dashData.kpis.reach.value > 0 ? `${(dashData.kpis.impressions.value / dashData.kpis.reach.value).toFixed(1)}x` : '—'}
+            />
+          </div>
         </BentoCard>
 
         {/* Instagram Section */}
@@ -283,5 +272,22 @@ function KpiCard({ label, value, format, d, scoreKey, colSpan = 2, context }: Kp
       )}
       {score && <ScoreBadge score={score} />}
     </BentoCard>
+  );
+}
+
+function EfficiencyStat({ label, value, d }: {
+  label: string; value: string; d?: { value: number; isUp: boolean };
+}) {
+  return (
+    <div>
+      <p className="text-[9px] font-semibold uppercase tracking-wider" style={{ color: 'var(--text-tertiary)' }}>{label}</p>
+      <p className="text-sm font-bold tabular-nums mt-0.5" style={{ color: 'var(--text-primary)' }}>{value}</p>
+      {d && d.value > 0 && (
+        <span className="text-[9px] font-semibold inline-flex items-center gap-0.5" style={{ color: d.isUp ? 'var(--system-green)' : 'var(--system-red)' }}>
+          {d.isUp ? <TrendingUp size={8} /> : <TrendingDown size={8} />}
+          {d.value.toFixed(1)}%
+        </span>
+      )}
+    </div>
   );
 }

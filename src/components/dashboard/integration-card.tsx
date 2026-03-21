@@ -34,10 +34,9 @@ export function IntegrationCard({ platform, integration, onConfigure, onToggle }
 
   return (
     <motion.div
-      className="glass-card"
-      style={{ padding: '10px 12px' }}
-      whileHover={{ scale: 1.005 }}
-      whileTap={{ scale: 0.995 }}
+      style={{ padding: '8px 12px' }}
+      whileHover={{ background: 'var(--fill-quaternary)' }}
+      transition={{ duration: 0.15 }}
     >
       {/* Single row: icon + name + badge + toggle */}
       <div className="flex items-center gap-2.5">

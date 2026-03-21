@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
@@ -15,6 +15,14 @@ interface Props {
   platforms: PlatformCatalogEntry[];
   integrations: CompanyIntegration[];
 }
+
+const categoryOrder = ['ads', 'analytics', 'seo', 'reviews'] as const;
+const categoryLabels: Record<string, string> = {
+  ads: 'Advertising',
+  analytics: 'Analytics',
+  seo: 'SEO',
+  reviews: 'Reviews & Local',
+};
 
 export function PlatformsClient({ company, platforms, integrations: initialIntegrations }: Props) {
   const [integrations, setIntegrations] = useState(initialIntegrations);
@@ -36,12 +44,21 @@ export function PlatformsClient({ company, platforms, integrations: initialInteg
   }, [company.id]);
 
   const handleSaved = useCallback(() => {
-    // Reload integrations - in production we'd use router.refresh()
     window.location.reload();
   }, []);
 
   const getIntegration = (slug: string) =>
     integrations.find((i) => i.platform_slug === slug);
+
+  // Group platforms by category
+  const grouped = useMemo(() => {
+    const groups: Record<string, PlatformCatalogEntry[]> = {};
+    for (const cat of categoryOrder) {
+      const items = (platforms as PlatformCatalogEntry[]).filter((p) => p.category === cat);
+      if (items.length > 0) groups[cat] = items;
+    }
+    return groups;
+  }, [platforms]);
 
   return (
     <motion.div
@@ -51,49 +68,80 @@ export function PlatformsClient({ company, platforms, integrations: initialInteg
       exit="exit"
     >
       {/* Header */}
-      <div className="flex items-center gap-3 mb-4">
+      <div className="flex items-center gap-3 mb-5">
         <Link
           href={`/dashboard/companies/${company.id}`}
-          className="flex items-center justify-center w-8 h-8"
+          className="flex items-center justify-center w-7 h-7"
           style={{
             background: 'var(--fill-quaternary)',
             borderRadius: 'var(--radius-full)',
             color: 'var(--text-secondary)',
           }}
         >
-          <ArrowLeft size={15} />
+          <ArrowLeft size={14} />
         </Link>
         <div>
-          <h1
-            className="font-semibold"
-            style={{ fontSize: '18px', color: 'var(--text-primary)' }}
-          >
+          <h1 className="font-semibold" style={{ fontSize: '16px', color: 'var(--text-primary)' }}>
             Platforms
           </h1>
-          <p style={{ fontSize: '12px', color: 'var(--text-tertiary)' }}>
+          <p style={{ fontSize: '11px', color: 'var(--text-tertiary)' }}>
             {company.name}
           </p>
         </div>
       </div>
 
-      {/* Platform list — compact rows */}
-      <motion.div
-        className="space-y-1.5 max-w-2xl"
-        variants={staggerContainer}
-        initial="hidden"
-        animate="visible"
-      >
-        {(platforms as PlatformCatalogEntry[]).map((platform) => (
-          <motion.div key={platform.slug} variants={staggerItem}>
-            <IntegrationCard
-              platform={platform}
-              integration={getIntegration(platform.slug)}
-              onConfigure={handleConfigure}
-              onToggle={handleToggle}
-            />
-          </motion.div>
-        ))}
-      </motion.div>
+      {/* Grouped by category */}
+      <div className="max-w-xl space-y-5">
+        {categoryOrder.map((cat) => {
+          const items = grouped[cat];
+          if (!items) return null;
+          return (
+            <div key={cat}>
+              {/* Category header */}
+              <h3
+                className="uppercase font-semibold mb-1.5"
+                style={{
+                  fontSize: '10px',
+                  color: 'var(--text-tertiary)',
+                  letterSpacing: '0.8px',
+                }}
+              >
+                {categoryLabels[cat]}
+              </h3>
+
+              {/* iOS grouped list — rounded container with dividers */}
+              <motion.div
+                className="overflow-hidden"
+                style={{
+                  borderRadius: '10px',
+                  background: 'var(--glass-bg)',
+                  border: '1px solid var(--glass-border)',
+                }}
+                variants={staggerContainer}
+                initial="hidden"
+                animate="visible"
+              >
+                {items.map((platform, idx) => (
+                  <motion.div
+                    key={platform.slug}
+                    variants={staggerItem}
+                    style={{
+                      borderTop: idx > 0 ? '1px solid var(--separator)' : undefined,
+                    }}
+                  >
+                    <IntegrationCard
+                      platform={platform}
+                      integration={getIntegration(platform.slug)}
+                      onConfigure={handleConfigure}
+                      onToggle={handleToggle}
+                    />
+                  </motion.div>
+                ))}
+              </motion.div>
+            </div>
+          );
+        })}
+      </div>
 
       {/* Credential Sheet */}
       <CredentialSheet

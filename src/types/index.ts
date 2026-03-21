@@ -108,7 +108,7 @@ export interface DailyMetrics {
   client_id: string;
   campaign_id: string | null;
   date: string;
-  platform: "meta" | "google" | "tiktok";
+  platform: "meta" | "google" | "tiktok" | "instagram";
   spend: number;
   impressions: number;
   reach: number;
@@ -138,6 +138,7 @@ export interface MetricInfo {
 
 export type PlatformSlug =
   | 'meta_ads'
+  | 'instagram'
   | 'google_analytics'
   | 'google_ads'
   | 'google_business'

@@ -1,6 +1,7 @@
 import type { SyncResult, PlatformSlug } from '@/types';
 import { syncMetaAds } from './meta-ads';
 import { syncGoogleAnalytics } from './google-analytics';
+import { syncInstagram } from './instagram';
 
 export type SyncFunction = (
   companyId: string,
@@ -12,6 +13,7 @@ export type SyncFunction = (
 const syncRegistry: Partial<Record<PlatformSlug, SyncFunction>> = {
   meta_ads: syncMetaAds,
   google_analytics: syncGoogleAnalytics,
+  instagram: syncInstagram,
 };
 
 export function getSyncFunction(platformSlug: PlatformSlug): SyncFunction | undefined {

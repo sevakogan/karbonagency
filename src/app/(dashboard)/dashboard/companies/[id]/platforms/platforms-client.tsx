@@ -51,34 +51,34 @@ export function PlatformsClient({ company, platforms, integrations: initialInteg
       exit="exit"
     >
       {/* Header */}
-      <div className="flex items-center gap-[var(--space-4)] mb-[var(--space-6)]">
+      <div className="flex items-center gap-3 mb-4">
         <Link
           href={`/dashboard/companies/${company.id}`}
-          className="flex items-center justify-center w-10 h-10"
+          className="flex items-center justify-center w-8 h-8"
           style={{
             background: 'var(--fill-quaternary)',
             borderRadius: 'var(--radius-full)',
             color: 'var(--text-secondary)',
           }}
         >
-          <ArrowLeft size={18} />
+          <ArrowLeft size={15} />
         </Link>
         <div>
           <h1
-            className="font-bold"
-            style={{ fontSize: 'var(--text-title-2)', color: 'var(--text-primary)' }}
+            className="font-semibold"
+            style={{ fontSize: '18px', color: 'var(--text-primary)' }}
           >
             Platforms
           </h1>
-          <p style={{ fontSize: 'var(--text-subhead)', color: 'var(--text-secondary)' }}>
-            {company.name} — Connect your marketing platforms
+          <p style={{ fontSize: '12px', color: 'var(--text-tertiary)' }}>
+            {company.name}
           </p>
         </div>
       </div>
 
-      {/* Platform grid */}
+      {/* Platform list — compact rows */}
       <motion.div
-        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-[var(--space-4)]"
+        className="space-y-1.5 max-w-2xl"
         variants={staggerContainer}
         initial="hidden"
         animate="visible"

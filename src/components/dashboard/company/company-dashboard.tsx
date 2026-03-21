@@ -117,52 +117,56 @@ export function CompanyDashboard({ company, integrations, dailyMetrics }: Props)
           <HealthScoreRing context={dashData.kpis._context} />
         </BentoCard>
 
-        {/* Section: Performance Overview — 6 compact cards */}
+        {/* Section: Performance Overview — 6 compact mini cards */}
         <SectionHeader icon="📊" title="Performance Overview" />
 
-        <KpiCard label="Ad Spend" value={dashData.kpis.spend.value} format="currency" d={dashData.kpis.spend.delta} colSpan={2} />
-        <KpiCard label="Impressions" value={dashData.kpis.impressions.value} format="number" d={dashData.kpis.impressions.delta} colSpan={2} />
-        <KpiCard label="Clicks" value={dashData.kpis.clicks.value} format="number" d={dashData.kpis.clicks.delta} colSpan={2} />
-        <KpiCard label="Conversions" value={dashData.kpis.conversions.value} format="number" d={dashData.kpis.conversions.delta} colSpan={2} />
-        <KpiCard label="CTR" value={dashData.kpis.ctr.value} format="pct" d={dashData.kpis.ctr.delta} scoreKey="ctr" colSpan={2} context={dashData.kpis._context} />
-        <KpiCard label="CPC" value={dashData.kpis.cpc.value} format="currency" d={dashData.kpis.cpc.delta} scoreKey="cpc" colSpan={2} context={dashData.kpis._context} />
+        <KpiCardMini label="Ad Spend" value={dashData.kpis.spend.value} format="currency" d={dashData.kpis.spend.delta} />
+        <KpiCardMini label="Impressions" value={dashData.kpis.impressions.value} format="number" d={dashData.kpis.impressions.delta} />
+        <KpiCardMini label="Clicks" value={dashData.kpis.clicks.value} format="number" d={dashData.kpis.clicks.delta} />
+        <KpiCardMini label="Conversions" value={dashData.kpis.conversions.value} format="number" d={dashData.kpis.conversions.delta} />
+        <KpiCardMini label="CTR" value={dashData.kpis.ctr.value} format="pct" d={dashData.kpis.ctr.delta} />
+        <KpiCardMini label="CPC" value={dashData.kpis.cpc.value} format="currency" d={dashData.kpis.cpc.delta} />
 
-        {/* Section: Trends */}
-        <SectionHeader icon="📈" title="Trends" />
+        {/* Section: Trends (left col-8) + Bookings Attribution (right col-4, spans 2 rows) */}
+        <SectionHeader icon="📈" title="Trends & Attribution" />
 
-        <BentoCard colSpan={8}>
-          <SpendTrendChart chartData={dashData.chartData} activePlatforms={dashData.activePlatforms} showOverlay={dashData.showOverlay} activeColor={activeColor} />
-        </BentoCard>
+        {/* Left column: stacked charts */}
+        <div style={{ gridColumn: 'span 8', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+          {/* Spend trend — full width of left column */}
+          <BentoCard colSpan={2}>
+            <SpendTrendChart chartData={dashData.chartData} activePlatforms={dashData.activePlatforms} showOverlay={dashData.showOverlay} activeColor={activeColor} />
+          </BentoCard>
 
-        <BentoCard colSpan={4}>
-          <BookingsAttribution
-            reservations={dashData.kpis.conversions.value}
-            platformMetrics={dashData.platformBreakdown.map((p) => ({
-              platform: p.slug,
-              clicks: p.clicks,
-              conversions: p.conversions,
-              spend: p.spend,
-            }))}
-          />
-        </BentoCard>
+          {/* Second row: donut + clicks/conv side by side */}
+          <BentoCard>
+            <PlatformDonut breakdown={dashData.platformBreakdown} />
+          </BentoCard>
 
-        <BentoCard colSpan={4}>
-          <PlatformDonut breakdown={dashData.platformBreakdown} />
-        </BentoCard>
+          <BentoCard>
+            <ClicksConversionsChart
+              chartData={dashData.chartData}
+              activePlatforms={dashData.activePlatforms}
+              showOverlay={dashData.showOverlay}
+              activeColor={activeColor}
+              conversionScore={scoreMetric('conversion_rate', 0, dashData.kpis._context)}
+            />
+          </BentoCard>
+        </div>
 
-        <BentoCard colSpan={4}>
-          <ClicksConversionsChart
-            chartData={dashData.chartData}
-            activePlatforms={dashData.activePlatforms}
-            showOverlay={dashData.showOverlay}
-            activeColor={activeColor}
-            conversionScore={scoreMetric('conversion_rate', 0, dashData.kpis._context)}
-          />
-        </BentoCard>
-
-        <BentoCard colSpan={4}>
-          <WeeklySpendBars data={dashData.weeklySpend} />
-        </BentoCard>
+        {/* Right column: Bookings Attribution — tall square spanning both rows */}
+        <div style={{ gridColumn: 'span 4', gridRow: 'span 1' }}>
+          <BentoCard className="h-full">
+            <BookingsAttribution
+              reservations={dashData.kpis.conversions.value}
+              platformMetrics={dashData.platformBreakdown.map((p) => ({
+                platform: p.slug,
+                clicks: p.clicks,
+                conversions: p.conversions,
+                spend: p.spend,
+              }))}
+            />
+          </BentoCard>
+        </div>
 
         {/* Section: Efficiency & ROI */}
         <SectionHeader icon="💰" title="Efficiency & ROI" />
@@ -229,6 +233,26 @@ function SectionHeader({ icon, title }: { icon: string; title: string }) {
       <span className="text-sm">{icon}</span>
       <h3 className="text-[12px] font-bold uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>{title}</h3>
     </div>
+  );
+}
+
+function KpiCardMini({ label, value, format, d }: {
+  label: string; value: number; format: 'currency' | 'number' | 'pct';
+  d: { value: number; isUp: boolean };
+}) {
+  return (
+    <BentoCard colSpan={2} className="py-2.5 px-3">
+      <p className="text-[9px] font-semibold uppercase tracking-wider" style={{ color: 'var(--text-tertiary)' }}>{label}</p>
+      <p className="text-base font-bold tabular-nums leading-tight mt-0.5" style={{ color: 'var(--text-primary)' }}>
+        {format === 'currency' ? `$${fmt(value)}` : format === 'pct' ? `${value.toFixed(1)}%` : fmt(value)}
+      </p>
+      {d.value > 0 && (
+        <span className="text-[9px] font-semibold inline-flex items-center gap-0.5" style={{ color: d.isUp ? 'var(--system-green)' : 'var(--system-red)' }}>
+          {d.isUp ? <TrendingUp size={8} /> : <TrendingDown size={8} />}
+          {d.value.toFixed(1)}%
+        </span>
+      )}
+    </BentoCard>
   );
 }
 

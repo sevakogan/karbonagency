@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Globe, Pencil } from 'lucide-react';
+import { ArrowLeft, Globe, Plug, Settings } from 'lucide-react';
 import Link from 'next/link';
 import { pageVariants, staggerContainer, staggerItem } from '@/lib/animations';
 import { KpiRow } from '@/components/dashboard/kpi-row';
@@ -103,23 +103,40 @@ export function CompanyOverviewClient({ company, integrations }: Props) {
           </div>
         </div>
 
-        <div className="flex items-center gap-[var(--space-3)]">
+        <div className="flex items-center gap-2">
           <RefreshButton companyId={company.id} />
           <DateRangePicker value={dateRange} onChange={setDateRange} />
           <Link
             href={`/dashboard/companies/${company.id}/platforms`}
-            className="flex items-center gap-[var(--space-2)] px-[var(--space-3)] py-[var(--space-2)]"
+            className="flex items-center gap-1.5 px-3 py-1.5"
             style={{
-              background: 'var(--accent)',
-              color: 'white',
+              background: 'var(--fill-tertiary)',
+              color: 'var(--text-primary)',
+              border: '1px solid var(--glass-border)',
               borderRadius: 'var(--radius-full)',
-              fontSize: 'var(--text-caption-1)',
-              fontWeight: 600,
+              fontSize: '12px',
+              fontWeight: 500,
               textDecoration: 'none',
             }}
           >
-            <Pencil size={14} />
-            Manage Platforms
+            <Plug size={13} />
+            Platforms
+          </Link>
+          <Link
+            href={`/dashboard/companies/${company.id}/settings`}
+            className="flex items-center gap-1.5 px-3 py-1.5"
+            style={{
+              background: 'var(--fill-tertiary)',
+              color: 'var(--text-primary)',
+              border: '1px solid var(--glass-border)',
+              borderRadius: 'var(--radius-full)',
+              fontSize: '12px',
+              fontWeight: 500,
+              textDecoration: 'none',
+            }}
+          >
+            <Settings size={13} />
+            Settings
           </Link>
         </div>
       </div>

@@ -10,9 +10,12 @@ export default async function PlatformPage({
 }: {
   params: Promise<{ id: string; platform: string }>;
 }) {
-  const { id, platform: platformSlug } = await params;
+  const { id, platform: rawSlug } = await params;
   const company = await getCompanyById(id);
   if (!company) notFound();
+
+  // Normalize: accept both hyphens and underscores (meta-ads → meta_ads)
+  const platformSlug = rawSlug.replace(/-/g, '_');
 
   // Map the platform slug to the daily_metrics platform column
   // daily_metrics uses 'meta' not 'meta_ads' for legacy rows

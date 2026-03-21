@@ -9,6 +9,8 @@ import {
   BarChart, Bar, PieChart, Pie, Cell,
 } from 'recharts';
 import type { Company, CompanyIntegration } from '@/types';
+import { InstagramSection } from '@/components/dashboard/instagram-section';
+import { createBrowserClient } from '@supabase/ssr';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -213,6 +215,18 @@ export function CompanyOverviewClient({ company, integrations, dailyMetrics }: P
   // Multi-select: Set of selected platform slugs. Empty = all.
   const [selectedPlatforms, setSelectedPlatforms] = useState<Set<string>>(new Set());
   const [refreshing, setRefreshing] = useState(false);
+  const [sessionToken, setSessionToken] = useState<string | null>(null);
+
+  // Get session token for client-side API calls (Instagram section)
+  useState(() => {
+    const supabase = createBrowserClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
+    supabase.auth.getSession().then(({ data }) => {
+      setSessionToken(data.session?.access_token ?? null);
+    });
+  });
 
   const normSlug = (s: string) => s === 'meta' ? 'meta_ads' : s;
 
@@ -747,6 +761,11 @@ export function CompanyOverviewClient({ company, integrations, dailyMetrics }: P
             <p style={{ fontSize: '12px', color: 'var(--text-quaternary)', textAlign: 'center', padding: '30px 0' }}>No data</p>
           )}
         </W>
+
+        {/* ── Section: Instagram ── */}
+        {sessionToken && (
+          <InstagramSection companyId={company.id} accessToken={sessionToken} />
+        )}
 
         {/* ── Section: Daily Breakdown ── */}
         <SectionTitle title="Daily Breakdown" icon="📅" />

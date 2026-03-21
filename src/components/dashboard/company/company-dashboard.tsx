@@ -233,14 +233,24 @@ export function CompanyDashboard({ company, integrations, dailyMetrics }: Props)
     [channelData],
   );
 
-  // --- Revenue derived from real data (no mocks) ---
-  // TODO: Connect Square API for real POS revenue. Until then, estimate from ShiftOS conversions.
+  // --- Revenue: fetch from ShiftOS analytics ---
+  const [todayRevenue, setTodayRevenue] = useState(0);
+  useEffect(() => {
+    if (!company.id) return;
+    fetch(`/api/shiftos/analytics?companyId=${company.id}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d?.revenue?.today != null) setTodayRevenue(d.revenue.today); })
+      .catch(() => {});
+  }, [company.id]);
+
   const revenueData = {
-    totalRevenue: 0, // Will be populated when Square is connected
-    shiftOSRevenue: 0,
+    totalRevenue: todayRevenue,
+    shiftOSRevenue: todayRevenue,
     squareRevenue: 0,
     transactions: dashData.kpis.conversions.value,
-    avgTicket: 0,
+    avgTicket: todayRevenue > 0 && dashData.kpis.conversions.value > 0
+      ? todayRevenue / dashData.kpis.conversions.value
+      : 0,
   };
 
   return (
@@ -258,12 +268,7 @@ export function CompanyDashboard({ company, integrations, dailyMetrics }: Props)
         }, null as string | null)}
       />
 
-      {/* ShiftOS Analytics toggle */}
-      <div className="flex justify-end mb-2">
-        <ShiftOSToggle enabled={shiftosAnalytics} onToggle={() => setShiftosAnalytics(prev => !prev)} />
-      </div>
-
-      {/* 2. Platform filter bar + calendar */}
+      {/* 2. Platform filter bar + ShiftOS toggle + calendar */}
       <PlatformFilterBar
         connectedPlatforms={connectedPlatforms}
         selectedPlatforms={selectedPlatforms}
@@ -274,6 +279,9 @@ export function CompanyDashboard({ company, integrations, dailyMetrics }: Props)
         onCustomDateRange={handleCustomDateRange}
         customStart={customStart}
         customEnd={customEnd}
+        trailingElement={
+          <ShiftOSToggle enabled={shiftosAnalytics} onToggle={() => setShiftosAnalytics(prev => !prev)} />
+        }
       />
 
       <div className="flex flex-col gap-3">
@@ -297,7 +305,8 @@ export function CompanyDashboard({ company, integrations, dailyMetrics }: Props)
         </div>
 
         {/* 4. KPI STRIP */}
-        <div className="grid grid-cols-6 gap-2">
+        <div className="grid grid-cols-7 gap-2">
+          <KpiStripCard label="Revenue Today" value={`$${fmt(todayRevenue)}`} accent />
           <KpiStripCard label="Ad Spend" value={`$${fmt(dashData.kpis.spend.value)}`} d={dashData.kpis.spend.delta} />
           <KpiStripCard label="Impressions" value={fmt(dashData.kpis.impressions.value)} d={dashData.kpis.impressions.delta} />
           <KpiStripCard label="Clicks" value={fmt(dashData.kpis.clicks.value)} d={dashData.kpis.clicks.delta} />
@@ -403,14 +412,14 @@ export function CompanyDashboard({ company, integrations, dailyMetrics }: Props)
 // KPI strip card — compact single-metric card
 // ---------------------------------------------------------------------------
 
-function KpiStripCard({ label, value, d }: {
-  label: string; value: string; d: { value: number; isUp: boolean };
+function KpiStripCard({ label, value, d, accent }: {
+  label: string; value: string; d?: { value: number; isUp: boolean }; accent?: boolean;
 }) {
   return (
-    <BentoCard className="py-2 px-3">
-      <p className="text-[8px] font-semibold uppercase tracking-wider" style={{ color: 'var(--text-quaternary)' }}>{label}</p>
-      <p className="text-sm font-bold tabular-nums leading-tight" style={{ color: 'var(--text-primary)' }}>{value}</p>
-      {d.value > 0 && (
+    <BentoCard className="py-2 px-3" style={accent ? { borderColor: 'var(--system-green)', borderWidth: '1.5px' } : undefined}>
+      <p className="text-[8px] font-semibold uppercase tracking-wider" style={{ color: accent ? 'var(--system-green)' : 'var(--text-quaternary)' }}>{label}</p>
+      <p className="text-sm font-bold tabular-nums leading-tight" style={{ color: accent ? 'var(--system-green)' : 'var(--text-primary)' }}>{value}</p>
+      {d && d.value > 0 && (
         <span className="text-[8px] font-semibold inline-flex items-center gap-0.5" style={{ color: d.isUp ? 'var(--system-green)' : 'var(--system-red)' }}>
           {d.isUp ? <TrendingUp size={7} /> : <TrendingDown size={7} />}
           {d.value.toFixed(1)}%

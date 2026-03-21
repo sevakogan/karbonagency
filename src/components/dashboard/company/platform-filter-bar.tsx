@@ -15,6 +15,8 @@ interface Props {
   onCustomDateRange: (start: string, end: string) => void;
   customStart?: string;
   customEnd?: string;
+  /** Optional trailing element rendered after platform pills (e.g. ShiftOS toggle) */
+  trailingElement?: React.ReactNode;
 }
 
 const RANGE_OPTIONS: { label: string; value: DateRange }[] = [
@@ -58,6 +60,7 @@ export function PlatformFilterBar({
   onCustomDateRange,
   customStart,
   customEnd,
+  trailingElement,
 }: Props) {
   const isAllSelected = selectedPlatforms.size === 0;
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -298,6 +301,13 @@ export function PlatformFilterBar({
               </button>
             );
           })}
+
+          {/* Trailing element (ShiftOS toggle) */}
+          {trailingElement && (
+            <div className="ml-1 border-l pl-2" style={{ borderColor: 'var(--glass-border)' }}>
+              {trailingElement}
+            </div>
+          )}
         </div>
 
         {/* Range presets */}

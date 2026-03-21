@@ -198,29 +198,25 @@ export function PlatformFilterBar({
               const isSelected = inDragRange || inCustomRange;
               const isRangeEnd = dateStr === activeStart || dateStr === activeEnd;
 
-              // Tile styles
+              // Tile styles — today is ALWAYS green, never overridden
               let bg = 'var(--fill-quaternary)';
               let textColor = 'var(--text-secondary)';
               let border = '1.5px solid transparent';
               let shadow = 'none';
 
-              if (isSelected && isRangeEnd) {
+              if (isToday) {
+                // Today: always green, no matter what
+                bg = '#00D26A';
+                textColor = 'white';
+                border = '1.5px solid #00D26A';
+                shadow = '0 0 10px rgba(0, 210, 106, 0.4)';
+              } else if (isSelected && isRangeEnd) {
                 bg = 'var(--accent)';
                 textColor = 'white';
                 shadow = '0 2px 8px color-mix(in srgb, var(--accent) 40%, transparent)';
               } else if (isSelected) {
                 bg = 'color-mix(in srgb, var(--accent) 18%, var(--fill-quaternary))';
                 textColor = 'var(--text-primary)';
-              }
-
-              // Today ring — always visible
-              if (isToday) {
-                border = isSelected
-                  ? '1.5px solid rgba(255,255,255,0.6)'
-                  : '1.5px solid var(--accent)';
-                if (!isSelected) {
-                  shadow = '0 0 0 1px var(--accent), 0 0 8px color-mix(in srgb, var(--accent) 25%, transparent)';
-                }
               }
 
               return (

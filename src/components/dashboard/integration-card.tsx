@@ -1,8 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { Settings2, Wifi } from 'lucide-react';
-import { ToggleSwitch } from '@/components/ui/toggle-switch';
+import { ChevronRight } from 'lucide-react';
 import type { PlatformCatalogEntry, CompanyIntegration, IntegrationStatus } from '@/types';
 
 interface IntegrationCardProps {
@@ -13,134 +12,74 @@ interface IntegrationCardProps {
 }
 
 const categoryColors: Record<string, string> = {
-  ads: 'var(--system-blue)',
-  analytics: 'var(--system-green)',
-  reviews: 'var(--system-amber)',
-  seo: 'var(--system-purple)',
+  ads: '#007AFF',
+  analytics: '#30D158',
+  reviews: '#FF9F0A',
+  seo: '#BF5AF2',
 };
 
-const statusDotColor: Record<IntegrationStatus, string> = {
-  connected: 'var(--system-green)',
-  error: 'var(--system-red)',
-  syncing: 'var(--system-green)',
-  disconnected: 'var(--text-quaternary)',
+const statusLabel: Record<IntegrationStatus, { text: string; color: string }> = {
+  connected: { text: 'Connected', color: 'var(--system-green)' },
+  error: { text: 'Error', color: 'var(--system-red)' },
+  syncing: { text: 'Syncing', color: 'var(--system-green)' },
+  disconnected: { text: '', color: 'var(--text-quaternary)' },
 };
 
-export function IntegrationCard({ platform, integration, onConfigure, onToggle }: IntegrationCardProps) {
+export function IntegrationCard({ platform, integration, onConfigure }: IntegrationCardProps) {
   const status: IntegrationStatus = integration?.status ?? 'disconnected';
-  const isEnabled = integration?.is_enabled ?? false;
-  const categoryColor = categoryColors[platform.category] ?? 'var(--text-tertiary)';
   const isConnected = status === 'connected';
+  const categoryColor = categoryColors[platform.category] ?? '#8E8E93';
+  const statusInfo = statusLabel[status];
 
   return (
-    <motion.div
-      style={{ padding: '8px 12px' }}
+    <motion.button
+      onClick={() => onConfigure(platform)}
+      className="w-full flex items-center gap-3 text-left cursor-pointer"
+      style={{ padding: '10px 14px', background: 'transparent', border: 'none' }}
       whileHover={{ background: 'var(--fill-quaternary)' }}
-      transition={{ duration: 0.15 }}
+      whileTap={{ scale: 0.98 }}
+      transition={{ duration: 0.1 }}
     >
-      {/* Single row: icon + name + badge + toggle */}
-      <div className="flex items-center gap-2.5">
-        {/* Platform icon — small circle */}
-        <div
-          className="w-7 h-7 rounded-lg flex items-center justify-center text-white font-semibold flex-shrink-0"
-          style={{ background: categoryColor, fontSize: '11px' }}
-        >
-          {platform.display_name.charAt(0)}
-        </div>
-
-        {/* Name + status */}
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-1.5">
-            <span
-              className="font-medium truncate"
-              style={{ fontSize: '13px', color: 'var(--text-primary)', lineHeight: 1.2 }}
-            >
-              {platform.display_name}
-            </span>
-          </div>
-          <div className="flex items-center gap-1.5 mt-0.5">
-            {/* Status dot */}
-            <div
-              className="w-1.5 h-1.5 rounded-full flex-shrink-0"
-              style={{ background: statusDotColor[status] }}
-            />
-            <span style={{ fontSize: '10px', color: 'var(--text-tertiary)' }}>
-              {isConnected
-                ? integration?.status_detail ?? 'Connected'
-                : !platform.sync_enabled
-                  ? 'Coming soon'
-                  : 'Not connected'}
-            </span>
-          </div>
-        </div>
-
-        {/* Category pill */}
-        <span
-          className="flex-shrink-0 px-1.5 py-0.5 rounded-full font-medium"
-          style={{
-            fontSize: '9px',
-            background: `color-mix(in srgb, ${categoryColor} 12%, transparent)`,
-            color: categoryColor,
-            textTransform: 'uppercase',
-            letterSpacing: '0.5px',
-          }}
-        >
-          {platform.category}
-        </span>
-
-        {/* Connect button or toggle */}
-        {isConnected ? (
-          <ToggleSwitch
-            checked={isEnabled}
-            onChange={(checked) => onToggle(platform.slug, checked)}
-          />
-        ) : (
-          <button
-            onClick={() => onConfigure(platform)}
-            className="flex items-center gap-1 flex-shrink-0"
-            style={{
-              background: 'var(--fill-tertiary)',
-              border: '1px solid var(--glass-border)',
-              borderRadius: 'var(--radius-full)',
-              padding: '4px 10px',
-              fontSize: '11px',
-              fontWeight: 500,
-              color: 'var(--text-primary)',
-              cursor: 'pointer',
-            }}
-          >
-            <Wifi size={11} />
-            Connect
-          </button>
-        )}
-
-        {/* Settings gear for connected */}
-        {isConnected && (
-          <button
-            onClick={() => onConfigure(platform)}
-            className="flex-shrink-0"
-            style={{
-              background: 'none',
-              border: 'none',
-              cursor: 'pointer',
-              color: 'var(--text-tertiary)',
-              padding: '4px',
-            }}
-          >
-            <Settings2 size={13} />
-          </button>
-        )}
+      {/* Platform icon — iOS app icon style */}
+      <div
+        className="flex-shrink-0 flex items-center justify-center text-white font-semibold"
+        style={{
+          width: 32,
+          height: 32,
+          borderRadius: 8,
+          background: `linear-gradient(145deg, ${categoryColor}, color-mix(in srgb, ${categoryColor} 75%, #000))`,
+          fontSize: '13px',
+          boxShadow: `0 1px 3px color-mix(in srgb, ${categoryColor} 30%, transparent)`,
+        }}
+      >
+        {platform.display_name.charAt(0)}
       </div>
 
-      {/* Error message — only if error */}
-      {integration?.error_message && (
-        <p
-          className="mt-1.5 ml-9"
-          style={{ fontSize: '10px', color: 'var(--system-red)', lineHeight: 1.3 }}
+      {/* Name */}
+      <div className="flex-1 min-w-0">
+        <span
+          className="block truncate"
+          style={{ fontSize: '14px', color: 'var(--text-primary)', fontWeight: 400 }}
         >
-          {integration.error_message}
-        </p>
-      )}
-    </motion.div>
+          {platform.display_name}
+        </span>
+      </div>
+
+      {/* Right side — status or "Coming soon" */}
+      <div className="flex items-center gap-1.5 flex-shrink-0">
+        {isConnected ? (
+          <span style={{ fontSize: '13px', color: statusInfo.color }}>
+            {statusInfo.text}
+          </span>
+        ) : status === 'error' ? (
+          <span style={{ fontSize: '13px', color: 'var(--system-red)' }}>Error</span>
+        ) : !platform.sync_enabled ? (
+          <span style={{ fontSize: '13px', color: 'var(--text-quaternary)' }}>Soon</span>
+        ) : (
+          <span style={{ fontSize: '13px', color: 'var(--text-quaternary)' }}>Off</span>
+        )}
+        <ChevronRight size={14} style={{ color: 'var(--text-quaternary)' }} />
+      </div>
+    </motion.button>
   );
 }

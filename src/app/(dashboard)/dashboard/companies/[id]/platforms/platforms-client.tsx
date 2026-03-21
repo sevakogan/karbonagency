@@ -109,26 +109,22 @@ export function PlatformsClient({ company, platforms, integrations: initialInteg
                 {categoryLabels[cat]}
               </h3>
 
-              {/* iOS grouped list — rounded container with dividers */}
+              {/* iOS grouped list — inset rounded container */}
               <motion.div
                 className="overflow-hidden"
                 style={{
-                  borderRadius: '10px',
-                  background: 'var(--glass-bg)',
-                  border: '1px solid var(--glass-border)',
+                  borderRadius: '12px',
+                  background: 'var(--bg-elevated)',
                 }}
                 variants={staggerContainer}
                 initial="hidden"
                 animate="visible"
               >
                 {items.map((platform, idx) => (
-                  <motion.div
-                    key={platform.slug}
-                    variants={staggerItem}
-                    style={{
-                      borderTop: idx > 0 ? '1px solid var(--separator)' : undefined,
-                    }}
-                  >
+                  <motion.div key={platform.slug} variants={staggerItem}>
+                    {idx > 0 && (
+                      <div style={{ marginLeft: 58, height: 1, background: 'var(--separator)' }} />
+                    )}
                     <IntegrationCard
                       platform={platform}
                       integration={getIntegration(platform.slug)}

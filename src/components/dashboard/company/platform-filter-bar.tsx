@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useRef, useState, useCallback } from 'react';
+import { useMemo, useRef, useState, useCallback, useEffect } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { PLATFORM_COLORS, PLATFORM_NAMES } from '@/lib/dashboard/platform-config';
 import type { DateRange } from '@/lib/dashboard/use-dashboard-data';
@@ -69,10 +69,11 @@ export function PlatformFilterBar({
 
   const today = useMemo(() => new Date(), []);
 
-  // Build 14 days centered on today
+  // Build ~35 days: 4 weeks back + rest of current week
   const calendarDays = useMemo(() => {
     const days: Date[] = [];
-    for (let i = -6; i <= 7; i++) {
+    // 28 days back (4 weeks) through 3 days forward
+    for (let i = -28; i <= 3; i++) {
       const d = new Date(today);
       d.setDate(d.getDate() + i);
       days.push(d);
@@ -80,16 +81,17 @@ export function PlatformFilterBar({
     return days;
   }, [today]);
 
-  // Month tabs
+  // Unique months that appear in the day strip
   const monthTabs = useMemo(() => {
-    const now = new Date();
-    const tabs = [];
-    for (let i = -2; i <= 2; i++) {
-      const m = new Date(now.getFullYear(), now.getMonth() + i, 1);
-      tabs.push({ label: MONTHS[m.getMonth()], month: m.getMonth(), year: m.getFullYear() });
+    const seen = new Map<string, { label: string; month: number; year: number }>();
+    for (const d of calendarDays) {
+      const key = `${d.getFullYear()}-${d.getMonth()}`;
+      if (!seen.has(key)) {
+        seen.set(key, { label: MONTHS[d.getMonth()], month: d.getMonth(), year: d.getFullYear() });
+      }
     }
-    return tabs;
-  }, []);
+    return [...seen.values()];
+  }, [calendarDays]);
 
   const currentMonth = today.getMonth();
   const currentYear = today.getFullYear();
@@ -129,6 +131,13 @@ export function PlatformFilterBar({
     setDragStart(null);
     setDragEnd(null);
   }, [dragStart, dragEnd, onCustomDateRange]);
+
+  // Auto-scroll to today (near the end) on mount
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollLeft = scrollRef.current.scrollWidth;
+    }
+  }, []);
 
   const scroll = (dir: 'left' | 'right') => {
     scrollRef.current?.scrollBy({ left: dir === 'left' ? -200 : 200, behavior: 'smooth' });
@@ -174,10 +183,14 @@ export function PlatformFilterBar({
             <ChevronLeft size={14} />
           </button>
 
-          <div ref={scrollRef} className="flex items-center justify-around overflow-hidden flex-1">
-            {calendarDays.map((d) => {
+          <div ref={scrollRef} className="flex items-center gap-0.5 overflow-x-auto flex-1 scrollbar-hide">
+            {calendarDays.map((d, idx) => {
               const dateStr = toDateStr(d);
               const isToday = isSameDay(d, today);
+
+              // Show month divider when month changes
+              const prevDate = idx > 0 ? calendarDays[idx - 1] : null;
+              const showMonthDivider = prevDate && prevDate.getMonth() !== d.getMonth();
 
               // Highlight logic: dragging range OR committed custom range
               const inDragRange = dragStart ? isInRange(dateStr, dragStart, dragEnd ?? dragStart) : false;
@@ -186,30 +199,49 @@ export function PlatformFilterBar({
               const isRangeEnd = dateStr === activeStart || dateStr === activeEnd;
 
               let bg = 'transparent';
-              let color = 'var(--text-secondary)';
+              let textColor = 'var(--text-tertiary)';
 
               if (isSelected && isRangeEnd) {
                 bg = 'var(--accent)';
-                color = 'white';
+                textColor = 'white';
               } else if (isSelected) {
                 bg = 'color-mix(in srgb, var(--accent) 20%, transparent)';
-                color = 'var(--text-primary)';
-              } else if (isToday && dateRange !== 'custom') {
-                bg = 'color-mix(in srgb, var(--accent) 12%, transparent)';
-                color = 'var(--accent)';
+                textColor = 'var(--text-primary)';
               }
 
+              // Today always gets a visible ring
+              const todayRing = isToday && !isSelected
+                ? '2px solid var(--accent)'
+                : isToday
+                  ? '2px solid white'
+                  : '2px solid transparent';
+
               return (
-                <button
-                  key={dateStr}
-                  onMouseDown={() => handleDayMouseDown(dateStr)}
-                  onMouseEnter={() => handleDayMouseEnter(dateStr)}
-                  className="flex flex-col items-center gap-0.5 px-2.5 py-1 rounded-xl transition-colors flex-shrink-0 min-w-[40px] cursor-pointer"
-                  style={{ background: bg, color }}
-                >
-                  <span className="text-[8px] font-medium uppercase">{DAYS_SHORT[d.getDay()]}</span>
-                  <span className="text-sm font-bold leading-none">{d.getDate()}</span>
-                </button>
+                <span key={dateStr} className="flex items-center">
+                  {showMonthDivider && (
+                    <span
+                      className="flex-shrink-0 mx-1 px-1.5 py-3 text-[8px] font-bold uppercase"
+                      style={{ color: 'var(--text-quaternary)' }}
+                    >
+                      {MONTHS[d.getMonth()]}
+                    </span>
+                  )}
+                  <button
+                    onMouseDown={() => handleDayMouseDown(dateStr)}
+                    onMouseEnter={() => handleDayMouseEnter(dateStr)}
+                    className="flex flex-col items-center gap-0.5 py-1 rounded-xl transition-colors flex-shrink-0 cursor-pointer"
+                    style={{
+                      background: bg,
+                      color: textColor,
+                      border: todayRing,
+                      width: 38,
+                      minWidth: 38,
+                    }}
+                  >
+                    <span className="text-[7px] font-medium uppercase leading-none">{DAYS_SHORT[d.getDay()]}</span>
+                    <span className="text-xs font-bold leading-none">{d.getDate()}</span>
+                  </button>
+                </span>
               );
             })}
           </div>

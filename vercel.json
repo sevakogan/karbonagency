@@ -19,6 +19,10 @@
     {
       "path": "/api/cron/shiftos-users",
       "schedule": "0 16,22 * * *"
+    },
+    {
+      "path": "/api/cron/shiftos-sync",
+      "schedule": "0 14,17,20,23,2 * * *"
     }
   ]
 }

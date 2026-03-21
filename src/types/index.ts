@@ -149,7 +149,8 @@ export type PlatformSlug =
   | 'linkedin_ads'
   | 'yelp'
   | 'bing_ads'
-  | 'snapchat_ads';
+  | 'snapchat_ads'
+  | 'shiftos';
 
 export type PlatformCategory = 'ads' | 'analytics' | 'reviews' | 'seo';
 

@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { sendTelegramMessage, type TelegramUpdate } from '@/lib/telegram';
-import { generateAdInsight } from '@/lib/ai-summary';
+import { askClaude, generateAdInsight } from '@/lib/ai-summary';
 import { getAdminSupabase } from '@/lib/supabase-admin';
+import { getMiamiNewReservations, getMiamiNewUsers, getMiamiTotalUsers } from '@/lib/shiftos/client';
 
 export async function POST(request: NextRequest) {
   try {
@@ -19,12 +20,13 @@ export async function POST(request: NextRequest) {
       await sendTelegramMessage(chatId,
         `<b>🔴 Karbon Shift Bot</b>\n\n` +
         `I'm your AI marketing assistant powered by Claude.\n\n` +
-        `Ask me anything about your ad performance:\n` +
+        `Ask me anything about ads, bookings, or signups:\n` +
         `• "How are my ads doing?"\n` +
+        `• "How many reservations today?"\n` +
+        `• "Which ads are driving bookings?"\n` +
         `• "What's my spend this week?"\n` +
-        `• "How's my CTR?"\n` +
         `• "Give me a full report"\n\n` +
-        `I'll analyze your real-time data and give you insights.`
+        `I have real-time ad data AND live booking data from ShiftOS.`
       );
       return NextResponse.json({ ok: true });
     }
@@ -42,9 +44,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ ok: true });
     }
 
-    // Any other message — treat as a question for Claude
+    // Any other message — treat as a question for Claude (enhanced with ShiftOS data)
     const metricsContext = await getMetricsContext();
-    const insight = await generateAdInsight(metricsContext, text);
+    const insight = await askClaude({
+      systemPrompt: 'You are Karbon AI, a marketing analytics assistant for Karbon Agency managing Shift Arcade Miami. You have access to BOTH real-time ad performance data AND live booking/reservation data from ShiftOS. When asked about reservations, bookings, signups, or attribution — use the ShiftOS data. Be concise, specific with numbers. Format for Telegram (HTML: <b>bold</b>). Under 200 words.',
+      userMessage: `Here is the current data:\n\n${metricsContext}\n\nQuestion: ${text}`,
+      maxTokens: 400,
+    });
     await sendTelegramMessage(chatId, insight);
 
     return NextResponse.json({ ok: true });
@@ -75,6 +81,50 @@ async function getMetricsContext(): Promise<string> {
     .order('date', { ascending: false });
 
   if (!metrics || metrics.length === 0) return 'No ad data available yet.';
+
+  // Pull ShiftOS data in parallel (fail gracefully)
+  const todayStart = `${today}T00:00:00`;
+  let shiftosContext = '';
+  try {
+    const [todayBookings, todayUsers, totalUsers] = await Promise.all([
+      getMiamiNewReservations(todayStart),
+      getMiamiNewUsers(todayStart),
+      getMiamiTotalUsers(),
+    ]);
+
+    // Attribution: compare reservation timestamps to ad click timestamps
+    const adPlatforms = [...new Set((metrics ?? []).filter(r => r.date === today).map(r => r.platform))];
+    const todayAdSpend: Record<string, number> = {};
+    for (const row of (metrics ?? []).filter(r => r.date === today)) {
+      todayAdSpend[row.platform] = (todayAdSpend[row.platform] ?? 0) + Number(row.spend);
+    }
+
+    const platformBreakdown = Object.entries(todayAdSpend)
+      .map(([p, s]) => `  • ${p}: $${s.toFixed(2)}`)
+      .join('\n');
+
+    const totalAdSpendToday = Object.values(todayAdSpend).reduce((a, b) => a + b, 0);
+
+    shiftosContext = `\nSHIFT ARCADE BOOKINGS (LIVE from ShiftOS):
+- Reservations made today: ${todayBookings.count}
+- New user signups today: ${todayUsers.count}
+- Total Miami users: ${totalUsers.toLocaleString()}
+${todayBookings.reservations.slice(0, 10).map(r =>
+  `  • ${r.readonly_values.user_display_name} → ${r.readonly_values.calendar_name} at ${new Date(r.time).toLocaleTimeString('en-US', { timeZone: 'America/New_York', hour: '2-digit', minute: '2-digit' })}`
+).join('\n')}
+
+AD SPEND BY PLATFORM TODAY:
+${platformBreakdown || '  No ad data yet'}
+- Est. cost per reservation: $${todayBookings.count > 0 ? (totalAdSpendToday / todayBookings.count).toFixed(2) : 'N/A'}
+- Est. cost per signup: $${todayUsers.count > 0 ? (totalAdSpendToday / todayUsers.count).toFixed(2) : 'N/A'}
+
+RESERVATION ATTRIBUTION:
+When a reservation is made within 24 hours of ad clicks, it's likely ad-driven.
+Active ad platforms: ${adPlatforms.join(', ') || 'None'}`;
+  } catch (err) {
+    console.error('ShiftOS data unavailable for Q&A:', err);
+    shiftosContext = '\nShiftOS booking data: temporarily unavailable';
+  }
 
   // Build context string
   const rows = metrics;
@@ -120,7 +170,7 @@ LAST 30 DAYS:
 - Impressions: ${monthSum.impressions.toLocaleString()}
 - Clicks: ${monthSum.clicks.toLocaleString()}
 - Conversions: ${monthSum.conversions}
-- CPM: $${monthSum.impressions > 0 ? ((monthSum.spend / monthSum.impressions) * 1000).toFixed(2) : '0.00'}`;
+- CPM: $${monthSum.impressions > 0 ? ((monthSum.spend / monthSum.impressions) * 1000).toFixed(2) : '0.00'}${shiftosContext}`;
 }
 
 async function getSystemStatus(): Promise<string> {

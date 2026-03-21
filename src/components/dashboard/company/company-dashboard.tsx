@@ -230,32 +230,15 @@ export function CompanyDashboard({ company, integrations, dailyMetrics }: Props)
     [channelData],
   );
 
-  // --- Mock data for sections not yet connected to real sources ---
-
-  // TODO: Replace with real Square + ShiftOS revenue data
-  const mockRevenue = {
-    totalRevenue: dashData.kpis.conversions.value * 136,
-    shiftOSRevenue: Math.round(dashData.kpis.conversions.value * 136 * 0.72),
-    squareRevenue: Math.round(dashData.kpis.conversions.value * 136 * 0.28),
+  // --- Revenue derived from real data (no mocks) ---
+  // TODO: Connect Square API for real POS revenue. Until then, estimate from ShiftOS conversions.
+  const revenueData = {
+    totalRevenue: 0, // Will be populated when Square is connected
+    shiftOSRevenue: 0,
+    squareRevenue: 0,
     transactions: dashData.kpis.conversions.value,
-    avgTicket: 136,
+    avgTicket: 0,
   };
-
-  // TODO: Replace with real customer journey data from attribution tracking
-  const mockJourneySteps = [
-    { time: '2h ago', channel: 'Meta Ads', action: 'Clicked "Weekend Racing Special" ad', device: 'iPhone 15', status: 'session' as const },
-    { time: '1h ago', channel: 'Google', action: 'Searched "sim racing near me"', device: 'iPhone 15', status: 'intent' as const },
-    { time: '45m ago', channel: 'Direct', action: 'Visited booking page', device: 'iPhone 15', status: 'intent' as const },
-    { time: '30m ago', channel: 'Shift OS', action: 'Booked 2-hour group session', device: 'iPhone 15', status: 'booked' as const },
-    { time: '30m ago', channel: 'Square', action: '$272 payment processed', device: 'POS Terminal', status: 'revenue' as const },
-  ];
-
-  // TODO: Replace with real transaction data from Square + ShiftOS APIs
-  const mockTransactions = [
-    { time: '30m ago', source: 'Shift OS' as const, customer: 'Mike R.', amount: 272, package: '2hr Group Session', channel: 'Meta Ads', confidence: 0.92 },
-    { time: '1h ago', source: 'Square' as const, customer: 'Sarah L.', amount: 136, package: '1hr Solo Session', channel: 'Google Ads', confidence: 0.78 },
-    { time: '3h ago', source: 'Shift OS' as const, customer: 'James K.', amount: 408, package: '3hr Party Package', channel: 'Instagram', confidence: 0.65 },
-  ];
 
   return (
     <div>
@@ -285,7 +268,7 @@ export function CompanyDashboard({ company, integrations, dailyMetrics }: Props)
         {/* 3. HERO ROW */}
         <div className="grid gap-2" style={{ gridTemplateColumns: '1.3fr 0.7fr 1fr' }}>
           <BentoCard>
-            <HeroRevenue {...mockRevenue} />
+            <HeroRevenue {...revenueData} />
           </BentoCard>
           <BentoCard>
             <HeroHealth
@@ -355,18 +338,24 @@ export function CompanyDashboard({ company, integrations, dailyMetrics }: Props)
           </div>
         </section>
 
-        {/* 8. SECTION: Customer Journey */}
+        {/* 8. SECTION: Customer Journey — empty until attribution tracking is connected */}
         <section>
           <SectionHeaderV2 icon={<Route size={16} />} title="Customer Journey" />
           <BentoCard>
-            <CustomerJourney steps={mockJourneySteps} />
+            <p className="text-xs py-6 text-center" style={{ color: 'var(--text-tertiary)' }}>
+              Customer journey tracking will appear here once UTM attribution is connected.
+            </p>
           </BentoCard>
         </section>
 
-        {/* 9. SECTION: Recent Transactions */}
+        {/* 9. SECTION: Recent Transactions — empty until Square is connected */}
         <section>
           <SectionHeaderV2 icon={<Receipt size={16} />} title="Recent Transactions" />
-          <RecentTransactions transactions={mockTransactions} />
+          <BentoCard>
+            <p className="text-xs py-6 text-center" style={{ color: 'var(--text-tertiary)' }}>
+              Connect Square to see live transactions with attribution.
+            </p>
+          </BentoCard>
         </section>
 
         {/* 10. Instagram Section */}

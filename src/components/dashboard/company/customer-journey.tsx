@@ -1,11 +1,13 @@
 'use client';
 
-interface JourneyStep {
+export interface JourneyStep {
   time: string;
   channel: string;
   action: string;
   device: string;
   status: 'session' | 'intent' | 'booked' | 'revenue';
+  customerName?: string;
+  amount?: number;
 }
 
 interface CustomerJourneyProps {
@@ -27,8 +29,37 @@ const STATUS_LABELS: Record<string, string> = {
 };
 
 export function CustomerJourney({ steps }: CustomerJourneyProps) {
+  // Pull customer name and total amount from steps that have them
+  const customerName = steps.find(s => s.customerName)?.customerName;
+  const totalAmount = steps.filter(s => s.amount).reduce((sum, s) => sum + (s.amount ?? 0), 0);
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 0, position: 'relative' }}>
+    <div>
+      {/* Customer header */}
+      {(customerName || totalAmount > 0) && (
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12, paddingBottom: 10, borderBottom: '1px solid var(--separator)' }}>
+          {customerName && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div style={{
+                width: 28, height: 28, borderRadius: 14,
+                background: 'var(--accent)', color: 'white',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 11, fontWeight: 700,
+              }}>
+                {customerName.split(' ').map(n => n[0]).join('')}
+              </div>
+              <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)' }}>{customerName}</span>
+            </div>
+          )}
+          {totalAmount > 0 && (
+            <span style={{ fontSize: 16, fontWeight: 800, color: 'var(--system-green, #30D158)' }}>
+              ${totalAmount.toLocaleString()}
+            </span>
+          )}
+        </div>
+      )}
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 0, position: 'relative' }}>
       {steps.map((step, i) => {
         const color = STATUS_COLORS[step.status] ?? 'var(--text-tertiary)';
         const isLast = i === steps.length - 1;
@@ -95,6 +126,7 @@ export function CustomerJourney({ steps }: CustomerJourneyProps) {
           </div>
         );
       })}
+      </div>
     </div>
   );
 }

@@ -1,7 +1,10 @@
 import { notFound } from 'next/navigation';
 import { getCompanyById, getPlatformCatalog } from '@/lib/actions/companies';
-import { getCompanyIntegrations } from '@/lib/actions/integrations';
+import { getAdminSupabase } from '@/lib/supabase-admin';
 import { PlatformsClient } from './platforms-client';
+import type { CompanyIntegration } from '@/types';
+
+export const dynamic = 'force-dynamic';
 
 export default async function PlatformsPage({
   params,
@@ -12,9 +15,9 @@ export default async function PlatformsPage({
   const company = await getCompanyById(id);
   if (!company) notFound();
 
-  const [{ data: platforms }, { data: integrations }] = await Promise.all([
+  const [{ data: platforms }, integrations] = await Promise.all([
     getPlatformCatalog(),
-    getCompanyIntegrations(id),
+    fetchIntegrationsWithCreds(id),
   ]);
 
   return (
@@ -24,4 +27,16 @@ export default async function PlatformsPage({
       integrations={integrations}
     />
   );
+}
+
+async function fetchIntegrationsWithCreds(companyId: string): Promise<CompanyIntegration[]> {
+  const supabase = getAdminSupabase();
+  const { data, error } = await supabase
+    .from('company_integrations')
+    .select('*')
+    .eq('company_id', companyId)
+    .order('created_at', { ascending: true });
+
+  if (error || !data) return [];
+  return data as CompanyIntegration[];
 }

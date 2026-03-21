@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
 import { getCompanyById } from '@/lib/actions/companies';
 import { getCompanyIntegrations } from '@/lib/actions/integrations';
-import { createSupabaseServer } from '@/lib/supabase-server';
+import { getAdminSupabase } from '@/lib/supabase-admin';
 import { CompanyOverviewClient } from './company-overview-client';
 
 export const dynamic = 'force-dynamic';
@@ -17,8 +17,8 @@ export default async function CompanyDetailPage({
 
   const { data: integrations } = await getCompanyIntegrations(id);
 
-  // Fetch aggregated metrics from daily_metrics
-  const supabase = await createSupabaseServer();
+  // Fetch aggregated metrics from daily_metrics (admin client to bypass RLS)
+  const supabase = getAdminSupabase();
   const thirtyDaysAgo = new Date();
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
   const since = thirtyDaysAgo.toISOString().split('T')[0];

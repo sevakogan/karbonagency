@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 import { pageVariants, staggerContainer, staggerItem } from '@/lib/animations';
 import { IntegrationCard } from '@/components/dashboard/integration-card';
 import { CredentialSheet } from '@/components/dashboard/credential-sheet';
-import { toggleIntegration } from '@/lib/actions/integrations';
+import { toggleIntegration, getIntegrationWithCredentials } from '@/lib/actions/integrations';
 import type { Company, PlatformCatalogEntry, CompanyIntegration, PlatformSlug } from '@/types';
 
 interface Props {
@@ -28,12 +28,20 @@ export function PlatformsClient({ company, platforms, integrations: initialInteg
   const router = useRouter();
   const [integrations, setIntegrations] = useState(initialIntegrations);
   const [selectedPlatform, setSelectedPlatform] = useState<PlatformCatalogEntry | null>(null);
+  const [existingCredentials, setExistingCredentials] = useState<Record<string, string>>({});
   const [isSheetOpen, setIsSheetOpen] = useState(false);
 
-  const handleConfigure = useCallback((platform: PlatformCatalogEntry) => {
+  const handleConfigure = useCallback(async (platform: PlatformCatalogEntry) => {
     setSelectedPlatform(platform);
+    setExistingCredentials({});
     setIsSheetOpen(true);
-  }, []);
+
+    // Fetch decrypted credentials in background
+    const { data } = await getIntegrationWithCredentials(company.id, platform.slug as PlatformSlug);
+    if (data?.credentials) {
+      setExistingCredentials(data.credentials);
+    }
+  }, [company.id]);
 
   const handleToggle = useCallback(async (platformSlug: string, enabled: boolean) => {
     await toggleIntegration(company.id, platformSlug as PlatformSlug, enabled);
@@ -146,6 +154,7 @@ export function PlatformsClient({ company, platforms, integrations: initialInteg
       <CredentialSheet
         platform={selectedPlatform}
         companyId={company.id}
+        existingCredentials={existingCredentials}
         isOpen={isSheetOpen}
         onClose={() => setIsSheetOpen(false)}
         onSaved={handleSaved}

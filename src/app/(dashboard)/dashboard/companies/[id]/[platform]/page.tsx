@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation';
-import { createSupabaseServer } from '@/lib/supabase-server';
+import { getAdminSupabase } from '@/lib/supabase-admin';
 import { getCompanyById } from '@/lib/actions/companies';
 import { PlatformDeepDive } from './platform-deep-dive';
 
@@ -26,7 +26,7 @@ export default async function PlatformPage({
   const dbPlatform = platformMap[platformSlug] ?? platformSlug;
 
   // Fetch platform catalog info
-  const supabase = await createSupabaseServer();
+  const supabase = getAdminSupabase();
   const { data: catalogEntry } = await supabase
     .from('platform_catalog')
     .select('display_name, category, sync_enabled')

@@ -11,6 +11,7 @@ interface Props {
   selectedPlatforms: Set<string>;
   refreshing: boolean;
   onRefresh: () => void;
+  lastSyncedAt?: string | null;
 }
 
 export function DashboardHeader({
@@ -19,6 +20,7 @@ export function DashboardHeader({
   selectedPlatforms,
   refreshing,
   onRefresh,
+  lastSyncedAt,
 }: Props) {
   const router = useRouter();
   const initial = (company.company_name ?? company.name)?.[0]?.toUpperCase() ?? '?';
@@ -57,6 +59,19 @@ export function DashboardHeader({
           </h1>
           <p className="text-xs text-[var(--text-tertiary)]">
             {connectedPlatforms.length} platform{connectedPlatforms.length !== 1 ? 's' : ''} connected
+            {lastSyncedAt && (
+              <span className="ml-1.5 opacity-60">
+                · Synced {(() => {
+                  const diff = Date.now() - new Date(lastSyncedAt).getTime();
+                  const mins = Math.floor(diff / 60000);
+                  if (mins < 1) return 'just now';
+                  if (mins < 60) return `${mins}m ago`;
+                  const hrs = Math.floor(mins / 60);
+                  if (hrs < 24) return `${hrs}h ago`;
+                  return `${Math.floor(hrs / 24)}d ago`;
+                })()}
+              </span>
+            )}
           </p>
         </div>
       </div>

@@ -249,6 +249,10 @@ export function CompanyDashboard({ company, integrations, dailyMetrics }: Props)
         selectedPlatforms={selectedPlatforms}
         refreshing={refreshing}
         onRefresh={handleRefresh}
+        lastSyncedAt={integrations.reduce((latest, i) => {
+          if (!i.last_synced_at) return latest;
+          return !latest || i.last_synced_at > latest ? i.last_synced_at : latest;
+        }, null as string | null)}
       />
 
       {/* 2. Platform filter bar + calendar */}

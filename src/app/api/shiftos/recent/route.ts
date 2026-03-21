@@ -7,8 +7,9 @@ import { getMiamiNewReservations } from '@/lib/shiftos/client';
  */
 export async function GET() {
   try {
-    // Get reservations from last 24 hours
-    const since = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
+    // Get reservations from the start of the current month
+    const now = new Date();
+    const since = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
     const { reservations } = await getMiamiNewReservations(since);
 
     // Map to a clean format for the frontend

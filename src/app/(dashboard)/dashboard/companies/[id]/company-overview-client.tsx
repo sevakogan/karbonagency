@@ -82,10 +82,14 @@ export function CompanyOverviewClient({ company, integrations, dailyMetrics }: P
   const normSlug = (s: string) => s === 'meta' ? 'meta_ads' : s;
 
   const connectedPlatforms = useMemo(() => {
-    // Only show platforms that have actual data in daily_metrics
-    const dataPlatforms = [...new Set(dailyMetrics.map((r) => normSlug(r.platform)))];
-    return dataPlatforms;
-  }, [dailyMetrics]);
+    // Show platforms that have data OR are connected in integrations
+    const dataPlatforms = new Set(dailyMetrics.map((r) => normSlug(r.platform)));
+    const connectedIntegrations = integrations
+      .filter((i) => i.status === 'connected')
+      .map((i) => normSlug(i.platform_slug));
+    const all = new Set([...dataPlatforms, ...connectedIntegrations]);
+    return [...all];
+  }, [dailyMetrics, integrations]);
 
   // Filter by date range
   const { filtered, previousFiltered } = useMemo(() => {
@@ -342,7 +346,7 @@ export function CompanyOverviewClient({ company, integrations, dailyMetrics }: P
                 <XAxis dataKey="date" tick={{ fontSize: 9, fill: 'var(--text-quaternary)' }} axisLine={false} tickLine={false} />
                 <YAxis tick={{ fontSize: 9, fill: 'var(--text-quaternary)' }} axisLine={false} tickLine={false} width={35} tickFormatter={(v) => `$${fmt(v)}`} />
                 <Tooltip contentStyle={{ background: 'var(--bg-elevated)', border: '1px solid var(--separator)', borderRadius: 8, fontSize: 11 }} />
-                <Area type="monotone" dataKey="spend" stroke="var(--accent)" strokeWidth={2} fill="url(#spendGrad)" />
+                <Area type="natural" dataKey="spend" stroke="var(--accent)" strokeWidth={2} fill="url(#spendGrad)" />
               </AreaChart>
             </ResponsiveContainer>
           ) : (
@@ -369,8 +373,8 @@ export function CompanyOverviewClient({ company, integrations, dailyMetrics }: P
                 <XAxis dataKey="date" tick={{ fontSize: 9, fill: 'var(--text-quaternary)' }} axisLine={false} tickLine={false} />
                 <YAxis tick={{ fontSize: 9, fill: 'var(--text-quaternary)' }} axisLine={false} tickLine={false} width={35} />
                 <Tooltip contentStyle={{ background: 'var(--bg-elevated)', border: '1px solid var(--separator)', borderRadius: 8, fontSize: 11 }} />
-                <Area type="monotone" dataKey="clicks" stroke="#0A84FF" strokeWidth={2} fill="url(#clickGrad)" />
-                <Area type="monotone" dataKey="conversions" stroke="#30D158" strokeWidth={2} fill="none" />
+                <Area type="natural" dataKey="clicks" stroke="#0A84FF" strokeWidth={2} fill="url(#clickGrad)" />
+                <Area type="natural" dataKey="conversions" stroke="#30D158" strokeWidth={2} fill="none" />
               </AreaChart>
             </ResponsiveContainer>
           ) : (
@@ -384,7 +388,7 @@ export function CompanyOverviewClient({ company, integrations, dailyMetrics }: P
           {weeklySpend.length > 0 ? (
             <ResponsiveContainer width="100%" height={100}>
               <BarChart data={weeklySpend}>
-                <Bar dataKey="spend" fill="var(--accent)" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="spend" fill="var(--accent)" radius={[8, 8, 2, 2]} />
                 <Tooltip contentStyle={{ background: 'var(--bg-elevated)', border: '1px solid var(--separator)', borderRadius: 8, fontSize: 11 }} formatter={(v: number) => [`$${fmt(v)}`, 'Spend']} />
               </BarChart>
             </ResponsiveContainer>
@@ -458,7 +462,7 @@ export function CompanyOverviewClient({ company, integrations, dailyMetrics }: P
                 <XAxis dataKey="date" tick={{ fontSize: 9, fill: 'var(--text-quaternary)' }} axisLine={false} tickLine={false} />
                 <YAxis tick={{ fontSize: 9, fill: 'var(--text-quaternary)' }} axisLine={false} tickLine={false} width={35} tickFormatter={(v) => fmt(v)} />
                 <Tooltip contentStyle={{ background: 'var(--bg-elevated)', border: '1px solid var(--separator)', borderRadius: 8, fontSize: 11 }} />
-                <Area type="monotone" dataKey="impressions" stroke="#FF9F0A" strokeWidth={2} fill="url(#imprGrad)" />
+                <Area type="natural" dataKey="impressions" stroke="#FF9F0A" strokeWidth={2} fill="url(#imprGrad)" />
               </AreaChart>
             </ResponsiveContainer>
           ) : (
@@ -475,7 +479,7 @@ export function CompanyOverviewClient({ company, integrations, dailyMetrics }: P
                 <XAxis dataKey="date" tick={{ fontSize: 9, fill: 'var(--text-quaternary)' }} axisLine={false} tickLine={false} />
                 <YAxis tick={{ fontSize: 9, fill: 'var(--text-quaternary)' }} axisLine={false} tickLine={false} width={25} />
                 <Tooltip contentStyle={{ background: 'var(--bg-elevated)', border: '1px solid var(--separator)', borderRadius: 8, fontSize: 11 }} />
-                <Bar dataKey="conversions" fill="#30D158" radius={[3, 3, 0, 0]} />
+                <Bar dataKey="conversions" fill="#30D158" radius={[8, 8, 2, 2]} />
               </BarChart>
             </ResponsiveContainer>
           ) : (

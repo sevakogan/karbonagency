@@ -39,12 +39,12 @@ interface CredentialFieldProps {
 }
 
 const inputStyle = {
-  background: 'var(--fill-tertiary)',
-  border: '1px solid transparent',
+  background: 'var(--bg-elevated)',
+  border: '1px solid var(--separator-opaque)',
   borderRadius: '8px',
   color: 'var(--text-primary)',
   fontSize: '13px',
-  padding: '7px 10px',
+  padding: '8px 10px',
   outline: 'none',
   width: '100%',
 } as const;

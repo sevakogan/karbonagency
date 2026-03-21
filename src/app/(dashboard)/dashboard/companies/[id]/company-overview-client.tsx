@@ -78,13 +78,14 @@ export function CompanyOverviewClient({ company, integrations, dailyMetrics }: P
   const [platformFilter, setPlatformFilter] = useState<PlatformFilter>('all');
   const [refreshing, setRefreshing] = useState(false);
 
+  // Normalize platform slugs: 'meta' and 'meta_ads' are the same
+  const normSlug = (s: string) => s === 'meta' ? 'meta_ads' : s;
+
   const connectedPlatforms = useMemo(() => {
-    const connected = integrations.filter((i) => i.status === 'connected');
-    // Also check what platforms exist in the data
-    const dataPlatforms = [...new Set(dailyMetrics.map((r) => r.platform))];
-    const all = new Set([...connected.map((i) => i.platform_slug), ...dataPlatforms]);
-    return [...all];
-  }, [integrations, dailyMetrics]);
+    // Only show platforms that have actual data in daily_metrics
+    const dataPlatforms = [...new Set(dailyMetrics.map((r) => normSlug(r.platform)))];
+    return dataPlatforms;
+  }, [dailyMetrics]);
 
   // Filter by date range
   const { filtered, previousFiltered } = useMemo(() => {
@@ -104,8 +105,8 @@ export function CompanyOverviewClient({ company, integrations, dailyMetrics }: P
     let prevRows = dailyMetrics.filter((r) => r.date >= prevCutoff && r.date < cutoffStr);
 
     if (platformFilter !== 'all') {
-      rows = rows.filter((r) => r.platform === platformFilter);
-      prevRows = prevRows.filter((r) => r.platform === platformFilter);
+      rows = rows.filter((r) => normSlug(r.platform) === platformFilter);
+      prevRows = prevRows.filter((r) => normSlug(r.platform) === platformFilter);
     }
 
     return { filtered: rows, previousFiltered: prevRows };
@@ -192,22 +193,25 @@ export function CompanyOverviewClient({ company, integrations, dailyMetrics }: P
     { key: 'mtd', label: 'MTD' }, { key: '90d', label: '90D' },
   ];
 
-  // Widget card wrapper
+  // Widget card wrapper — glass effect
   const W = ({ children, className = '', span = 1 }: { children: React.ReactNode; className?: string; span?: number }) => (
     <div
       className={className}
       style={{
-        background: 'var(--bg-elevated)',
+        background: 'var(--glass-bg)',
+        backdropFilter: 'blur(var(--glass-blur)) saturate(var(--glass-saturate))',
+        WebkitBackdropFilter: 'blur(var(--glass-blur)) saturate(var(--glass-saturate))',
         borderRadius: 16,
         padding: '14px 16px',
         border: '1px solid var(--glass-border)',
+        boxShadow: 'var(--shadow-card)',
         gridColumn: span > 1 ? `span ${span}` : undefined,
         position: 'relative',
         overflow: 'hidden',
       }}
     >
-      {/* Top gloss */}
-      <div style={{ position: 'absolute', top: 0, left: '10%', right: '10%', height: 1, background: 'linear-gradient(90deg, transparent, var(--gloss-highlight), transparent)' }} />
+      {/* Top gloss highlight */}
+      <div style={{ position: 'absolute', top: 0, left: '8%', right: '8%', height: 1, background: 'linear-gradient(90deg, transparent, var(--gloss-highlight-strong), transparent)', pointerEvents: 'none' }} />
       {children}
     </div>
   );
@@ -366,7 +370,7 @@ export function CompanyOverviewClient({ company, integrations, dailyMetrics }: P
                 <YAxis tick={{ fontSize: 9, fill: 'var(--text-quaternary)' }} axisLine={false} tickLine={false} width={35} />
                 <Tooltip contentStyle={{ background: 'var(--bg-elevated)', border: '1px solid var(--separator)', borderRadius: 8, fontSize: 11 }} />
                 <Area type="monotone" dataKey="clicks" stroke="#0A84FF" strokeWidth={2} fill="url(#clickGrad)" />
-                <Area type="monotone" dataKey="conversions" stroke="var(--system-green)" strokeWidth={1.5} fill="none" />
+                <Area type="monotone" dataKey="conversions" stroke="#30D158" strokeWidth={2} fill="none" />
               </AreaChart>
             </ResponsiveContainer>
           ) : (
@@ -412,6 +416,70 @@ export function CompanyOverviewClient({ company, integrations, dailyMetrics }: P
             </div>
           ) : (
             <p style={{ fontSize: '11px', color: 'var(--text-quaternary)', textAlign: 'center' }}>No data</p>
+          )}
+        </W>
+
+        {/* Row 4: Reach, Cost/Conv, Leads, ROAS */}
+        <KpiMini label="Reach" value={kpis.reach.value} format="number" d={kpis.reach.delta} />
+        <W>
+          <p style={{ fontSize: '10px', color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.5px', margin: '0 0 4px 0', fontWeight: 600 }}>Cost / Conversion</p>
+          <p style={{ fontSize: '22px', fontWeight: 700, color: 'var(--text-primary)', margin: 0, fontVariantNumeric: 'tabular-nums' }}>
+            {kpis.conversions.value > 0 ? `$${(kpis.spend.value / kpis.conversions.value).toFixed(2)}` : '—'}
+          </p>
+          <p style={{ fontSize: '9px', color: 'var(--text-quaternary)', margin: '2px 0 0 0' }}>per conversion</p>
+        </W>
+        <W>
+          <p style={{ fontSize: '10px', color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.5px', margin: '0 0 4px 0', fontWeight: 600 }}>CPM</p>
+          <p style={{ fontSize: '22px', fontWeight: 700, color: 'var(--text-primary)', margin: 0, fontVariantNumeric: 'tabular-nums' }}>
+            ${kpis.impressions.value > 0 ? ((kpis.spend.value / kpis.impressions.value) * 1000).toFixed(2) : '0.00'}
+          </p>
+          <p style={{ fontSize: '9px', color: 'var(--text-quaternary)', margin: '2px 0 0 0' }}>per 1,000 impressions</p>
+        </W>
+        <W>
+          <p style={{ fontSize: '10px', color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.5px', margin: '0 0 4px 0', fontWeight: 600 }}>Frequency</p>
+          <p style={{ fontSize: '22px', fontWeight: 700, color: 'var(--text-primary)', margin: 0, fontVariantNumeric: 'tabular-nums' }}>
+            {kpis.reach.value > 0 ? (kpis.impressions.value / kpis.reach.value).toFixed(1) : '—'}
+          </p>
+          <p style={{ fontSize: '9px', color: 'var(--text-quaternary)', margin: '2px 0 0 0' }}>avg views per person</p>
+        </W>
+
+        {/* Impressions vs Reach chart — spans 2 */}
+        <W span={2}>
+          <p style={{ fontSize: '10px', color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.5px', margin: '0 0 8px 0', fontWeight: 600 }}>Impressions vs Reach</p>
+          {chartData.length > 0 ? (
+            <ResponsiveContainer width="100%" height={120}>
+              <AreaChart data={chartData}>
+                <defs>
+                  <linearGradient id="imprGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#FF9F0A" stopOpacity={0.25} />
+                    <stop offset="100%" stopColor="#FF9F0A" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <XAxis dataKey="date" tick={{ fontSize: 9, fill: 'var(--text-quaternary)' }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fontSize: 9, fill: 'var(--text-quaternary)' }} axisLine={false} tickLine={false} width={35} tickFormatter={(v) => fmt(v)} />
+                <Tooltip contentStyle={{ background: 'var(--bg-elevated)', border: '1px solid var(--separator)', borderRadius: 8, fontSize: 11 }} />
+                <Area type="monotone" dataKey="impressions" stroke="#FF9F0A" strokeWidth={2} fill="url(#imprGrad)" />
+              </AreaChart>
+            </ResponsiveContainer>
+          ) : (
+            <p style={{ fontSize: '12px', color: 'var(--text-quaternary)', textAlign: 'center', padding: '30px 0' }}>No data</p>
+          )}
+        </W>
+
+        {/* Conversions trend — spans 2 */}
+        <W span={2}>
+          <p style={{ fontSize: '10px', color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.5px', margin: '0 0 8px 0', fontWeight: 600 }}>Conversions Trend</p>
+          {chartData.length > 0 ? (
+            <ResponsiveContainer width="100%" height={120}>
+              <BarChart data={chartData}>
+                <XAxis dataKey="date" tick={{ fontSize: 9, fill: 'var(--text-quaternary)' }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fontSize: 9, fill: 'var(--text-quaternary)' }} axisLine={false} tickLine={false} width={25} />
+                <Tooltip contentStyle={{ background: 'var(--bg-elevated)', border: '1px solid var(--separator)', borderRadius: 8, fontSize: 11 }} />
+                <Bar dataKey="conversions" fill="#30D158" radius={[3, 3, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          ) : (
+            <p style={{ fontSize: '12px', color: 'var(--text-quaternary)', textAlign: 'center', padding: '30px 0' }}>No data</p>
           )}
         </W>
 

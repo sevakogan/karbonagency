@@ -87,13 +87,17 @@ export function PlatformFilterBar({
 
   return (
     <div className="mb-3 space-y-2.5">
-      {/* Row 1: Month tabs + Day strip */}
+      {/* Row 1: Month tabs + Day strip — full width breakout */}
       <div
-        className="rounded-xl py-2.5 px-3"
-        style={{ background: 'var(--glass-bg)', border: '1px solid var(--glass-border)' }}
+        className="py-2.5 px-6 -mx-4 sm:-mx-6"
+        style={{
+          background: 'var(--glass-bg)',
+          borderBottom: '1px solid var(--glass-border)',
+          borderTop: '1px solid var(--glass-border)',
+        }}
       >
         {/* Month tabs */}
-        <div className="flex items-center gap-1 mb-2">
+        <div className="flex items-center justify-center gap-1 mb-2">
           {calendarData.months.map((m) => {
             const isActive = m.month === calendarData.currentMonth && m.year === calendarData.currentYear;
             return (
@@ -121,7 +125,7 @@ export function PlatformFilterBar({
             <ChevronLeft size={14} />
           </button>
 
-          <div ref={scrollRef} className="flex items-center gap-1 overflow-hidden flex-1">
+          <div ref={scrollRef} className="flex items-center justify-around overflow-hidden flex-1">
             {calendarData.days.map((d) => {
               const isToday = isSameDay(d, today);
               const dateStr = toDateStr(d);

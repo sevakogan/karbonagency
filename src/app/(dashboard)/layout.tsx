@@ -31,7 +31,7 @@ export default async function DashboardLayout({
             className="w-full py-4 text-center"
             style={{ fontSize: '10px', color: '#555', fontFamily: 'var(--font-mono)' }}
           >
-            v2.1.0 · {new Date().toISOString().replace('T', ' ').substring(0, 19)}
+            v2.1.0 · {new Date().toLocaleString('en-US', { timeZone: 'America/Los_Angeles', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }).replace(',', '')} PT
           </footer>
         </div>
       </ThemeProvider>

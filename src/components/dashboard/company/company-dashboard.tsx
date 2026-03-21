@@ -20,6 +20,7 @@ import { ClicksConversionsChart } from './clicks-conversions-chart';
 import { PlatformDonut } from './platform-donut';
 import { WeeklySpendBars } from './weekly-spend-bars';
 import { DailyBreakdownTable } from './daily-breakdown-table';
+import { BookingsAttribution } from './bookings-attribution';
 import { InstagramSection } from '@/components/dashboard/instagram-section';
 
 interface Props {
@@ -134,10 +135,22 @@ export function CompanyDashboard({ company, integrations, dailyMetrics }: Props)
         </BentoCard>
 
         <BentoCard colSpan={4}>
+          <BookingsAttribution
+            reservations={dashData.kpis.conversions.value}
+            platformMetrics={dashData.platformBreakdown.map((p) => ({
+              platform: p.slug,
+              clicks: p.clicks,
+              conversions: p.conversions,
+              spend: p.spend,
+            }))}
+          />
+        </BentoCard>
+
+        <BentoCard colSpan={4}>
           <PlatformDonut breakdown={dashData.platformBreakdown} />
         </BentoCard>
 
-        <BentoCard colSpan={6}>
+        <BentoCard colSpan={4}>
           <ClicksConversionsChart
             chartData={dashData.chartData}
             activePlatforms={dashData.activePlatforms}
@@ -147,7 +160,7 @@ export function CompanyDashboard({ company, integrations, dailyMetrics }: Props)
           />
         </BentoCard>
 
-        <BentoCard colSpan={6}>
+        <BentoCard colSpan={4}>
           <WeeklySpendBars data={dashData.weeklySpend} />
         </BentoCard>
 

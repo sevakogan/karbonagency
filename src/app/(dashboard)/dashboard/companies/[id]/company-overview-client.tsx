@@ -140,20 +140,27 @@ export function CompanyOverviewClient({ company, integrations, dailyMetrics }: P
     };
   }, [filtered, previousFiltered]);
 
-  // Chart data — aggregate by date
+  // Active color based on selected platform
+  const activeColor = platformFilter !== 'all' ? (platformColors[platformFilter] ?? '#E02030') : '#E02030';
+
+  // Chart data — aggregate by date, also per-platform for "All" view
   const chartData = useMemo(() => {
-    const byDate: Record<string, { spend: number; impressions: number; clicks: number; conversions: number }> = {};
+    const byDate: Record<string, Record<string, number> & { spend: number; impressions: number; clicks: number; conversions: number }> = {};
     for (const r of filtered) {
+      const slug = normSlug(r.platform);
       const d = byDate[r.date] ?? { spend: 0, impressions: 0, clicks: 0, conversions: 0 };
       d.spend += r.spend;
       d.impressions += r.impressions;
       d.clicks += r.clicks;
       d.conversions += r.conversions;
+      // Per-platform spend for stacked view
+      d[`spend_${slug}`] = (d[`spend_${slug}`] ?? 0) + r.spend;
+      d[`clicks_${slug}`] = (d[`clicks_${slug}`] ?? 0) + r.clicks;
       byDate[r.date] = d;
     }
     return Object.entries(byDate)
       .sort(([a], [b]) => a.localeCompare(b))
-      .map(([date, d]) => ({ date: fmtDate(date), ...d }));
+      .map(([date, d]) => ({ date: fmtDate(date), rawDate: date, ...d }));
   }, [filtered]);
 
   // Platform breakdown for pie
@@ -339,14 +346,26 @@ export function CompanyOverviewClient({ company, integrations, dailyMetrics }: P
               <AreaChart data={chartData}>
                 <defs>
                   <linearGradient id="spendGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="var(--accent)" stopOpacity={0.3} />
-                    <stop offset="100%" stopColor="var(--accent)" stopOpacity={0} />
+                    <stop offset="0%" stopColor={activeColor} stopOpacity={0.3} />
+                    <stop offset="100%" stopColor={activeColor} stopOpacity={0} />
                   </linearGradient>
+                  {connectedPlatforms.map((slug) => (
+                    <linearGradient key={slug} id={`grad_${slug}`} x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor={platformColors[slug] ?? '#888'} stopOpacity={0.2} />
+                      <stop offset="100%" stopColor={platformColors[slug] ?? '#888'} stopOpacity={0} />
+                    </linearGradient>
+                  ))}
                 </defs>
                 <XAxis dataKey="date" tick={{ fontSize: 9, fill: 'var(--text-quaternary)' }} axisLine={false} tickLine={false} />
                 <YAxis tick={{ fontSize: 9, fill: 'var(--text-quaternary)' }} axisLine={false} tickLine={false} width={35} tickFormatter={(v) => `$${fmt(v)}`} />
                 <Tooltip contentStyle={{ background: 'var(--bg-elevated)', border: '1px solid var(--separator)', borderRadius: 8, fontSize: 11 }} />
-                <Area type="natural" dataKey="spend" stroke="var(--accent)" strokeWidth={2} fill="url(#spendGrad)" />
+                {platformFilter === 'all' && connectedPlatforms.length > 1 ? (
+                  connectedPlatforms.map((slug) => (
+                    <Area key={slug} type="natural" dataKey={`spend_${slug}`} name={platformNames[slug] ?? slug} stroke={platformColors[slug] ?? '#888'} strokeWidth={2} fill={`url(#grad_${slug})`} />
+                  ))
+                ) : (
+                  <Area type="natural" dataKey="spend" stroke={activeColor} strokeWidth={2} fill="url(#spendGrad)" />
+                )}
               </AreaChart>
             </ResponsiveContainer>
           ) : (
@@ -373,8 +392,16 @@ export function CompanyOverviewClient({ company, integrations, dailyMetrics }: P
                 <XAxis dataKey="date" tick={{ fontSize: 9, fill: 'var(--text-quaternary)' }} axisLine={false} tickLine={false} />
                 <YAxis tick={{ fontSize: 9, fill: 'var(--text-quaternary)' }} axisLine={false} tickLine={false} width={35} />
                 <Tooltip contentStyle={{ background: 'var(--bg-elevated)', border: '1px solid var(--separator)', borderRadius: 8, fontSize: 11 }} />
-                <Area type="natural" dataKey="clicks" stroke="#0A84FF" strokeWidth={2} fill="url(#clickGrad)" />
-                <Area type="natural" dataKey="conversions" stroke="#30D158" strokeWidth={2} fill="none" />
+                {platformFilter === 'all' && connectedPlatforms.length > 1 ? (
+                  connectedPlatforms.map((slug) => (
+                    <Area key={slug} type="natural" dataKey={`clicks_${slug}`} name={platformNames[slug] ?? slug} stroke={platformColors[slug] ?? '#888'} strokeWidth={2} fill="none" />
+                  ))
+                ) : (
+                  <>
+                    <Area type="natural" dataKey="clicks" stroke={activeColor} strokeWidth={2} fill="url(#clickGrad)" />
+                    <Area type="natural" dataKey="conversions" stroke="#30D158" strokeWidth={2} fill="none" strokeDasharray="4 2" />
+                  </>
+                )}
               </AreaChart>
             </ResponsiveContainer>
           ) : (
@@ -491,11 +518,11 @@ export function CompanyOverviewClient({ company, integrations, dailyMetrics }: P
         <W span={4}>
           <p style={{ fontSize: '10px', color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.5px', margin: '0 0 8px 0', fontWeight: 600 }}>Daily Breakdown</p>
           <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11px' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
               <thead>
                 <tr>
                   {['Date', 'Spend', 'Impr.', 'Clicks', 'CTR', 'CPC', 'Conv.'].map((h) => (
-                    <th key={h} style={{ textAlign: 'left', padding: '4px 8px', color: 'var(--text-quaternary)', fontWeight: 600, fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '1px solid var(--separator)' }}>
+                    <th key={h} style={{ textAlign: 'left', padding: '6px 10px', color: 'var(--text-tertiary)', fontWeight: 600, fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '1px solid var(--separator)' }}>
                       {h}
                     </th>
                   ))}
@@ -503,14 +530,19 @@ export function CompanyOverviewClient({ company, integrations, dailyMetrics }: P
               </thead>
               <tbody>
                 {chartData.slice().reverse().slice(0, 14).map((row) => (
-                  <tr key={row.date} style={{ borderBottom: '1px solid var(--separator)' }}>
-                    <td style={{ padding: '5px 8px', color: 'var(--text-primary)', fontVariantNumeric: 'tabular-nums' }}>{row.date}</td>
-                    <td style={{ padding: '5px 8px', color: 'var(--text-primary)', fontVariantNumeric: 'tabular-nums' }}>${row.spend.toFixed(2)}</td>
-                    <td style={{ padding: '5px 8px', color: 'var(--text-primary)', fontVariantNumeric: 'tabular-nums' }}>{row.impressions.toLocaleString()}</td>
-                    <td style={{ padding: '5px 8px', color: 'var(--text-primary)', fontVariantNumeric: 'tabular-nums' }}>{row.clicks.toLocaleString()}</td>
-                    <td style={{ padding: '5px 8px', color: 'var(--text-primary)', fontVariantNumeric: 'tabular-nums' }}>{row.impressions > 0 ? ((row.clicks / row.impressions) * 100).toFixed(1) : '0'}%</td>
-                    <td style={{ padding: '5px 8px', color: 'var(--text-primary)', fontVariantNumeric: 'tabular-nums' }}>${row.clicks > 0 ? (row.spend / row.clicks).toFixed(2) : '0.00'}</td>
-                    <td style={{ padding: '5px 8px', color: 'var(--text-primary)', fontVariantNumeric: 'tabular-nums' }}>{row.conversions}</td>
+                  <tr
+                    key={row.date}
+                    style={{ borderBottom: '1px solid var(--separator)', cursor: 'default', transition: 'background 0.1s' }}
+                    onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--fill-quaternary)'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+                  >
+                    <td style={{ padding: '8px 10px', color: 'var(--text-primary)', fontWeight: 500, fontVariantNumeric: 'tabular-nums' }}>{row.date}</td>
+                    <td style={{ padding: '8px 10px', color: 'var(--text-primary)', fontVariantNumeric: 'tabular-nums' }}>${row.spend.toFixed(2)}</td>
+                    <td style={{ padding: '8px 10px', color: 'var(--text-primary)', fontVariantNumeric: 'tabular-nums' }}>{row.impressions.toLocaleString()}</td>
+                    <td style={{ padding: '8px 10px', color: 'var(--text-primary)', fontVariantNumeric: 'tabular-nums' }}>{row.clicks.toLocaleString()}</td>
+                    <td style={{ padding: '8px 10px', color: 'var(--text-primary)', fontVariantNumeric: 'tabular-nums' }}>{row.impressions > 0 ? ((row.clicks / row.impressions) * 100).toFixed(1) : '0'}%</td>
+                    <td style={{ padding: '8px 10px', color: 'var(--text-primary)', fontVariantNumeric: 'tabular-nums' }}>${row.clicks > 0 ? (row.spend / row.clicks).toFixed(2) : '0.00'}</td>
+                    <td style={{ padding: '8px 10px', color: 'var(--text-primary)', fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>{row.conversions}</td>
                   </tr>
                 ))}
               </tbody>

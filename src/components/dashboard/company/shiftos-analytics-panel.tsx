@@ -282,6 +282,10 @@ export function ShiftOSAnalyticsPanel({ companyId }: ShiftOSAnalyticsPanelProps)
         }
         const json = await res.json();
         if (!cancelled) {
+          // Validate expected shape before setting — prevents crash if API returns unexpected data
+          if (!json.revenue || typeof json.revenue.today !== 'number') {
+            throw new Error('ShiftOS API returned unexpected data shape');
+          }
           setData(json);
         }
       } catch (err) {

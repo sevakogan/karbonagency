@@ -103,11 +103,54 @@ export async function GET(request: NextRequest) {
       .map(([calendarName, bookingCount]) => ({ calendarName, bookingCount }))
       .sort((a, b) => b.bookingCount - a.bookingCount);
 
+    // Bookings today count + avg ticket
+    const bookingsToday = todayReservations.length;
+    const avgTicket =
+      allReservations.length > 0
+        ? Math.round(
+            allReservations.reduce((s, r) => s + Number(r.revenue), 0) /
+              allReservations.length
+          )
+        : 0;
+
+    // Build per-simulator revenue lookup
+    const simRevenueMap = new Map<string, number>();
+    for (const r of allReservations) {
+      simRevenueMap.set(
+        r.calendar_name,
+        (simRevenueMap.get(r.calendar_name) ?? 0) + Number(r.revenue)
+      );
+    }
+
+    // Response shaped to match ShiftOSData interface expected by the panel component
     return NextResponse.json({
-      dailyRevenue,
-      customerHealth,
-      topVouchers,
-      simUtilization,
+      revenue: {
+        today: dailyRevenue.today,
+        month: dailyRevenue.last30d,
+        lifetime: dailyRevenue.lifetime,
+      },
+      bookingsToday,
+      avgTicket,
+      customers: {
+        newCount: customerHealth.newCount,
+        returningCount: customerHealth.returningCount,
+        returnRate: customerHealth.returnRate,
+        totalCustomers: customerHealth.totalCustomers,
+        returnedCustomers: customerHealth.returningCount,
+        avgRebookingDays: customerHealth.avgDaysBetweenBookings,
+        rebookingTrend: 0,
+        avgCustomerValue: customerHealth.avgCustomerValue,
+      },
+      topVouchers: topVouchers.map((v) => ({
+        code: v.code,
+        timesUsed: v.usageCount,
+        totalDiscount: v.totalDiscount,
+      })),
+      simulators: simUtilization.map((s) => ({
+        name: s.calendarName,
+        bookings: s.bookingCount,
+        revenue: simRevenueMap.get(s.calendarName) ?? 0,
+      })),
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Unknown error';

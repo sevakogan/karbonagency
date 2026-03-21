@@ -11,12 +11,22 @@ import { RefreshButton } from '@/components/dashboard/refresh-button';
 import { StatusBadge } from '@/components/ui/status-badge';
 import type { Company, CompanyIntegration } from '@/types';
 
+interface MetricsData {
+  totalSpend: number;
+  totalImpressions: number;
+  totalClicks: number;
+  totalConversions: number;
+  avgCpc: number;
+  avgRoas: number;
+}
+
 interface Props {
   company: Company;
   integrations: CompanyIntegration[];
+  metrics?: MetricsData;
 }
 
-export function CompanyOverviewClient({ company, integrations }: Props) {
+export function CompanyOverviewClient({ company, integrations, metrics }: Props) {
   const [dateRange, setDateRange] = useState<'7d' | '30d' | 'mtd' | 'custom'>('30d');
   const connectedCount = integrations.filter((i) => i.status === 'connected').length;
 
@@ -26,14 +36,15 @@ export function CompanyOverviewClient({ company, integrations }: Props) {
       ? 'connected' as const
       : 'disconnected' as const;
 
-  // KPI data (will be populated from daily_metrics in a future pass)
+  const m = metrics ?? { totalSpend: 0, totalImpressions: 0, totalClicks: 0, totalConversions: 0, avgCpc: 0, avgRoas: 0 };
+
   const kpis = [
-    { metricKey: 'spend', label: 'Total Spend', value: 0, format: 'currency' as const },
-    { metricKey: 'impressions', label: 'Impressions', value: 0, format: 'number' as const },
-    { metricKey: 'clicks', label: 'Clicks', value: 0, format: 'number' as const },
-    { metricKey: 'conversions', label: 'Conversions', value: 0, format: 'number' as const },
-    { metricKey: 'roas', label: 'ROAS', value: 0, format: 'multiplier' as const },
-    { metricKey: 'cpc', label: 'CPC', value: 0, format: 'currency' as const },
+    { metricKey: 'spend', label: 'Total Spend', value: m.totalSpend, format: 'currency' as const },
+    { metricKey: 'impressions', label: 'Impressions', value: m.totalImpressions, format: 'number' as const },
+    { metricKey: 'clicks', label: 'Clicks', value: m.totalClicks, format: 'number' as const },
+    { metricKey: 'conversions', label: 'Conversions', value: m.totalConversions, format: 'number' as const },
+    { metricKey: 'roas', label: 'ROAS', value: m.avgRoas, format: 'multiplier' as const },
+    { metricKey: 'cpc', label: 'CPC', value: m.avgCpc, format: 'currency' as const },
   ];
 
   return (
@@ -158,7 +169,7 @@ export function CompanyOverviewClient({ company, integrations }: Props) {
           .map((integration) => (
             <motion.div key={integration.id} variants={staggerItem}>
               <Link
-                href={`/dashboard/companies/${company.id}/${integration.platform_slug.replace('_', '-')}`}
+                href={`/dashboard/companies/${company.id}/${integration.platform_slug}`}
                 style={{ textDecoration: 'none' }}
               >
                 <div className="glass-card p-[var(--space-4)]">

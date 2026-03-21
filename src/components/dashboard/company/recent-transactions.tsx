@@ -1,98 +1,98 @@
 'use client';
 
-import { ConfidenceDot } from './confidence-dot';
-
-interface Transaction {
+export interface RecentBooking {
+  id: string;
   time: string;
-  source: 'Shift OS' | 'Square';
+  source: string;
   customer: string;
-  amount: number;
   package: string;
-  channel: string;
-  confidence: number;
+  paid: boolean;
 }
 
 interface RecentTransactionsProps {
-  transactions: Transaction[];
+  bookings: RecentBooking[];
 }
 
 const SOURCE_COLORS: Record<string, string> = {
-  'Shift OS': 'var(--system-blue, #0A84FF)',
-  'Square': 'var(--system-orange, #FF9F0A)',
+  'Shift OS': '#0A84FF',
+  'Square': '#FF9F0A',
 };
 
-export function RecentTransactions({ transactions }: RecentTransactionsProps) {
+export function RecentTransactions({ bookings }: RecentTransactionsProps) {
+  if (bookings.length === 0) {
+    return (
+      <div style={{
+        borderRadius: 14, padding: 20, background: 'var(--glass-bg)',
+        border: '1px solid var(--glass-border)', textAlign: 'center',
+      }}>
+        <p style={{ fontSize: 12, color: 'var(--text-tertiary)' }}>No recent bookings in the last 24 hours</p>
+      </div>
+    );
+  }
+
   return (
     <div style={{
       display: 'grid',
-      gridTemplateColumns: 'repeat(3, 1fr)',
+      gridTemplateColumns: `repeat(${Math.min(bookings.length, 3)}, 1fr)`,
       gap: 8,
     }}>
-      {transactions.map((tx, i) => {
-        const sourceColor = SOURCE_COLORS[tx.source] ?? 'var(--text-tertiary)';
+      {bookings.slice(0, 6).map((b) => {
+        const sourceColor = SOURCE_COLORS[b.source] ?? '#888';
 
         return (
           <div
-            key={i}
+            key={b.id}
             style={{
-              borderRadius: 14,
-              padding: 14,
+              borderRadius: 14, padding: 14,
               background: 'var(--glass-bg)',
               border: '1px solid var(--glass-border)',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 8,
+              display: 'flex', flexDirection: 'column', gap: 6,
             }}
           >
             {/* Source badge + time */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <span style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                padding: '2px 8px',
-                borderRadius: 10,
-                background: `${sourceColor}18`,
-                color: sourceColor,
-                fontSize: 9,
-                fontWeight: 700,
+                display: 'inline-flex', alignItems: 'center',
+                padding: '2px 8px', borderRadius: 10,
+                background: `${sourceColor}18`, color: sourceColor,
+                fontSize: 9, fontWeight: 700,
               }}>
-                {tx.source}
+                {b.source}
               </span>
-              <span style={{ fontSize: 9, color: 'var(--text-tertiary)' }}>
-                {tx.time}
-              </span>
+              <span style={{ fontSize: 9, color: 'var(--text-tertiary)' }}>{b.time}</span>
             </div>
 
-            {/* Amount */}
-            <div style={{
-              fontSize: 22,
-              fontWeight: 800,
-              color: 'var(--text-primary)',
-              fontVariantNumeric: 'tabular-nums',
-              lineHeight: 1,
-            }}>
-              ${tx.amount.toLocaleString()}
-            </div>
-
-            {/* Package */}
-            <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-primary)' }}>
-              {tx.package}
+            {/* Package name */}
+            <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1.3 }}>
+              {b.package}
             </div>
 
             {/* Customer */}
-            <div style={{ fontSize: 10, color: 'var(--text-secondary)' }}>
-              {tx.customer}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <div style={{
+                width: 22, height: 22, borderRadius: 11,
+                background: sourceColor + '20', color: sourceColor,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 9, fontWeight: 700,
+              }}>
+                {b.customer.split(' ').map(n => n[0]).join('').slice(0, 2)}
+              </div>
+              <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{b.customer}</span>
             </div>
 
-            {/* Divider */}
-            <div style={{ height: 1, background: 'var(--separator)' }} />
-
-            {/* Attribution */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <span style={{ fontSize: 9, color: 'var(--text-tertiary)' }}>
-                Attributed: <span style={{ fontWeight: 600, color: 'var(--text-secondary)' }}>{tx.channel}</span>
-              </span>
-              <ConfidenceDot pct={Math.round(tx.confidence * 100)} />
+            {/* Status */}
+            <div style={{
+              display: 'inline-flex', alignItems: 'center', gap: 4,
+              padding: '2px 8px', borderRadius: 10, alignSelf: 'flex-start',
+              background: b.paid ? '#30D15818' : '#FF9F0A18',
+              color: b.paid ? '#30D158' : '#FF9F0A',
+              fontSize: 9, fontWeight: 700,
+            }}>
+              <span style={{
+                width: 5, height: 5, borderRadius: 3,
+                background: b.paid ? '#30D158' : '#FF9F0A',
+              }} />
+              {b.paid ? 'Paid' : 'Pending'}
             </div>
           </div>
         );

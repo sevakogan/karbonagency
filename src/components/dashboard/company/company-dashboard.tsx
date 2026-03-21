@@ -348,14 +348,10 @@ export function CompanyDashboard({ company, integrations, dailyMetrics }: Props)
           </BentoCard>
         </section>
 
-        {/* 9. SECTION: Recent Transactions — empty until Square is connected */}
+        {/* 9. SECTION: Recent Bookings — live from ShiftOS */}
         <section>
-          <SectionHeaderV2 icon={<Receipt size={16} />} title="Recent Transactions" />
-          <BentoCard>
-            <p className="text-xs py-6 text-center" style={{ color: 'var(--text-tertiary)' }}>
-              Connect Square to see live transactions with attribution.
-            </p>
-          </BentoCard>
+          <SectionHeaderV2 icon={<Receipt size={16} />} title="Recent Bookings" />
+          <RecentBookingsLive />
         </section>
 
         {/* 10. Instagram Section */}
@@ -405,4 +401,34 @@ function KpiStripCard({ label, value, d }: {
       )}
     </BentoCard>
   );
+}
+
+// ---------------------------------------------------------------------------
+// Live bookings fetcher — calls /api/shiftos/recent
+// ---------------------------------------------------------------------------
+
+function RecentBookingsLive() {
+  const [bookings, setBookings] = useState<Array<{
+    id: string; time: string; source: string;
+    customer: string; package: string; paid: boolean;
+  }>>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch('/api/shiftos/recent')
+      .then(res => res.json())
+      .then(data => setBookings(data.reservations ?? []))
+      .catch(() => setBookings([]))
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (loading) {
+    return (
+      <BentoCard>
+        <p className="text-xs py-4 text-center" style={{ color: 'var(--text-tertiary)' }}>Loading recent bookings...</p>
+      </BentoCard>
+    );
+  }
+
+  return <RecentTransactions bookings={bookings} />;
 }

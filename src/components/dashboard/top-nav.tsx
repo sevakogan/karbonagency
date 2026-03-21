@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import Logo from "@/components/logo";
 import ClientSelector from "@/components/dashboard/client-selector";
 import UserAvatarDropdown from "@/components/dashboard/user-avatar-dropdown";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { useAuth } from "@/components/auth/auth-provider";
 import type { Client } from "@/types";
 
@@ -49,7 +50,10 @@ export default function TopNav({ clients }: TopNavProps) {
           {isAdmin && <ClientSelector clients={clients} />}
         </div>
 
-        <UserAvatarDropdown />
+        <div className="flex items-center gap-2">
+          <ThemeToggle />
+          <UserAvatarDropdown />
+        </div>
       </div>
 
       {/* Row 2: Tabs */}

@@ -28,12 +28,14 @@ export function DashboardHeader({
       {/* Left: back + company info */}
       <div className="flex items-center gap-3">
         <button
-          onClick={() => router.push('/dashboard/companies')}
-          className="flex h-8 w-8 items-center justify-center rounded-lg
+          onClick={() => router.push('/dashboard')}
+          className="flex h-8 items-center gap-1.5 rounded-lg px-3
                      bg-[var(--bg-elevated)] text-[var(--text-secondary)]
-                     transition-colors hover:text-[var(--text-primary)]"
+                     transition-colors hover:text-[var(--text-primary)]
+                     text-xs font-medium"
         >
-          <ArrowLeft size={16} />
+          <ArrowLeft size={14} />
+          Overview
         </button>
 
         {company.logo_url ? (

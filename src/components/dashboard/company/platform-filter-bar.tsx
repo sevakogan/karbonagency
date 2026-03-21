@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useRef } from 'react';
+import { useMemo, useRef, useState, useCallback } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { PLATFORM_COLORS, PLATFORM_NAMES } from '@/lib/dashboard/platform-config';
 import type { DateRange } from '@/lib/dashboard/use-dashboard-data';
@@ -12,9 +12,9 @@ interface Props {
   onSelectAll: () => void;
   dateRange: DateRange;
   onDateRangeChange: (range: DateRange) => void;
-  /** Optional: callback when a specific date is tapped */
-  onDateSelect?: (date: string) => void;
-  selectedDate?: string;
+  onCustomDateRange: (start: string, end: string) => void;
+  customStart?: string;
+  customEnd?: string;
 }
 
 const RANGE_OPTIONS: { label: string; value: DateRange }[] = [
@@ -28,25 +28,24 @@ const RANGE_OPTIONS: { label: string; value: DateRange }[] = [
 ];
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const DAYS_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
-function buildCalendarDays(centerDate: Date, count: number): Date[] {
-  const half = Math.floor(count / 2);
-  const dates: Date[] = [];
-  for (let i = -half; i <= half; i++) {
-    const d = new Date(centerDate);
-    d.setDate(d.getDate() + i);
-    dates.push(d);
-  }
-  return dates;
+function toDateStr(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
 }
 
 function isSameDay(a: Date, b: Date): boolean {
   return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
 }
 
-function toDateStr(d: Date): string {
-  return d.toISOString().split('T')[0];
+function isInRange(dateStr: string, start?: string, end?: string): boolean {
+  if (!start || !end) return false;
+  const lo = start <= end ? start : end;
+  const hi = start <= end ? end : start;
+  return dateStr >= lo && dateStr <= hi;
 }
 
 export function PlatformFilterBar({
@@ -56,40 +55,90 @@ export function PlatformFilterBar({
   onSelectAll,
   dateRange,
   onDateRangeChange,
+  onCustomDateRange,
+  customStart,
+  customEnd,
 }: Props) {
   const isAllSelected = selectedPlatforms.size === 0;
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  // Drag state for range selection
+  const [dragStart, setDragStart] = useState<string | null>(null);
+  const [dragEnd, setDragEnd] = useState<string | null>(null);
+  const isDragging = useRef(false);
+
   const today = useMemo(() => new Date(), []);
 
-  // Build visible month tabs and day strip
-  const calendarData = useMemo(() => {
-    const now = new Date();
-    const currentMonth = now.getMonth();
-    const currentYear = now.getFullYear();
-
-    // Show 5 months centered on current
-    const months = [];
-    for (let i = -2; i <= 2; i++) {
-      const m = new Date(currentYear, currentMonth + i, 1);
-      months.push({ label: MONTHS[m.getMonth()], month: m.getMonth(), year: m.getFullYear(), date: m });
+  // Build 14 days centered on today
+  const calendarDays = useMemo(() => {
+    const days: Date[] = [];
+    for (let i = -6; i <= 7; i++) {
+      const d = new Date(today);
+      d.setDate(d.getDate() + i);
+      days.push(d);
     }
+    return days;
+  }, [today]);
 
-    // Build 7 days for the day strip (centered on today)
-    const days = buildCalendarDays(now, 6);
-
-    return { months, days, currentMonth, currentYear };
+  // Month tabs
+  const monthTabs = useMemo(() => {
+    const now = new Date();
+    const tabs = [];
+    for (let i = -2; i <= 2; i++) {
+      const m = new Date(now.getFullYear(), now.getMonth() + i, 1);
+      tabs.push({ label: MONTHS[m.getMonth()], month: m.getMonth(), year: m.getFullYear() });
+    }
+    return tabs;
   }, []);
+
+  const currentMonth = today.getMonth();
+  const currentYear = today.getFullYear();
+
+  // Which dates are highlighted
+  const activeStart = dragStart ?? customStart;
+  const activeEnd = dragEnd ?? customEnd;
+
+  const handleDayMouseDown = useCallback((dateStr: string) => {
+    isDragging.current = true;
+    setDragStart(dateStr);
+    setDragEnd(dateStr);
+  }, []);
+
+  const handleDayMouseEnter = useCallback((dateStr: string) => {
+    if (isDragging.current) {
+      setDragEnd(dateStr);
+    }
+  }, []);
+
+  const handleMouseUp = useCallback(() => {
+    if (isDragging.current && dragStart) {
+      const start = dragStart;
+      const end = dragEnd ?? dragStart;
+      const lo = start <= end ? start : end;
+      const hi = start <= end ? end : start;
+
+      if (lo === hi) {
+        // Single day click
+        onCustomDateRange(lo, lo);
+      } else {
+        // Range drag
+        onCustomDateRange(lo, hi);
+      }
+    }
+    isDragging.current = false;
+    setDragStart(null);
+    setDragEnd(null);
+  }, [dragStart, dragEnd, onCustomDateRange]);
 
   const scroll = (dir: 'left' | 'right') => {
     scrollRef.current?.scrollBy({ left: dir === 'left' ? -200 : 200, behavior: 'smooth' });
   };
 
   return (
-    <div className="mb-3 space-y-2.5">
-      {/* Row 1: Month tabs + Day strip — full width breakout */}
+    <div className="mb-3 space-y-2.5" onMouseUp={handleMouseUp} onMouseLeave={handleMouseUp}>
+      {/* Calendar strip — full width */}
       <div
-        className="py-2.5 px-6 -mx-4 sm:-mx-6"
+        className="py-2 px-6 -mx-4 sm:-mx-6 select-none"
         style={{
           background: 'var(--glass-bg)',
           borderBottom: '1px solid var(--glass-border)',
@@ -98,8 +147,8 @@ export function PlatformFilterBar({
       >
         {/* Month tabs */}
         <div className="flex items-center justify-center gap-1 mb-2">
-          {calendarData.months.map((m) => {
-            const isActive = m.month === calendarData.currentMonth && m.year === calendarData.currentYear;
+          {monthTabs.map((m) => {
+            const isActive = m.month === currentMonth && m.year === currentYear;
             return (
               <button
                 key={`${m.year}-${m.month}`}
@@ -115,8 +164,8 @@ export function PlatformFilterBar({
           })}
         </div>
 
-        {/* Day strip */}
-        <div className="flex items-center gap-1">
+        {/* Day strip — click + drag to select */}
+        <div className="flex items-center gap-0.5">
           <button
             onClick={() => scroll('left')}
             className="p-0.5 rounded-md flex-shrink-0"
@@ -126,26 +175,40 @@ export function PlatformFilterBar({
           </button>
 
           <div ref={scrollRef} className="flex items-center justify-around overflow-hidden flex-1">
-            {calendarData.days.map((d) => {
-              const isToday = isSameDay(d, today);
+            {calendarDays.map((d) => {
               const dateStr = toDateStr(d);
+              const isToday = isSameDay(d, today);
+
+              // Highlight logic: dragging range OR committed custom range
+              const inDragRange = dragStart ? isInRange(dateStr, dragStart, dragEnd ?? dragStart) : false;
+              const inCustomRange = dateRange === 'custom' && !dragStart && isInRange(dateStr, customStart, customEnd);
+              const isSelected = inDragRange || inCustomRange;
+              const isRangeEnd = dateStr === activeStart || dateStr === activeEnd;
+
+              let bg = 'transparent';
+              let color = 'var(--text-secondary)';
+
+              if (isSelected && isRangeEnd) {
+                bg = 'var(--accent)';
+                color = 'white';
+              } else if (isSelected) {
+                bg = 'color-mix(in srgb, var(--accent) 20%, transparent)';
+                color = 'var(--text-primary)';
+              } else if (isToday && dateRange !== 'custom') {
+                bg = 'color-mix(in srgb, var(--accent) 12%, transparent)';
+                color = 'var(--accent)';
+              }
+
               return (
                 <button
                   key={dateStr}
-                  onClick={() => {
-                    // Clicking a specific day sets range to 'today' behavior for that date
-                    if (isToday) {
-                      onDateRangeChange('today');
-                    }
-                  }}
-                  className="flex flex-col items-center gap-0.5 px-3 py-1 rounded-xl transition-all flex-shrink-0 min-w-[44px]"
-                  style={{
-                    background: isToday ? 'var(--accent)' : 'transparent',
-                    color: isToday ? 'white' : 'var(--text-secondary)',
-                  }}
+                  onMouseDown={() => handleDayMouseDown(dateStr)}
+                  onMouseEnter={() => handleDayMouseEnter(dateStr)}
+                  className="flex flex-col items-center gap-0.5 px-2.5 py-1 rounded-xl transition-colors flex-shrink-0 min-w-[40px] cursor-pointer"
+                  style={{ background: bg, color }}
                 >
-                  <span className="text-[9px] font-medium uppercase">{DAYS[d.getDay()]}</span>
-                  <span className="text-sm font-bold">{d.getDate()}</span>
+                  <span className="text-[8px] font-medium uppercase">{DAYS_SHORT[d.getDay()]}</span>
+                  <span className="text-sm font-bold leading-none">{d.getDate()}</span>
                 </button>
               );
             })}
@@ -161,9 +224,8 @@ export function PlatformFilterBar({
         </div>
       </div>
 
-      {/* Row 2: Platform pills + Range presets */}
+      {/* Platform pills + Range presets */}
       <div className="flex flex-wrap items-center justify-between gap-2">
-        {/* Platform pills */}
         <div className="flex flex-wrap items-center gap-1.5">
           <button
             onClick={onSelectAll}

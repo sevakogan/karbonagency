@@ -27,9 +27,13 @@ interface DashboardDataInput {
   dateRange: DateRange;
   selectedPlatforms: Set<string>;
   connectedPlatforms: string[];
+  /** For 'custom' dateRange: start date string YYYY-MM-DD */
+  customStart?: string;
+  /** For 'custom' dateRange: end date string YYYY-MM-DD */
+  customEnd?: string;
 }
 
-export function useDashboardData({ dailyMetrics, dateRange, selectedPlatforms, connectedPlatforms }: DashboardDataInput) {
+export function useDashboardData({ dailyMetrics, dateRange, selectedPlatforms, connectedPlatforms, customStart, customEnd }: DashboardDataInput) {
   const isAllSelected = selectedPlatforms.size === 0;
   const activePlatforms = isAllSelected ? connectedPlatforms : [...selectedPlatforms];
 
@@ -45,12 +49,23 @@ export function useDashboardData({ dailyMetrics, dateRange, selectedPlatforms, c
       case '30d': days = 30; cutoff = new Date(now.getTime() - 30 * 86400000); break;
       case 'mtd': cutoff = new Date(now.getFullYear(), now.getMonth(), 1); days = Math.ceil((now.getTime() - cutoff.getTime()) / 86400000); break;
       case 'ytd': cutoff = new Date(now.getFullYear(), 0, 1); days = Math.ceil((now.getTime() - cutoff.getTime()) / 86400000); break;
+      case 'custom': {
+        if (customStart && customEnd) {
+          cutoff = new Date(customStart + 'T00:00:00');
+          const endDate = new Date(customEnd + 'T00:00:00');
+          days = Math.max(1, Math.ceil((endDate.getTime() - cutoff.getTime()) / 86400000) + 1);
+        } else {
+          days = 1; cutoff = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        }
+        break;
+      }
       default: days = 90; cutoff = new Date(now.getTime() - 90 * 86400000);
     }
     const cutoffStr = cutoff.toISOString().split('T')[0];
+    const endStr = (dateRange === 'custom' && customEnd) ? customEnd : undefined;
     const prevCutoff = new Date(cutoff.getTime() - days * 86400000).toISOString().split('T')[0];
 
-    let rows = dailyMetrics.filter((r) => r.date >= cutoffStr);
+    let rows = dailyMetrics.filter((r) => r.date >= cutoffStr && (!endStr || r.date <= endStr));
     let prevRows = dailyMetrics.filter((r) => r.date >= prevCutoff && r.date < cutoffStr);
 
     if (!isAllSelected) {
@@ -59,7 +74,7 @@ export function useDashboardData({ dailyMetrics, dateRange, selectedPlatforms, c
     }
 
     return { filtered: rows, previousFiltered: prevRows };
-  }, [dailyMetrics, dateRange, selectedPlatforms, isAllSelected]);
+  }, [dailyMetrics, dateRange, selectedPlatforms, isAllSelected, customStart, customEnd]);
 
   // Aggregate KPIs
   const kpis = useMemo(() => {

@@ -32,6 +32,8 @@ interface Props {
 export function CompanyDashboard({ company, integrations, dailyMetrics }: Props) {
   const router = useRouter();
   const [dateRange, setDateRange] = useState<DateRange>('today');
+  const [customStart, setCustomStart] = useState<string | undefined>();
+  const [customEnd, setCustomEnd] = useState<string | undefined>();
   const [selectedPlatforms, setSelectedPlatforms] = useState<Set<string>>(new Set());
   const [refreshing, setRefreshing] = useState(false);
   const [sessionToken, setSessionToken] = useState<string | null>(null);
@@ -62,7 +64,15 @@ export function CompanyDashboard({ company, integrations, dailyMetrics }: Props)
     dateRange,
     selectedPlatforms,
     connectedPlatforms,
+    customStart,
+    customEnd,
   });
+
+  const handleCustomDateRange = (start: string, end: string) => {
+    setCustomStart(start);
+    setCustomEnd(end);
+    setDateRange('custom');
+  };
 
   const togglePlatform = (slug: string) => {
     setSelectedPlatforms((prev) => {
@@ -107,7 +117,10 @@ export function CompanyDashboard({ company, integrations, dailyMetrics }: Props)
         onTogglePlatform={togglePlatform}
         onSelectAll={selectAll}
         dateRange={dateRange}
-        onDateRangeChange={setDateRange}
+        onDateRangeChange={(r) => { setDateRange(r); setCustomStart(undefined); setCustomEnd(undefined); }}
+        onCustomDateRange={handleCustomDateRange}
+        customStart={customStart}
+        customEnd={customEnd}
       />
 
       {/* 12-column bento grid */}

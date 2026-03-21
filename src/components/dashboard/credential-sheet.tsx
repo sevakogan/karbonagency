@@ -132,20 +132,18 @@ export function CredentialSheet({
             onClick={onClose}
           />
 
-          {/* Sheet */}
+          {/* Sheet — compact panel */}
           <motion.div
-            className="fixed right-0 top-0 bottom-0 z-50 w-full max-w-[440px] overflow-y-auto"
+            className="fixed right-0 top-0 bottom-0 z-50 w-full max-w-[340px] overflow-y-auto"
             style={{
-              background: 'var(--glass-bg-heavy)',
-              backdropFilter: 'blur(60px) saturate(200%)',
-              WebkitBackdropFilter: 'blur(60px) saturate(200%)',
+              background: 'var(--bg-elevated)',
               borderLeft: '1px solid var(--glass-border-strong)',
               boxShadow: 'var(--shadow-elevated)',
             }}
             variants={{
               hidden: { x: '100%' },
-              visible: { x: 0, transition: { type: 'spring', stiffness: 300, damping: 40 } },
-              exit: { x: '100%', transition: { duration: 0.25, ease: [0.25, 0.46, 0.45, 0.94] } },
+              visible: { x: 0, transition: { type: 'spring', stiffness: 350, damping: 38 } },
+              exit: { x: '100%', transition: { duration: 0.2, ease: [0.25, 0.46, 0.45, 0.94] } },
             }}
             initial="hidden"
             animate="visible"
@@ -153,40 +151,39 @@ export function CredentialSheet({
           >
             {/* Header */}
             <div
-              className="sticky top-0 z-10 flex items-center justify-between p-[var(--space-4)]"
+              className="sticky top-0 z-10 flex items-center justify-between px-4 py-3"
               style={{
-                background: 'var(--glass-bg-thick)',
-                backdropFilter: 'blur(var(--glass-blur))',
-                borderBottom: '1px solid var(--glass-border)',
+                background: 'var(--bg-elevated)',
+                borderBottom: '1px solid var(--separator)',
               }}
             >
               <h2
-                className="font-bold"
-                style={{ fontSize: 'var(--text-title-3)', color: 'var(--text-primary)' }}
+                className="font-semibold"
+                style={{ fontSize: '15px', color: 'var(--text-primary)' }}
               >
                 {platform.display_name}
               </h2>
               <button
                 onClick={onClose}
                 style={{
-                  background: 'var(--fill-tertiary)',
+                  background: 'var(--fill-quaternary)',
                   border: 'none',
-                  borderRadius: 'var(--radius-full)',
-                  width: 32,
-                  height: 32,
+                  borderRadius: '50%',
+                  width: 26,
+                  height: 26,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   cursor: 'pointer',
-                  color: 'var(--text-secondary)',
+                  color: 'var(--text-tertiary)',
                 }}
               >
-                <X size={18} />
+                <X size={14} />
               </button>
             </div>
 
             {/* Body */}
-            <div className="p-[var(--space-4)]">
+            <div className="px-4 py-3">
               {fields.map((field) => (
                 <CredentialField
                   key={field.key}
@@ -199,88 +196,83 @@ export function CredentialSheet({
               {/* Result message */}
               {resultMessage && (
                 <motion.div
-                  initial={{ opacity: 0, y: 8 }}
+                  initial={{ opacity: 0, y: 4 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="flex items-center gap-[var(--space-2)] mb-[var(--space-4)] p-[var(--space-3)]"
+                  className="flex items-center gap-1.5 mb-3 p-2 rounded-lg"
                   style={{
-                    borderRadius: 'var(--radius-sm)',
                     background: saveState === 'success'
-                      ? 'color-mix(in srgb, var(--system-green) 12%, transparent)'
-                      : 'color-mix(in srgb, var(--system-red) 12%, transparent)',
-                    fontSize: 'var(--text-subhead)',
+                      ? 'color-mix(in srgb, var(--system-green) 10%, transparent)'
+                      : 'color-mix(in srgb, var(--system-red) 10%, transparent)',
+                    fontSize: '11px',
                     color: saveState === 'success' ? 'var(--system-green)' : 'var(--system-red)',
                   }}
                 >
-                  {saveState === 'success' ? <CheckCircle size={16} /> : <AlertCircle size={16} />}
+                  {saveState === 'success' ? <CheckCircle size={12} /> : <AlertCircle size={12} />}
                   {resultMessage}
                 </motion.div>
               )}
 
-              {/* Buttons */}
-              <div className="space-y-[var(--space-2)]">
+              {/* Buttons — compact */}
+              <div className="flex gap-2 mt-2">
                 <button
                   onClick={handleSaveAndConnect}
                   disabled={saveState === 'saving' || saveState === 'testing'}
-                  className="w-full flex items-center justify-center gap-[var(--space-2)]"
+                  className="flex-1 flex items-center justify-center gap-1.5"
                   style={{
                     background: 'var(--accent)',
                     color: 'white',
                     border: 'none',
-                    borderRadius: 'var(--radius-full)',
-                    padding: '0 24px',
-                    minHeight: 'var(--tap-min)',
+                    borderRadius: '8px',
+                    padding: '7px 12px',
                     fontWeight: 600,
-                    fontSize: 'var(--text-body)',
+                    fontSize: '12px',
                     cursor: (saveState === 'saving' || saveState === 'testing') ? 'not-allowed' : 'pointer',
                     opacity: (saveState === 'saving' || saveState === 'testing') ? 0.7 : 1,
                   }}
                 >
                   {(saveState === 'saving' || saveState === 'testing') && (
                     <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}>
-                      <Loader2 size={16} />
+                      <Loader2 size={12} />
                     </motion.div>
                   )}
-                  {saveState === 'testing' ? 'Testing connection...' : 'Save & Connect'}
+                  {saveState === 'testing' ? 'Testing...' : 'Save & Connect'}
                 </button>
 
                 <button
                   onClick={handleSaveOnly}
                   disabled={saveState === 'saving' || saveState === 'testing'}
-                  className="w-full"
                   style={{
                     background: 'var(--fill-tertiary)',
-                    color: 'var(--text-primary)',
+                    color: 'var(--text-secondary)',
                     border: '1px solid var(--glass-border)',
-                    borderRadius: 'var(--radius-full)',
-                    padding: '0 24px',
-                    minHeight: 'var(--tap-min)',
+                    borderRadius: '8px',
+                    padding: '7px 12px',
                     fontWeight: 500,
-                    fontSize: 'var(--text-body)',
+                    fontSize: '12px',
                     cursor: 'pointer',
                   }}
                 >
-                  Save Only
+                  Save
                 </button>
-
-                {existingCredentials && Object.keys(existingCredentials).length > 0 && (
-                  <button
-                    onClick={handleDisconnect}
-                    className="w-full"
-                    style={{
-                      background: 'transparent',
-                      color: 'var(--system-red)',
-                      border: 'none',
-                      padding: '0 16px',
-                      minHeight: 'var(--tap-min)',
-                      fontWeight: 500,
-                      fontSize: 'var(--text-body)',
-                      cursor: 'pointer',
-                    }}
-                  >
-                    Disconnect
-                  </button>
-                )}
               </div>
+
+              {existingCredentials && Object.keys(existingCredentials).length > 0 && (
+                <button
+                  onClick={handleDisconnect}
+                  className="w-full mt-2"
+                  style={{
+                    background: 'transparent',
+                    color: 'var(--system-red)',
+                    border: 'none',
+                    padding: '6px',
+                    fontWeight: 500,
+                    fontSize: '11px',
+                    cursor: 'pointer',
+                  }}
+                >
+                  Disconnect
+                </button>
+              )}
             </div>
           </motion.div>
         </>

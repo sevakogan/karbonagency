@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronDown, Eye, EyeOff, ExternalLink, Check } from 'lucide-react';
+import { ChevronRight, Eye, EyeOff, ExternalLink, Check } from 'lucide-react';
 import { expandVariants } from '@/lib/animations';
 import type { CredentialField as CredentialFieldType } from '@/types';
 
@@ -12,151 +12,96 @@ interface CredentialFieldProps {
   onChange: (value: string) => void;
 }
 
+const inputStyle = {
+  background: 'var(--fill-tertiary)',
+  border: '1px solid transparent',
+  borderRadius: '8px',
+  color: 'var(--text-primary)',
+  fontSize: '13px',
+  padding: '7px 10px',
+  outline: 'none',
+  width: '100%',
+} as const;
+
 export function CredentialField({ field, value, onChange }: CredentialFieldProps) {
   const [showSecret, setShowSecret] = useState(false);
   const [showWalkthrough, setShowWalkthrough] = useState(false);
   const isSecret = field.type === 'secret';
   const hasValue = value.trim().length > 0;
+  const isTextarea = field.key === 'service_account_json';
 
   return (
-    <div className="mb-[var(--space-4)]">
-      {/* Label + required */}
-      <div className="flex items-center gap-[var(--space-2)] mb-[var(--space-1)]">
-        <label
-          className="font-medium"
-          style={{ fontSize: 'var(--text-subhead)', color: 'var(--text-primary)' }}
-        >
+    <div className="mb-3">
+      {/* Label row */}
+      <div className="flex items-center gap-1 mb-1">
+        <label className="font-medium" style={{ fontSize: '12px', color: 'var(--text-primary)' }}>
           {field.label}
-          {field.required && <span style={{ color: 'var(--system-red)' }}> *</span>}
         </label>
-        {hasValue && (
-          <Check size={14} style={{ color: 'var(--system-green)' }} />
-        )}
+        {field.required && <span style={{ color: 'var(--system-red)', fontSize: '12px' }}>*</span>}
+        {hasValue && <Check size={11} style={{ color: 'var(--system-green)' }} />}
       </div>
 
-      {/* Help text */}
+      {/* Help — single line, subtle */}
       {field.help && (
-        <p
-          className="mb-[var(--space-2)]"
-          style={{ fontSize: 'var(--text-caption-1)', color: 'var(--text-tertiary)', lineHeight: 1.4 }}
-        >
+        <p style={{ fontSize: '10px', color: 'var(--text-quaternary)', lineHeight: 1.3, marginBottom: '4px' }}>
           {field.help}
         </p>
       )}
 
       {/* Input */}
       <div className="relative">
-        {isSecret && field.key !== 'service_account_json' ? (
-          <input
-            type={showSecret ? 'text' : 'password'}
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
-            placeholder={field.placeholder}
-            className="w-full pr-10"
-            style={{
-              background: 'var(--fill-tertiary)',
-              border: '1px solid transparent',
-              borderRadius: 'var(--radius-sm)',
-              color: 'var(--text-primary)',
-              fontSize: 'var(--text-body)',
-              padding: '12px 16px',
-              minHeight: 'var(--tap-min)',
-              outline: 'none',
-            }}
-            onFocus={(e) => {
-              e.currentTarget.style.borderColor = 'var(--accent)';
-              e.currentTarget.style.boxShadow = '0 0 0 3px var(--accent-muted)';
-            }}
-            onBlur={(e) => {
-              e.currentTarget.style.borderColor = 'transparent';
-              e.currentTarget.style.boxShadow = 'none';
-            }}
-          />
-        ) : field.key === 'service_account_json' ? (
+        {isTextarea ? (
           <textarea
             value={value}
             onChange={(e) => onChange(e.target.value)}
             placeholder={field.placeholder}
-            rows={4}
-            className="w-full"
-            style={{
-              background: 'var(--fill-tertiary)',
-              border: '1px solid transparent',
-              borderRadius: 'var(--radius-sm)',
-              color: 'var(--text-primary)',
-              fontSize: 'var(--text-footnote)',
-              fontFamily: 'var(--font-mono)',
-              padding: '12px 16px',
-              outline: 'none',
-              resize: 'vertical',
-            }}
-            onFocus={(e) => {
-              e.currentTarget.style.borderColor = 'var(--accent)';
-              e.currentTarget.style.boxShadow = '0 0 0 3px var(--accent-muted)';
-            }}
-            onBlur={(e) => {
-              e.currentTarget.style.borderColor = 'transparent';
-              e.currentTarget.style.boxShadow = 'none';
-            }}
+            rows={3}
+            style={{ ...inputStyle, fontFamily: 'var(--font-mono)', fontSize: '11px', resize: 'vertical' }}
           />
         ) : (
           <input
-            type="text"
+            type={isSecret && !showSecret ? 'password' : 'text'}
             value={value}
             onChange={(e) => onChange(e.target.value)}
             placeholder={field.placeholder}
-            className="w-full"
-            style={{
-              background: 'var(--fill-tertiary)',
-              border: '1px solid transparent',
-              borderRadius: 'var(--radius-sm)',
-              color: 'var(--text-primary)',
-              fontSize: 'var(--text-body)',
-              padding: '12px 16px',
-              minHeight: 'var(--tap-min)',
-              outline: 'none',
-            }}
-            onFocus={(e) => {
-              e.currentTarget.style.borderColor = 'var(--accent)';
-              e.currentTarget.style.boxShadow = '0 0 0 3px var(--accent-muted)';
-            }}
-            onBlur={(e) => {
-              e.currentTarget.style.borderColor = 'transparent';
-              e.currentTarget.style.boxShadow = 'none';
-            }}
+            style={{ ...inputStyle, paddingRight: isSecret ? '32px' : '10px' }}
           />
         )}
 
-        {isSecret && field.key !== 'service_account_json' && (
+        {isSecret && !isTextarea && (
           <button
             type="button"
             onClick={() => setShowSecret(!showSecret)}
-            className="absolute right-3 top-1/2 -translate-y-1/2"
-            style={{ color: 'var(--text-tertiary)', background: 'none', border: 'none', cursor: 'pointer' }}
+            className="absolute right-2 top-1/2 -translate-y-1/2"
+            style={{ color: 'var(--text-quaternary)', background: 'none', border: 'none', cursor: 'pointer' }}
           >
-            {showSecret ? <EyeOff size={16} /> : <Eye size={16} />}
+            {showSecret ? <EyeOff size={13} /> : <Eye size={13} />}
           </button>
         )}
       </div>
 
-      {/* Walkthrough accordion */}
+      {/* Walkthrough — collapsed by default */}
       {field.walkthrough && (
-        <div className="mt-[var(--space-2)]">
+        <div className="mt-1">
           <button
             type="button"
             onClick={() => setShowWalkthrough(!showWalkthrough)}
-            className="flex items-center gap-[var(--space-1)] w-full text-left"
+            className="flex items-center gap-0.5"
             style={{
               background: 'none',
               border: 'none',
               cursor: 'pointer',
-              fontSize: 'var(--text-caption-1)',
-              color: 'var(--accent)',
+              fontSize: '10px',
+              color: 'var(--system-blue)',
               fontWeight: 500,
+              padding: 0,
             }}
           >
-            <motion.div animate={{ rotate: showWalkthrough ? 180 : 0 }}>
-              <ChevronDown size={14} />
+            <motion.div
+              animate={{ rotate: showWalkthrough ? 90 : 0 }}
+              transition={{ duration: 0.15 }}
+            >
+              <ChevronRight size={10} />
             </motion.div>
             How to find this
           </button>
@@ -171,32 +116,19 @@ export function CredentialField({ field, value, onChange }: CredentialFieldProps
                 className="overflow-hidden"
               >
                 <div
-                  className="mt-[var(--space-2)] p-[var(--space-3)]"
-                  style={{
-                    background: 'var(--fill-quaternary)',
-                    borderRadius: 'var(--radius-sm)',
-                  }}
+                  className="mt-1 p-2"
+                  style={{ background: 'var(--fill-quaternary)', borderRadius: '6px' }}
                 >
-                  <p
-                    className="font-medium mb-[var(--space-2)]"
-                    style={{ fontSize: 'var(--text-caption-1)', color: 'var(--text-primary)' }}
-                  >
-                    {field.walkthrough.title}
-                  </p>
-                  <ol className="space-y-[var(--space-1)]">
+                  <ol className="space-y-0.5">
                     {field.walkthrough.steps.map((step, i) => (
                       <li
                         key={i}
-                        className="flex gap-[var(--space-2)]"
-                        style={{ fontSize: 'var(--text-caption-1)', color: 'var(--text-secondary)' }}
+                        className="flex gap-1.5"
+                        style={{ fontSize: '10px', color: 'var(--text-secondary)', lineHeight: 1.4 }}
                       >
                         <span
-                          className="flex-shrink-0 w-4 h-4 flex items-center justify-center rounded-full font-bold"
-                          style={{
-                            fontSize: '10px',
-                            background: 'var(--accent-muted)',
-                            color: 'var(--accent)',
-                          }}
+                          className="flex-shrink-0 w-3.5 h-3.5 flex items-center justify-center rounded-full font-bold"
+                          style={{ fontSize: '8px', background: 'var(--accent-muted)', color: 'var(--accent)', marginTop: '1px' }}
                         >
                           {i + 1}
                         </span>
@@ -209,15 +141,10 @@ export function CredentialField({ field, value, onChange }: CredentialFieldProps
                       href={field.walkthrough.direct_link}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center gap-[var(--space-1)] mt-[var(--space-2)]"
-                      style={{
-                        fontSize: 'var(--text-caption-1)',
-                        color: 'var(--system-blue)',
-                        fontWeight: 500,
-                        textDecoration: 'none',
-                      }}
+                      className="flex items-center gap-0.5 mt-1.5"
+                      style={{ fontSize: '10px', color: 'var(--system-blue)', fontWeight: 500, textDecoration: 'none' }}
                     >
-                      Open in new tab <ExternalLink size={12} />
+                      Open <ExternalLink size={9} />
                     </a>
                   )}
                 </div>

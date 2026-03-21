@@ -32,18 +32,18 @@ export default function MetricCard({
   const isLarge = size === "large";
 
   return (
-    <div className={`rounded-xl border border-gray-200 bg-white shadow-sm ${isLarge ? "p-6" : "p-4"}`}>
-      <div className="flex items-start justify-between mb-1">
-        <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+    <div className={`glass-card ${isLarge ? "p-4" : "p-3"}`}>
+      <div className="flex items-start justify-between mb-0.5">
+        <p className="text-[11px] font-medium uppercase tracking-wide" style={{ color: "var(--text-secondary)" }}>
           {label}
           <InfoTooltip text={description} formula={formula} />
         </p>
       </div>
-      <p className={`font-black text-gray-900 ${isLarge ? "text-3xl" : "text-2xl"}`}>
+      <p className={`font-bold ${isLarge ? "text-xl" : "text-lg"}`} style={{ color: "var(--text-primary)", fontVariantNumeric: "tabular-nums" }}>
         {prefix}{value}{suffix}
       </p>
       {trend && (
-        <p className={`text-xs mt-1 ${trendDown ? "text-red-500" : "text-green-600"}`}>
+        <p className="text-[11px] mt-0.5" style={{ color: trendDown ? "var(--system-red)" : "var(--system-green)" }}>
           {trend}
         </p>
       )}

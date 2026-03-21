@@ -26,7 +26,7 @@ export default async function DashboardLayout({
           style={{ background: "var(--bg-base)", color: "var(--text-primary)" }}
         >
           <TopNav clients={clients} />
-          <main className="mx-auto max-w-7xl px-6 py-8">{children}</main>
+          <main className="mx-auto max-w-7xl px-4 py-5 sm:px-6">{children}</main>
         </div>
       </ThemeProvider>
     </AuthProvider>

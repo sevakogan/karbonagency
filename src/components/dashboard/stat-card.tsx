@@ -10,14 +10,14 @@ interface StatCardProps {
 
 export default function StatCard({ label, value, trend, description, formula }: StatCardProps) {
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-      <p className="text-xs font-medium text-gray-500 mb-1">
+    <div className="glass-card p-3">
+      <p className="text-[11px] font-medium mb-0.5" style={{ color: "var(--text-secondary)" }}>
         {label}
         {description && <InfoTooltip text={description} formula={formula} />}
       </p>
-      <p className="text-2xl font-black text-gray-900">{value}</p>
+      <p className="text-lg font-bold" style={{ color: "var(--text-primary)", fontVariantNumeric: "tabular-nums" }}>{value}</p>
       {trend && (
-        <p className="text-xs text-green-600 mt-1">{trend}</p>
+        <p className="text-[11px] mt-0.5" style={{ color: "var(--system-green)" }}>{trend}</p>
       )}
     </div>
   );

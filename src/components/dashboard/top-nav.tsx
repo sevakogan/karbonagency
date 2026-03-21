@@ -40,7 +40,7 @@ export default function TopNav({ clients }: TopNavProps) {
   }
 
   return (
-    <header className="sticky top-0 z-40 border-b border-gray-200 bg-white">
+    <header className="glass-nav">
       {/* Row 1: Logo, client dropdown, user */}
       <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-6">
         <div className="flex items-center gap-4">
@@ -62,11 +62,11 @@ export default function TopNav({ clients }: TopNavProps) {
               <Link
                 key={tab.href}
                 href={tab.href}
-                className={`whitespace-nowrap border-b-2 py-2.5 text-sm font-medium transition-colors ${
-                  active
-                    ? "border-red-600 text-red-600"
-                    : "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700"
-                }`}
+                className="whitespace-nowrap border-b-2 py-2.5 text-sm font-medium transition-colors"
+                style={{
+                  borderColor: active ? "var(--accent)" : "transparent",
+                  color: active ? "var(--accent)" : "var(--text-secondary)",
+                }}
               >
                 {tab.label}
               </Link>

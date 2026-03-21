@@ -76,9 +76,12 @@ function MenuItem({
     <Link
       href={href}
       onClick={onClick}
-      className="flex items-center gap-3 px-5 py-2.5 text-sm text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-colors"
+      className="flex items-center gap-2.5 px-4 py-2 text-xs transition-colors"
+      style={{ color: "var(--text-secondary)" }}
+      onMouseEnter={(e) => { e.currentTarget.style.background = "var(--fill-quaternary)"; e.currentTarget.style.color = "var(--text-primary)"; }}
+      onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--text-secondary)"; }}
     >
-      <span className="text-gray-400">{icon}</span>
+      <span style={{ color: "var(--text-tertiary)" }}>{icon}</span>
       {label}
     </Link>
   );
@@ -115,24 +118,32 @@ export default function UserAvatarDropdown() {
       {/* Trigger */}
       <button
         onClick={() => setOpen((prev) => !prev)}
-        className="flex items-center gap-2 rounded-full px-2 py-1.5 hover:bg-gray-100 transition-colors"
+        className="flex items-center gap-2 rounded-full px-2 py-1 transition-colors"
+        style={{ background: "transparent" }}
+        onMouseEnter={(e) => { e.currentTarget.style.background = "var(--fill-quaternary)"; }}
+        onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
       >
         {profile?.avatar_url ? (
           <img
             src={profile.avatar_url}
             alt="Avatar"
-            className="h-8 w-8 rounded-full object-cover ring-2 ring-gray-100"
+            className="h-7 w-7 rounded-full object-cover"
+            style={{ border: "2px solid var(--glass-border)" }}
           />
         ) : (
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-200 text-xs font-bold text-gray-600 ring-2 ring-gray-100">
+          <div
+            className="flex h-7 w-7 items-center justify-center rounded-full text-[11px] font-bold"
+            style={{ background: "var(--fill-secondary)", color: "var(--text-primary)", border: "2px solid var(--glass-border)" }}
+          >
             {initial}
           </div>
         )}
-        <span className="hidden text-sm font-medium text-gray-700 sm:block">
+        <span className="hidden text-xs font-medium sm:block" style={{ color: "var(--text-primary)" }}>
           {profile?.full_name || "User"}
         </span>
         <svg
-          className={`w-4 h-4 text-gray-400 transition-transform ${open ? "rotate-180" : ""}`}
+          className={`w-3.5 h-3.5 transition-transform ${open ? "rotate-180" : ""}`}
+          style={{ color: "var(--text-tertiary)" }}
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
@@ -144,65 +155,70 @@ export default function UserAvatarDropdown() {
 
       {/* Dropdown */}
       {open && (
-        <div className="absolute right-0 top-full mt-2 z-50 w-64 rounded-2xl border border-gray-200 bg-white shadow-xl overflow-hidden">
-          {/* User header with avatar */}
-          <div className="px-5 py-4 bg-gray-50/50 border-b border-gray-100">
-            <div className="flex items-center gap-3">
+        <div
+          className="absolute right-0 top-full mt-2 z-50 w-56 overflow-hidden"
+          style={{
+            borderRadius: "var(--radius-lg)",
+            border: "1px solid var(--glass-border-strong)",
+            background: "var(--glass-bg-ultra)",
+            backdropFilter: "blur(40px) saturate(180%)",
+            WebkitBackdropFilter: "blur(40px) saturate(180%)",
+            boxShadow: "var(--shadow-elevated)",
+          }}
+        >
+          {/* User header */}
+          <div className="px-4 py-3" style={{ borderBottom: "1px solid var(--separator)" }}>
+            <div className="flex items-center gap-2.5">
               {profile?.avatar_url ? (
-                <img
-                  src={profile.avatar_url}
-                  alt="Avatar"
-                  className="h-10 w-10 rounded-full object-cover ring-2 ring-white shadow-sm"
-                />
+                <img src={profile.avatar_url} alt="Avatar" className="h-8 w-8 rounded-full object-cover" />
               ) : (
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-300 text-sm font-bold text-white ring-2 ring-white shadow-sm">
+                <div className="flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold" style={{ background: "var(--fill-secondary)", color: "var(--text-primary)" }}>
                   {initial}
                 </div>
               )}
               <div className="min-w-0 flex-1">
-                <p className="text-sm font-semibold text-gray-900 truncate">
+                <p className="text-xs font-semibold truncate" style={{ color: "var(--text-primary)" }}>
                   {profile?.full_name || "User"}
                 </p>
-                <p className="text-xs text-gray-500 truncate">
+                <p className="text-[11px] truncate" style={{ color: "var(--text-tertiary)" }}>
                   {profile?.email || ""}
                 </p>
               </div>
             </div>
-            {/* Role badge */}
-            <div className="mt-2.5">
-              <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                isAdmin
-                  ? "bg-red-50 text-red-700 ring-1 ring-red-600/10"
-                  : "bg-blue-50 text-blue-700 ring-1 ring-blue-600/10"
-              }`}>
-                Role: {isAdmin ? "Admin" : "Client"}
+            <div className="mt-2">
+              <span
+                className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium"
+                style={{
+                  background: isAdmin ? "var(--accent-muted)" : "color-mix(in srgb, var(--system-blue) 15%, transparent)",
+                  color: isAdmin ? "var(--accent)" : "var(--system-blue)",
+                }}
+              >
+                {isAdmin ? "Admin" : "Client"}
               </span>
             </div>
           </div>
 
           {/* Menu items */}
-          <div className="py-1.5">
+          <div className="py-1">
             <MenuItem href="/dashboard/profile" icon={<ProfileIcon />} label="My Profile" onClick={close} />
             <MenuItem href="/dashboard/settings" icon={<SettingsIcon />} label="Settings" onClick={close} />
 
             {isAdmin && (
               <>
-                <div className="border-t border-gray-100 my-1.5" />
+                <div className="my-1" style={{ borderTop: "1px solid var(--separator)" }} />
                 <MenuItem href="/admin" icon={<AdminIcon />} label="Admin Panel" onClick={close} />
                 <MenuItem href="/admin/users" icon={<UsersIcon />} label="Users" onClick={close} />
-                <MenuItem href="/dashboard/settings" icon={<IntegrationsIcon />} label="Integrations" onClick={close} />
+                <MenuItem href="/dashboard/settings/api-keys" icon={<IntegrationsIcon />} label="API Keys" onClick={close} />
               </>
             )}
           </div>
 
           {/* Sign out */}
-          <div className="border-t border-gray-100">
+          <div style={{ borderTop: "1px solid var(--separator)" }}>
             <button
-              onClick={() => {
-                close();
-                signOut();
-              }}
-              className="flex items-center gap-3 w-full text-left px-5 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
+              onClick={() => { close(); signOut(); }}
+              className="flex items-center gap-2.5 w-full text-left px-4 py-2 text-xs transition-colors"
+              style={{ color: "var(--system-red)" }}
             >
               <SignOutIcon />
               Sign Out

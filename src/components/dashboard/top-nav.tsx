@@ -17,6 +17,7 @@ interface TabItem {
 const adminTabs: TabItem[] = [
   { label: "Overview", href: "/dashboard" },
   { label: "CRM", href: "/dashboard/leads" },
+  { label: "Marketing", href: "/dashboard/marketing" },
 ];
 
 const clientTabs: TabItem[] = [

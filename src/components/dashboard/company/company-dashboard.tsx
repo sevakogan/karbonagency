@@ -104,6 +104,54 @@ export function CompanyDashboard({ company, integrations, dailyMetrics }: Props)
     router.refresh();
   };
 
+  // --- Revenue: fetch from real marketing analytics + ShiftOS analytics ---
+  const [marketingData, setMarketingData] = useState<{
+    revenueThisMonth: number;
+    revenueLifetime: number;
+    shiftosRevenue: number;
+    squareRevenue: number;
+    avgLTV: number;
+    totalCustomerBookings: number;
+    revenueTrend: Array<{ period: string; revenue: number }>;
+  }>({ revenueThisMonth: 0, revenueLifetime: 0, shiftosRevenue: 0, squareRevenue: 0, avgLTV: 0, totalCustomerBookings: 0, revenueTrend: [] });
+  const [todayRevenue, setTodayRevenue] = useState(0);
+
+  useEffect(() => {
+    if (!company.id) return;
+    Promise.all([
+      fetch(`/api/marketing/analytics?companyId=${company.id}&period=30d`).then(r => r.ok ? r.json() : null),
+      fetch(`/api/shiftos/analytics?companyId=${company.id}`).then(r => r.ok ? r.json() : null),
+    ]).then(([mktg, shiftos]) => {
+      if (mktg) {
+        setMarketingData({
+          revenueThisMonth: mktg.revenue_this_month ?? 0,
+          revenueLifetime: mktg.revenue_lifetime ?? 0,
+          shiftosRevenue: mktg.pnl?.shiftos_revenue ?? 0,
+          squareRevenue: mktg.pnl?.square_revenue ?? 0,
+          avgLTV: mktg.avg_lifetime_value ?? 0,
+          totalCustomerBookings: (mktg.revenue_trend ?? []).reduce((s: number, r: { bookings?: number }) => s + (r.bookings ?? 0), 0),
+          revenueTrend: (mktg.revenue_trend ?? []).map((r: { period: string; revenue: number }) => ({
+            period: r.period,
+            revenue: r.revenue ?? 0,
+          })),
+        });
+      }
+      if (shiftos?.revenue?.today != null) {
+        setTodayRevenue(shiftos.revenue.today);
+      }
+    }).catch(() => {});
+  }, [company.id]);
+
+  const revenueData = {
+    totalRevenue: marketingData.revenueThisMonth,
+    shiftOSRevenue: marketingData.shiftosRevenue,
+    squareRevenue: marketingData.squareRevenue,
+    transactions: marketingData.totalCustomerBookings,
+    avgTicket: marketingData.totalCustomerBookings > 0
+      ? marketingData.revenueLifetime / marketingData.totalCustomerBookings
+      : 0,
+  };
+
   // --- Derived data for V2 sections ---
 
   const overallHealth = scoreMetric('overall', 0, dashData.kpis._context);
@@ -240,55 +288,6 @@ export function CompanyDashboard({ company, integrations, dailyMetrics }: Props)
     () => channelData.map((ch) => ({ label: ch.name, revenue: ch.revenue, spend: ch.spend, color: ch.color })),
     [channelData],
   );
-
-  // --- Revenue: fetch from real marketing analytics + ShiftOS analytics ---
-  const [marketingData, setMarketingData] = useState<{
-    revenueThisMonth: number;
-    revenueLifetime: number;
-    shiftosRevenue: number;
-    squareRevenue: number;
-    avgLTV: number;
-    totalCustomerBookings: number;
-    revenueTrend: Array<{ period: string; revenue: number }>;
-  }>({ revenueThisMonth: 0, revenueLifetime: 0, shiftosRevenue: 0, squareRevenue: 0, avgLTV: 0, totalCustomerBookings: 0, revenueTrend: [] });
-  const [todayRevenue, setTodayRevenue] = useState(0);
-
-  useEffect(() => {
-    if (!company.id) return;
-    // Fetch both in parallel — marketing analytics (source of truth) + today's live revenue
-    Promise.all([
-      fetch(`/api/marketing/analytics?companyId=${company.id}&period=30d`).then(r => r.ok ? r.json() : null),
-      fetch(`/api/shiftos/analytics?companyId=${company.id}`).then(r => r.ok ? r.json() : null),
-    ]).then(([mktg, shiftos]) => {
-      if (mktg) {
-        setMarketingData({
-          revenueThisMonth: mktg.revenue_this_month ?? 0,
-          revenueLifetime: mktg.revenue_lifetime ?? 0,
-          shiftosRevenue: mktg.pnl?.shiftos_revenue ?? 0,
-          squareRevenue: mktg.pnl?.square_revenue ?? 0,
-          avgLTV: mktg.avg_lifetime_value ?? 0,
-          totalCustomerBookings: (mktg.revenue_trend ?? []).reduce((s: number, r: { bookings?: number }) => s + (r.bookings ?? 0), 0),
-          revenueTrend: (mktg.revenue_trend ?? []).map((r: { period: string; revenue: number }) => ({
-            period: r.period,
-            revenue: r.revenue ?? 0,
-          })),
-        });
-      }
-      if (shiftos?.revenue?.today != null) {
-        setTodayRevenue(shiftos.revenue.today);
-      }
-    }).catch(() => {});
-  }, [company.id]);
-
-  const revenueData = {
-    totalRevenue: marketingData.revenueThisMonth,
-    shiftOSRevenue: marketingData.shiftosRevenue,
-    squareRevenue: marketingData.squareRevenue,
-    transactions: marketingData.totalCustomerBookings,
-    avgTicket: marketingData.totalCustomerBookings > 0
-      ? marketingData.revenueLifetime / marketingData.totalCustomerBookings
-      : 0,
-  };
 
   return (
     <div>

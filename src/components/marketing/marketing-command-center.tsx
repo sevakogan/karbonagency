@@ -179,11 +179,11 @@ export function MarketingCommandCenter() {
       .finally(() => setLoading(false));
   }, [queryString]);
 
-  // Fetch analytics (driven by chartPeriod, NOT filters — avoids full re-render)
+  // Fetch analytics ONCE with all data — filter client-side by chartPeriod
   useEffect(() => {
     setAnalyticsLoading(true);
     const params = new URLSearchParams();
-    params.set('period', chartPeriod);
+    params.set('period', 'all'); // always fetch all, filter in UI
     fetch(`/api/marketing/analytics?${params.toString()}`)
       .then((r) => (r.ok ? r.json() : null))
       .then((raw) => {
@@ -215,7 +215,7 @@ export function MarketingCommandCenter() {
       })
       .catch(() => setAnalytics(null))
       .finally(() => setAnalyticsLoading(false));
-  }, [chartPeriod]);
+  }, []); // fetch once on mount, filter client-side
 
   // Live polling — refresh every 5 min with countdown
   const [countdown, setCountdown] = useState(300);

@@ -177,12 +177,28 @@ function useRevenueInsight(data: AnalyticsData['revenue_trend'], period: string)
   }, [data, period]);
 }
 
+function filterByPeriod<T extends { period: string }>(data: T[], period: string): T[] {
+  if (period === 'all') return data;
+  const now = new Date();
+  let cutoff: Date;
+  if (period === 'mtd') {
+    cutoff = new Date(now.getFullYear(), now.getMonth(), 1);
+  } else {
+    const days = parseInt(period) || 30;
+    cutoff = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
+  }
+  const cutoffStr = cutoff.toISOString().substring(0, 10);
+  return data.filter((d) => d.period >= cutoffStr);
+}
+
 function RevenueTrendChart({ data, period, onPeriodChange }: {
   data: AnalyticsData['revenue_trend'];
   period: string;
   onPeriodChange: (p: string) => void;
 }) {
-  const insight = useRevenueInsight(data, period);
+  // Filter data client-side based on period — no API refetch needed
+  const filteredData = useMemo(() => filterByPeriod(data, period), [data, period]);
+  const insight = useRevenueInsight(filteredData, period);
 
   return (
     <ChartCard
@@ -191,7 +207,7 @@ function RevenueTrendChart({ data, period, onPeriodChange }: {
     >
       <div className="h-52 -mx-1">
         <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={data} margin={{ top: 4, right: 4, left: -10, bottom: 0 }}>
+          <AreaChart data={filteredData} margin={{ top: 4, right: 4, left: -10, bottom: 0 }}>
             <defs>
               <linearGradient id="revGrad" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="5%" stopColor="var(--system-green)" stopOpacity={0.3} />

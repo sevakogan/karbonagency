@@ -284,62 +284,341 @@ function useHealthInsight(summary: AnalyticsData['summary'] | undefined): string
   }, [summary]);
 }
 
-function HealthRing({ analytics, onStatusClick }: {
+const HEALTH_COLORS = { active: '#06d6a0', at_risk: '#ffd166', churned: '#ef476f' };
+
+interface HealthProps {
   analytics: AnalyticsData | null;
   onStatusClick: (s: 'all' | 'active' | 'at_risk' | 'churned') => void;
-}) {
-  const summary = analytics?.summary;
-  const data = useMemo(() => [
-    { name: 'Active', value: summary?.active ?? 0, color: STATUS_COLORS.active },
-    { name: 'At Risk', value: summary?.at_risk ?? 0, color: STATUS_COLORS.at_risk },
-    { name: 'Churned', value: summary?.churned ?? 0, color: STATUS_COLORS.churned },
-  ], [summary]);
+}
 
-  const total = data.reduce((s, d) => s + d.value, 0);
-  const insight = useHealthInsight(summary);
+function useHealthData(analytics: AnalyticsData | null) {
+  return useMemo(() => {
+    const s = analytics?.summary;
+    const active = s?.active ?? 0;
+    const atRisk = s?.at_risk ?? 0;
+    const churned = s?.churned ?? 0;
+    const total = active + atRisk + churned;
+    const score = total > 0 ? Math.round((active / total) * 100) : 0;
+    return { active, atRisk, churned, total, score };
+  }, [analytics]);
+}
 
-  const handleClick = (_: unknown, index: number) => {
-    const statusMap: Array<'active' | 'at_risk' | 'churned'> = ['active', 'at_risk', 'churned'];
-    onStatusClick(statusMap[index]);
-  };
+/* ── Design 1: Gauge Meter ─────────────────────────────────────────── */
+function HealthGauge({ analytics, onStatusClick }: HealthProps) {
+  const { active, atRisk, churned, total, score } = useHealthData(analytics);
+  const insight = useHealthInsight(analytics?.summary);
+
+  // Needle angle: 0 = left (180deg), score% maps to 180..0 degrees
+  const needleAngle = 180 - (score / 100) * 180;
+  const needleRad = (needleAngle * Math.PI) / 180;
+  const cx = 120;
+  const cy = 110;
+  const needleLen = 65;
+  const nx = cx + needleLen * Math.cos(needleRad);
+  const ny = cy - needleLen * Math.sin(needleRad);
 
   return (
-    <ChartCard title="Health Ring">
-      <div className="h-52 relative">
-        <ResponsiveContainer width="100%" height="100%">
-          <PieChart>
-            <Pie
-              data={data}
-              cx="50%"
-              cy="50%"
-              innerRadius="60%"
-              outerRadius="85%"
-              paddingAngle={2}
-              dataKey="value"
-              onClick={handleClick}
-              cursor="pointer"
-            >
-              {data.map((entry) => (
-                <Cell key={entry.name} fill={entry.color} stroke="none" />
-              ))}
-            </Pie>
-            <Tooltip content={<ChartTooltipContent />} />
-          </PieChart>
-        </ResponsiveContainer>
-        {/* Center text */}
-        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-          <p className="text-2xl font-bold tabular-nums" style={{ color: 'var(--text-primary)' }}>
-            {total}
-          </p>
-          <p className="text-[9px] font-medium" style={{ color: 'var(--text-secondary)' }}>
-            customers
-          </p>
+    <ChartCard title="Health — Option 1">
+      <div className="flex flex-col items-center">
+        <svg viewBox="0 0 240 130" className="w-full max-w-[220px]">
+          {/* Zone arcs: green 0-33%, amber 33-66%, red 66-100% */}
+          <path
+            d="M 25 110 A 95 95 0 0 1 87.45 27.77"
+            fill="none"
+            stroke={HEALTH_COLORS.churned}
+            strokeWidth="18"
+            strokeLinecap="round"
+            opacity="0.25"
+          />
+          <path
+            d="M 93.5 24.5 A 95 95 0 0 1 146.5 24.5"
+            fill="none"
+            stroke={HEALTH_COLORS.at_risk}
+            strokeWidth="18"
+            strokeLinecap="round"
+            opacity="0.25"
+          />
+          <path
+            d="M 152.55 27.77 A 95 95 0 0 1 215 110"
+            fill="none"
+            stroke={HEALTH_COLORS.active}
+            strokeWidth="18"
+            strokeLinecap="round"
+            opacity="0.25"
+          />
+          {/* Active arc fill based on score */}
+          {score > 66 && (
+            <path
+              d="M 152.55 27.77 A 95 95 0 0 1 215 110"
+              fill="none"
+              stroke={HEALTH_COLORS.active}
+              strokeWidth="18"
+              strokeLinecap="round"
+              opacity="0.9"
+            />
+          )}
+          {/* Needle */}
+          <line
+            x1={cx}
+            y1={cy}
+            x2={nx}
+            y2={ny}
+            stroke="var(--text-primary)"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+          />
+          <circle cx={cx} cy={cy} r="5" fill="var(--text-primary)" />
+          {/* Score */}
+          <text
+            x={cx}
+            y={cy + 20}
+            textAnchor="middle"
+            fill="var(--text-primary)"
+            fontSize="22"
+            fontWeight="700"
+            fontFamily="system-ui"
+          >
+            {score}%
+          </text>
+        </svg>
+        <div className="flex justify-center gap-4 mt-1 text-[10px] font-semibold">
+          <button
+            type="button"
+            onClick={() => onStatusClick('active')}
+            className="flex items-center gap-1 cursor-pointer hover:opacity-80 transition-opacity"
+            style={{ color: 'var(--text-secondary)' }}
+          >
+            <span className="w-2 h-2 rounded-full" style={{ background: HEALTH_COLORS.active }} />
+            Active {active}
+          </button>
+          <button
+            type="button"
+            onClick={() => onStatusClick('at_risk')}
+            className="flex items-center gap-1 cursor-pointer hover:opacity-80 transition-opacity"
+            style={{ color: 'var(--text-secondary)' }}
+          >
+            <span className="w-2 h-2 rounded-full" style={{ background: HEALTH_COLORS.at_risk }} />
+            At Risk {atRisk}
+          </button>
+          <button
+            type="button"
+            onClick={() => onStatusClick('churned')}
+            className="flex items-center gap-1 cursor-pointer hover:opacity-80 transition-opacity"
+            style={{ color: 'var(--text-secondary)' }}
+          >
+            <span className="w-2 h-2 rounded-full" style={{ background: HEALTH_COLORS.churned }} />
+            Churned {churned}
+          </button>
         </div>
       </div>
       <InsightBar text={insight} />
     </ChartCard>
   );
 }
+
+/* ── Design 2: Stacked Progress Bars ──────────────────────────────── */
+function HealthBars({ analytics, onStatusClick }: HealthProps) {
+  const { active, atRisk, churned, total } = useHealthData(analytics);
+  const insight = useHealthInsight(analytics?.summary);
+
+  const bars = [
+    { label: 'Active', count: active, color: HEALTH_COLORS.active, status: 'active' as const },
+    { label: 'At Risk', count: atRisk, color: HEALTH_COLORS.at_risk, status: 'at_risk' as const },
+    { label: 'Churned', count: churned, color: HEALTH_COLORS.churned, status: 'churned' as const },
+  ];
+
+  return (
+    <ChartCard title="Health — Option 2">
+      <div className="flex flex-col gap-3 py-2">
+        {bars.map((bar) => {
+          const pct = total > 0 ? (bar.count / total) * 100 : 0;
+          return (
+            <button
+              key={bar.label}
+              type="button"
+              onClick={() => onStatusClick(bar.status)}
+              className="w-full text-left cursor-pointer hover:opacity-80 transition-opacity"
+            >
+              <div className="flex justify-between items-center mb-1">
+                <span
+                  className="text-[10px] font-semibold flex items-center gap-1.5"
+                  style={{ color: 'var(--text-secondary)' }}
+                >
+                  <span className="w-2 h-2 rounded-full" style={{ background: bar.color }} />
+                  {bar.label}
+                </span>
+                <span
+                  className="text-[10px] font-bold tabular-nums"
+                  style={{ color: 'var(--text-primary)' }}
+                >
+                  {bar.count}
+                  <span
+                    className="ml-1 font-normal"
+                    style={{ color: 'var(--text-tertiary)' }}
+                  >
+                    ({Math.round(pct)}%)
+                  </span>
+                </span>
+              </div>
+              <div
+                className="h-2.5 w-full rounded-full overflow-hidden"
+                style={{ background: 'var(--fill-quaternary)' }}
+              >
+                <div
+                  className="h-full rounded-full transition-all duration-500"
+                  style={{ width: `${pct}%`, background: bar.color }}
+                />
+              </div>
+            </button>
+          );
+        })}
+        <div
+          className="flex justify-between items-center pt-1 border-t"
+          style={{ borderColor: 'var(--separator)' }}
+        >
+          <span
+            className="text-[10px] font-semibold"
+            style={{ color: 'var(--text-secondary)' }}
+          >
+            Total
+          </span>
+          <span
+            className="text-sm font-bold tabular-nums"
+            style={{ color: 'var(--text-primary)' }}
+          >
+            {total}
+          </span>
+        </div>
+      </div>
+      <InsightBar text={insight} />
+    </ChartCard>
+  );
+}
+
+/* ── Design 3: Three Radial Arcs ──────────────────────────────────── */
+function RadialArc({ pct, color, count, label, onClick }: {
+  pct: number;
+  color: string;
+  count: number;
+  label: string;
+  onClick: () => void;
+}) {
+  const radius = 42;
+  const cx = 50;
+  const cy = 55;
+  // Semicircle arc from 180deg to 0deg
+  const totalLen = Math.PI * radius; // half circumference
+  const filled = (pct / 100) * totalLen;
+  const gap = totalLen - filled;
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex flex-col items-center cursor-pointer hover:opacity-80 transition-opacity"
+    >
+      <svg viewBox="0 0 100 65" className="w-[100px]">
+        {/* Track */}
+        <path
+          d={`M ${cx - radius} ${cy} A ${radius} ${radius} 0 0 1 ${cx + radius} ${cy}`}
+          fill="none"
+          stroke={color}
+          strokeWidth="8"
+          strokeLinecap="round"
+          opacity="0.15"
+        />
+        {/* Filled */}
+        <path
+          d={`M ${cx - radius} ${cy} A ${radius} ${radius} 0 0 1 ${cx + radius} ${cy}`}
+          fill="none"
+          stroke={color}
+          strokeWidth="8"
+          strokeLinecap="round"
+          strokeDasharray={`${filled} ${gap}`}
+          opacity="0.9"
+        />
+        <text
+          x={cx}
+          y={cy - 4}
+          textAnchor="middle"
+          fill="var(--text-primary)"
+          fontSize="15"
+          fontWeight="700"
+          fontFamily="system-ui"
+        >
+          {Math.round(pct)}%
+        </text>
+      </svg>
+      <span
+        className="text-base font-bold tabular-nums -mt-1"
+        style={{ color: 'var(--text-primary)' }}
+      >
+        {count}
+      </span>
+      <span
+        className="text-[9px] font-semibold uppercase tracking-wider"
+        style={{ color: 'var(--text-tertiary)' }}
+      >
+        {label}
+      </span>
+    </button>
+  );
+}
+
+function HealthArcs({ analytics, onStatusClick }: HealthProps) {
+  const { active, atRisk, churned, total } = useHealthData(analytics);
+  const insight = useHealthInsight(analytics?.summary);
+
+  const activePct = total > 0 ? (active / total) * 100 : 0;
+  const atRiskPct = total > 0 ? (atRisk / total) * 100 : 0;
+  const churnedPct = total > 0 ? (churned / total) * 100 : 0;
+
+  return (
+    <ChartCard title="Health — Option 3">
+      <div className="flex justify-around items-end py-3">
+        <RadialArc pct={activePct} color={HEALTH_COLORS.active} count={active} label="Active" onClick={() => onStatusClick('active')} />
+        <RadialArc pct={atRiskPct} color={HEALTH_COLORS.at_risk} count={atRisk} label="At Risk" onClick={() => onStatusClick('at_risk')} />
+        <RadialArc pct={churnedPct} color={HEALTH_COLORS.churned} count={churned} label="Churned" onClick={() => onStatusClick('churned')} />
+      </div>
+      <InsightBar text={insight} />
+    </ChartCard>
+  );
+}
+
+/* ── Original HealthRing (preserved for restoration) ──────────────── */
+// function _OriginalHealthRing({ analytics, onStatusClick }: HealthProps) {
+//   const summary = analytics?.summary;
+//   const data = useMemo(() => [
+//     { name: 'Active', value: summary?.active ?? 0, color: STATUS_COLORS.active },
+//     { name: 'At Risk', value: summary?.at_risk ?? 0, color: STATUS_COLORS.at_risk },
+//     { name: 'Churned', value: summary?.churned ?? 0, color: STATUS_COLORS.churned },
+//   ], [summary]);
+//   const total = data.reduce((s, d) => s + d.value, 0);
+//   const insight = useHealthInsight(summary);
+//   const handleClick = (_: unknown, index: number) => {
+//     const statusMap: Array<'active' | 'at_risk' | 'churned'> = ['active', 'at_risk', 'churned'];
+//     onStatusClick(statusMap[index]);
+//   };
+//   return (
+//     <ChartCard title="Health Ring">
+//       <div className="h-52 relative">
+//         <ResponsiveContainer width="100%" height="100%">
+//           <PieChart>
+//             <Pie data={data} cx="50%" cy="50%" innerRadius="60%" outerRadius="85%" paddingAngle={2} dataKey="value" onClick={handleClick} cursor="pointer">
+//               {data.map((entry) => (<Cell key={entry.name} fill={entry.color} stroke="none" />))}
+//             </Pie>
+//             <Tooltip content={<ChartTooltipContent />} />
+//           </PieChart>
+//         </ResponsiveContainer>
+//         <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+//           <p className="text-2xl font-bold tabular-nums" style={{ color: 'var(--text-primary)' }}>{total}</p>
+//           <p className="text-[9px] font-medium" style={{ color: 'var(--text-secondary)' }}>customers</p>
+//         </div>
+//       </div>
+//       <InsightBar text={insight} />
+//     </ChartCard>
+//   );
+// }
 
 const SCATTER_COLORS: Record<string, string> = {
   active: '#06d6a0',
@@ -564,23 +843,26 @@ export function ChartGrid({ analytics, loading, period, onPeriodChange, onStatus
   }
 
   return (
-    <div className="grid grid-cols-2 gap-2">
-      <RevenueTrendChart
-        data={analytics?.revenue_trend ?? []}
-        period={period}
-        onPeriodChange={onPeriodChange}
-      />
-      <HealthRing
-        analytics={analytics}
-        onStatusClick={onStatusClick}
-      />
-      <VipScatter
-        scatterData={analytics?.scatter_data ?? []}
-        onStatusClick={onStatusClick}
-      />
-      <CouponImpactChart
-        data={analytics?.coupon_impact ?? []}
-      />
+    <div className="flex flex-col gap-2">
+      <div className="grid grid-cols-3 gap-2">
+        <HealthGauge analytics={analytics} onStatusClick={onStatusClick} />
+        <HealthBars analytics={analytics} onStatusClick={onStatusClick} />
+        <HealthArcs analytics={analytics} onStatusClick={onStatusClick} />
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        <RevenueTrendChart
+          data={analytics?.revenue_trend ?? []}
+          period={period}
+          onPeriodChange={onPeriodChange}
+        />
+        <VipScatter
+          scatterData={analytics?.scatter_data ?? []}
+          onStatusClick={onStatusClick}
+        />
+        <CouponImpactChart
+          data={analytics?.coupon_impact ?? []}
+        />
+      </div>
     </div>
   );
 }

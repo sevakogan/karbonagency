@@ -650,6 +650,52 @@ function CouponImpactChart({ data }: { data: AnalyticsData['coupon_impact'] }) {
   );
 }
 
+function PnlRow({ label, value, color, bold, indent }: { label: string; value: number; color?: string; bold?: boolean; indent?: boolean }) {
+  const isNeg = label.startsWith('-') || label.includes('Fee') || label.includes('franchise');
+  const displayVal = isNeg ? `-$${Math.abs(value).toLocaleString()}` : `$${value.toLocaleString()}`;
+  return (
+    <div className={`flex justify-between items-baseline ${indent ? 'pl-3' : ''}`}>
+      <span className={`text-[10px] ${bold ? 'font-bold' : 'font-medium'}`} style={{ color: color ?? 'var(--text-secondary)' }}>{label}</span>
+      <span className={`text-xs ${bold ? 'font-bold' : 'font-semibold'} tabular-nums`} style={{ color: color ?? 'var(--text-primary)' }}>{displayVal}</span>
+    </div>
+  );
+}
+
+function PnlCard({ analytics }: { analytics: AnalyticsData | null }) {
+  const pnl = analytics?.pnl;
+  if (!pnl) return null;
+
+  return (
+    <ChartCard title="Profit & Loss">
+      <div className="space-y-1.5">
+        <PnlRow label="Gross Revenue" value={pnl.gross_revenue} bold />
+        <div className="h-px" style={{ background: 'var(--separator)' }} />
+        <PnlRow label="ShiftOS (Stripe)" value={pnl.shiftos_revenue} color="#818cf8" indent />
+        <PnlRow label="Square (iPad)" value={pnl.square_revenue} color="#06d6a0" indent />
+        <div className="h-px" style={{ background: 'var(--separator)' }} />
+        <PnlRow label="Stripe Fees (2.9%+30¢)" value={pnl.stripe_fees} color="#ef476f" indent />
+        <PnlRow label="Square Fees (2.6%+10¢)" value={pnl.square_fees} color="#ffd166" indent />
+        <PnlRow label="Total Merchant Fees" value={pnl.total_merchant_fees} color="#ef476f" />
+        <div className="h-px" style={{ background: 'var(--separator)' }} />
+        <PnlRow label="Franchise Royalty (7%)" value={pnl.franchise_royalty} color="#f97316" indent />
+        <PnlRow label="Franchise Marketing (1%)" value={pnl.franchise_marketing} color="#f97316" indent />
+        <PnlRow label="Total Franchise Fees" value={pnl.total_franchise_fees} color="#f97316" />
+        <div className="h-px" style={{ background: 'var(--separator)' }} />
+        <PnlRow label="Total Deductions" value={pnl.total_deductions} color="var(--system-red)" />
+        <div className="h-px my-1" style={{ background: 'var(--text-primary)', opacity: 0.2 }} />
+        <div className="flex justify-between items-baseline">
+          <span className="text-[11px] font-bold" style={{ color: '#06d6a0' }}>Net Profit</span>
+          <div className="text-right">
+            <span className="text-sm font-bold tabular-nums" style={{ color: '#06d6a0' }}>${pnl.net_profit.toLocaleString()}</span>
+            <span className="text-[9px] font-semibold ml-1.5" style={{ color: 'var(--text-secondary)' }}>({pnl.margin_pct}% margin)</span>
+          </div>
+        </div>
+      </div>
+      <InsightBar text={`After merchant fees and franchise costs, you keep ${pnl.margin_pct}% of every dollar earned.`} />
+    </ChartCard>
+  );
+}
+
 function RevenueBreakdown({ analytics }: { analytics: AnalyticsData | null }) {
   const fees = analytics?.merchant_fees;
   const lifetime = analytics?.revenue_lifetime ?? 0;
@@ -760,6 +806,60 @@ function FeesChart({ analytics }: { analytics: AnalyticsData | null }) {
   );
 }
 
+function FranchiseFeesChart({ analytics }: { analytics: AnalyticsData | null }) {
+  const franchise = analytics?.franchise_fees;
+  const lifetime = analytics?.revenue_lifetime ?? 0;
+
+  const chartData = useMemo(() => {
+    if (!franchise) return [];
+    return [
+      { name: 'Royalty (7%)', value: franchise.royalty, color: '#f97316' },
+      { name: 'Marketing (1%)', value: franchise.marketing, color: '#fb923c' },
+    ];
+  }, [franchise]);
+
+  if (!franchise) return null;
+
+  return (
+    <ChartCard title="Franchise Fees">
+      <div className="flex items-center gap-4">
+        <div className="w-24 h-24 flex-shrink-0">
+          <ResponsiveContainer width="100%" height="100%">
+            <PieChart>
+              <Pie data={chartData} cx="50%" cy="50%" innerRadius="45%" outerRadius="85%" paddingAngle={3} dataKey="value">
+                {chartData.map((e) => <Cell key={e.name} fill={e.color} stroke="none" />)}
+              </Pie>
+              <Tooltip formatter={(v: number) => `$${v.toLocaleString()}`} contentStyle={{ background: '#1a1a2e', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, fontSize: 11, color: '#fff' }} />
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
+        <div className="flex-1 space-y-2">
+          <div className="flex justify-between items-baseline">
+            <span className="text-[10px] font-medium flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full" style={{ background: '#f97316' }} />
+              <span style={{ color: 'var(--text-secondary)' }}>Royalty (7%)</span>
+            </span>
+            <span className="text-xs font-semibold tabular-nums" style={{ color: '#f97316' }}>-${franchise.royalty.toLocaleString()}</span>
+          </div>
+          <div className="flex justify-between items-baseline">
+            <span className="text-[10px] font-medium flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full" style={{ background: '#fb923c' }} />
+              <span style={{ color: 'var(--text-secondary)' }}>Marketing (1%)</span>
+            </span>
+            <span className="text-xs font-semibold tabular-nums" style={{ color: '#fb923c' }}>-${franchise.marketing.toLocaleString()}</span>
+          </div>
+          <div className="h-px" style={{ background: 'var(--separator)' }} />
+          <div className="flex justify-between items-baseline">
+            <span className="text-[10px] font-bold" style={{ color: 'var(--text-primary)' }}>Total Franchise</span>
+            <span className="text-xs font-bold tabular-nums" style={{ color: '#f97316' }}>${franchise.total.toLocaleString()} ({lifetime > 0 ? ((franchise.total / lifetime) * 100).toFixed(0) : 0}%)</span>
+          </div>
+        </div>
+      </div>
+      <InsightBar text="Franchise fees are 8% of gross revenue — 7% royalty + 1% marketing fund." />
+    </ChartCard>
+  );
+}
+
 export function ChartGrid({ analytics, loading, period, onPeriodChange, onStatusClick }: ChartGridProps) {
   if (loading) {
     return (
@@ -786,19 +886,20 @@ export function ChartGrid({ analytics, loading, period, onPeriodChange, onStatus
         period={period}
         onPeriodChange={onPeriodChange}
       />
-      {/* Row 2: Customer Health + Revenue Breakdown */}
+      {/* Row 2: Customer Health + P&L */}
       <div className="grid grid-cols-2 gap-2">
         <HealthArcs analytics={analytics} onStatusClick={onStatusClick} />
-        <RevenueBreakdown analytics={analytics} />
+        <PnlCard analytics={analytics} />
       </div>
       {/* Row 3: Customer Value Map — full width */}
       <VipScatter
         scatterData={analytics?.scatter_data ?? []}
         onStatusClick={onStatusClick}
       />
-      {/* Row 4: Fees + Coupon */}
-      <div className="grid grid-cols-2 gap-2">
+      {/* Row 4: Merchant Fees + Franchise Fees + Coupon */}
+      <div className="grid grid-cols-3 gap-2">
         <FeesChart analytics={analytics} />
+        <FranchiseFeesChart analytics={analytics} />
         <CouponImpactChart data={analytics?.coupon_impact ?? []} />
       </div>
     </div>

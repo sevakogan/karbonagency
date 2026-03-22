@@ -80,6 +80,13 @@ export interface AnalyticsData {
   scatter_data: ScatterPoint[];
   revenue_lifetime: number;
   merchant_fees: { stripe: number; square: number; total: number; net_revenue: number };
+  franchise_fees: { royalty: number; marketing: number; total: number };
+  pnl: {
+    gross_revenue: number; shiftos_revenue: number; square_revenue: number;
+    stripe_fees: number; square_fees: number; total_merchant_fees: number;
+    franchise_royalty: number; franchise_marketing: number; total_franchise_fees: number;
+    total_deductions: number; net_profit: number; margin_pct: number;
+  } | null;
   revenue_trend: Array<{
     period: string;
     date?: string;
@@ -206,6 +213,8 @@ export function MarketingCommandCenter() {
           revenue_trend: raw.revenue_trend ?? [],
           revenue_lifetime: raw.revenue_lifetime ?? 0,
           merchant_fees: raw.merchant_fees ?? { stripe: 0, square: 0, total: 0, net_revenue: 0 },
+          franchise_fees: raw.franchise_fees ?? { royalty: 0, marketing: 0, total: 0 },
+          pnl: raw.pnl ?? null,
           coupon_impact: (raw.coupon_analysis ?? []).map((c: any) => ({
             code: c.code,
             first_time: c.uses - Math.round(c.uses * (c.repeat_rate ?? 0)),

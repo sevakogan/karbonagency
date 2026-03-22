@@ -181,7 +181,19 @@ export async function GET(request: NextRequest) {
 
     const stripeFees = totalShiftOSRev * STRIPE_RATE + totalShiftosTxns * STRIPE_FIXED;
     const squareFees = totalSquareRev * SQUARE_RATE + totalSquareTxns * SQUARE_FIXED;
-    const totalFees = stripeFees + squareFees;
+    const totalMerchantFees = stripeFees + squareFees;
+
+    // Franchise fees: 7% royalty + 1% marketing = 8% total on gross revenue
+    const FRANCHISE_ROYALTY_RATE = 0.07;
+    const FRANCHISE_MARKETING_RATE = 0.01;
+    const franchiseRoyalty = totalLifetimeRevenue * FRANCHISE_ROYALTY_RATE;
+    const franchiseMarketing = totalLifetimeRevenue * FRANCHISE_MARKETING_RATE;
+    const totalFranchiseFees = franchiseRoyalty + franchiseMarketing;
+
+    const totalDeductions = totalMerchantFees + totalFranchiseFees;
+    const netProfit = totalLifetimeRevenue - totalDeductions;
+
+    const r = (n: number) => Math.round(n * 100) / 100;
 
     return NextResponse.json({
       revenue_trend: csvRevenueTrend.length > 0 ? csvRevenueTrend : revenueTrend,
@@ -194,10 +206,29 @@ export async function GET(request: NextRequest) {
       revenue_lifetime: totalLifetimeRevenue,
       avg_lifetime_value: avgLTV,
       merchant_fees: {
-        stripe: Math.round(stripeFees * 100) / 100,
-        square: Math.round(squareFees * 100) / 100,
-        total: Math.round(totalFees * 100) / 100,
-        net_revenue: Math.round((totalLifetimeRevenue - totalFees) * 100) / 100,
+        stripe: r(stripeFees),
+        square: r(squareFees),
+        total: r(totalMerchantFees),
+        net_revenue: r(netProfit),
+      },
+      franchise_fees: {
+        royalty: r(franchiseRoyalty),
+        marketing: r(franchiseMarketing),
+        total: r(totalFranchiseFees),
+      },
+      pnl: {
+        gross_revenue: r(totalLifetimeRevenue),
+        shiftos_revenue: r(totalShiftOSRev),
+        square_revenue: r(totalSquareRev),
+        stripe_fees: r(stripeFees),
+        square_fees: r(squareFees),
+        total_merchant_fees: r(totalMerchantFees),
+        franchise_royalty: r(franchiseRoyalty),
+        franchise_marketing: r(franchiseMarketing),
+        total_franchise_fees: r(totalFranchiseFees),
+        total_deductions: r(totalDeductions),
+        net_profit: r(netProfit),
+        margin_pct: r((netProfit / totalLifetimeRevenue) * 100),
       },
     });
   } catch (err) {

@@ -1,11 +1,24 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef, Component, type ReactNode } from 'react';
+import dynamic from 'next/dynamic';
 import { PulseBar } from './pulse-bar';
-import { ChartGrid } from './chart-grid';
 import { ActiveFilters } from './active-filters';
 import { CustomerList } from './customer-list';
 import { formatTimeAgo } from '@/hooks/use-live-poll';
+
+// Dynamic import for Recharts components (no SSR)
+const ChartGrid = dynamic(() => import('./chart-grid').then(m => ({ default: m.ChartGrid })), { ssr: false, loading: () => <div className="h-64 flex items-center justify-center text-xs" style={{ color: 'var(--text-tertiary)' }}>Loading charts...</div> });
+
+// Error boundary to prevent crashes
+class ErrorBoundary extends Component<{ children: ReactNode }, { error: string | null }> {
+  constructor(props: { children: ReactNode }) { super(props); this.state = { error: null }; }
+  static getDerivedStateFromError(e: Error) { return { error: e.message }; }
+  render() {
+    if (this.state.error) return <div className="p-8 text-center text-sm" style={{ color: 'var(--system-red)' }}>Something went wrong: {this.state.error}</div>;
+    return this.props.children;
+  }
+}
 
 export interface MarketingFilters {
   status: 'all' | 'active' | 'at_risk' | 'churned';
@@ -201,6 +214,7 @@ export function MarketingCommandCenter() {
   }, [filters]);
 
   return (
+    <ErrorBoundary>
     <div className="flex flex-col gap-4">
       {/* Page title + live indicator */}
       <div className="flex items-center justify-between">
@@ -264,5 +278,6 @@ export function MarketingCommandCenter() {
         onFilterChange={updateFilter}
       />
     </div>
+    </ErrorBoundary>
   );
 }

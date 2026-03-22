@@ -601,6 +601,90 @@ function CouponImpactChart({ data }: { data: AnalyticsData['coupon_impact'] }) {
   );
 }
 
+function MerchantFeesChart({ analytics }: { analytics: AnalyticsData | null }) {
+  const fees = analytics?.merchant_fees;
+  const lifetime = analytics?.revenue_lifetime ?? 0;
+
+  const chartData = useMemo(() => {
+    if (!fees) return [];
+    return [
+      { name: 'Net Revenue', value: fees.net_revenue, color: '#06d6a0' },
+      { name: 'Stripe Fees', value: fees.stripe, color: '#ef476f' },
+      { name: 'Square Fees', value: fees.square, color: '#ffd166' },
+    ];
+  }, [fees]);
+
+  const fmtK = (n: number) => n >= 1000 ? `$${(n / 1000).toFixed(1)}k` : `$${n.toFixed(0)}`;
+
+  if (!fees) return null;
+
+  return (
+    <ChartCard title="Revenue & Fees Breakdown">
+      <div className="flex items-center gap-4">
+        <div className="w-32 h-32 flex-shrink-0">
+          <ResponsiveContainer width="100%" height="100%">
+            <PieChart>
+              <Pie
+                data={chartData}
+                cx="50%"
+                cy="50%"
+                innerRadius="55%"
+                outerRadius="85%"
+                paddingAngle={2}
+                dataKey="value"
+              >
+                {chartData.map((entry) => (
+                  <Cell key={entry.name} fill={entry.color} stroke="none" />
+                ))}
+              </Pie>
+              <Tooltip
+                formatter={(value: number) => `$${value.toLocaleString()}`}
+                contentStyle={{ background: '#1a1a2e', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, fontSize: 11, color: '#fff' }}
+              />
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
+        <div className="flex-1 space-y-2">
+          <div className="flex justify-between items-baseline">
+            <span className="text-[10px] font-medium" style={{ color: 'var(--text-secondary)' }}>Gross Revenue</span>
+            <span className="text-sm font-bold tabular-nums" style={{ color: 'var(--text-primary)' }}>{fmtK(lifetime)}</span>
+          </div>
+          <div className="h-px" style={{ background: 'var(--separator)' }} />
+          <div className="flex justify-between items-baseline">
+            <span className="text-[10px] font-medium flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full" style={{ background: '#ef476f' }} />
+              <span style={{ color: 'var(--text-secondary)' }}>Stripe (2.9% + 30¢)</span>
+            </span>
+            <span className="text-xs font-semibold tabular-nums" style={{ color: '#ef476f' }}>-${fees.stripe.toLocaleString()}</span>
+          </div>
+          <div className="flex justify-between items-baseline">
+            <span className="text-[10px] font-medium flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full" style={{ background: '#ffd166' }} />
+              <span style={{ color: 'var(--text-secondary)' }}>Square (2.6% + 10¢)</span>
+            </span>
+            <span className="text-xs font-semibold tabular-nums" style={{ color: '#ffd166' }}>-${fees.square.toLocaleString()}</span>
+          </div>
+          <div className="h-px" style={{ background: 'var(--separator)' }} />
+          <div className="flex justify-between items-baseline">
+            <span className="text-[10px] font-bold flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full" style={{ background: '#06d6a0' }} />
+              <span style={{ color: 'var(--text-primary)' }}>Net Revenue</span>
+            </span>
+            <span className="text-sm font-bold tabular-nums" style={{ color: '#06d6a0' }}>${fees.net_revenue.toLocaleString()}</span>
+          </div>
+          <div className="flex justify-between items-baseline">
+            <span className="text-[9px]" style={{ color: 'var(--text-secondary)' }}>Total Fees</span>
+            <span className="text-[9px] font-semibold tabular-nums" style={{ color: 'var(--text-secondary)' }}>
+              ${fees.total.toLocaleString()} ({lifetime > 0 ? ((fees.total / lifetime) * 100).toFixed(1) : 0}%)
+            </span>
+          </div>
+        </div>
+      </div>
+      <InsightBar text={`Processing fees are ${lifetime > 0 ? ((fees.total / lifetime) * 100).toFixed(1) : 0}% of gross revenue. Stripe handles online bookings, Square handles in-store iPad payments.`} />
+    </ChartCard>
+  );
+}
+
 export function ChartGrid({ analytics, loading, period, onPeriodChange, onStatusClick }: ChartGridProps) {
   if (loading) {
     return (
@@ -628,16 +712,18 @@ export function ChartGrid({ analytics, loading, period, onPeriodChange, onStatus
           period={period}
           onPeriodChange={onPeriodChange}
         />
-        <div className="flex flex-col gap-2">
-          <HealthArcs analytics={analytics} onStatusClick={onStatusClick} />
-          <CouponImpactChart data={analytics?.coupon_impact ?? []} />
-        </div>
+        <HealthArcs analytics={analytics} onStatusClick={onStatusClick} />
       </div>
       {/* Row 2: Customer Value Map — full width */}
       <VipScatter
         scatterData={analytics?.scatter_data ?? []}
         onStatusClick={onStatusClick}
       />
+      {/* Row 3: Fees breakdown + Coupon Impact */}
+      <div className="grid grid-cols-2 gap-2">
+        <MerchantFeesChart analytics={analytics} />
+        <CouponImpactChart data={analytics?.coupon_impact ?? []} />
+      </div>
     </div>
   );
 }

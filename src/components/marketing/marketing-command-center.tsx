@@ -28,7 +28,7 @@ export interface MarketingFilters {
   spendMin?: number;
   spendMax?: number;
   couponCode?: string;
-  period: '7d' | '30d' | '90d' | 'all';
+  period: '3d' | '7d' | '30d' | 'mtd' | '90d' | 'all';
   page: number;
 }
 

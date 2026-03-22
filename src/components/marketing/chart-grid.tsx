@@ -12,8 +12,8 @@ import type { AnalyticsData, CustomerRecord } from './marketing-command-center';
 interface ChartGridProps {
   analytics: AnalyticsData | null;
   loading: boolean;
-  period: '7d' | '30d' | '90d' | 'all';
-  onPeriodChange: (period: '7d' | '30d' | '90d' | 'all') => void;
+  period: string;
+  onPeriodChange: (period: string) => void;
   onStatusClick: (status: 'all' | 'active' | 'at_risk' | 'churned') => void;
   customers: CustomerRecord[];
 }
@@ -24,8 +24,11 @@ const STATUS_COLORS: Record<string, string> = {
   churned: '#ef4444',
 };
 
-const PERIOD_OPTIONS: Array<{ label: string; value: '7d' | '30d' | '90d' | 'all' }> = [
+const PERIOD_OPTIONS: Array<{ label: string; value: string }> = [
+  { label: '3d', value: '3d' },
+  { label: '7d', value: '7d' },
   { label: '30d', value: '30d' },
+  { label: 'MTD', value: 'mtd' },
   { label: '90d', value: '90d' },
   { label: 'All', value: 'all' },
 ];
@@ -66,7 +69,7 @@ function ChartCard({ title, trailing, children }: {
 
 function PeriodToggle({ value, onChange }: {
   value: string;
-  onChange: (v: '7d' | '30d' | '90d' | 'all') => void;
+  onChange: (v: string) => void;
 }) {
   return (
     <div className="flex gap-0.5 rounded-full p-0.5" style={{ background: 'var(--fill-quaternary)' }}>
@@ -121,7 +124,7 @@ function ChartTooltipContent({ active, payload, label }: any) {
 function RevenueTrendChart({ data, period, onPeriodChange }: {
   data: AnalyticsData['revenue_trend'];
   period: string;
-  onPeriodChange: (p: '7d' | '30d' | '90d' | 'all') => void;
+  onPeriodChange: (p: string) => void;
 }) {
   return (
     <ChartCard

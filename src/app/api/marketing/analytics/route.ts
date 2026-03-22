@@ -15,8 +15,10 @@ import { createSupabaseServer } from '@/lib/supabase-server';
 const EMPLOYEE_SHIFTOS_IDS = new Set([79299, 71048]);
 
 const PERIOD_DAYS: Record<string, number | null> = {
+  '3d': 3,
   '7d': 7,
   '30d': 30,
+  'mtd': null, // handled specially below
   '90d': 90,
   'all': null,
 };
@@ -65,11 +67,16 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    const periodDays = PERIOD_DAYS[period] ?? 30;
     const now = new Date();
-    const cutoff = periodDays !== null
-      ? new Date(now.getTime() - periodDays * 24 * 60 * 60 * 1000)
-      : null;
+    let cutoff: Date | null = null;
+    let periodDays: number | null = null;
+    if (period === 'mtd') {
+      cutoff = new Date(now.getFullYear(), now.getMonth(), 1);
+      periodDays = now.getDate(); // days into current month
+    } else {
+      periodDays = PERIOD_DAYS[period] ?? 30;
+      cutoff = periodDays !== null ? new Date(now.getTime() - periodDays * 24 * 60 * 60 * 1000) : null;
+    }
 
     const supabase = getAdminSupabase();
 
@@ -236,13 +243,14 @@ function computeRevenueTrend(
   reservations: readonly ReservationRow[],
   periodDays: number | null,
 ): TrendBucket[] {
-  // Group by week if <= 90 days, by month otherwise
-  const useWeekly = periodDays !== null && periodDays <= 90;
+  // Group by day if <= 30 days, by week if <= 90, by month otherwise
+  const useDaily = periodDays !== null && periodDays <= 30;
+  const useWeekly = periodDays !== null && periodDays <= 90 && !useDaily;
   const bucketMap = new Map<string, TrendBucket>();
 
   for (const r of reservations) {
     const date = new Date(r.booking_time);
-    const key = useWeekly ? getWeekKey(date) : getMonthKey(date);
+    const key = useDaily ? getDayKey(date) : useWeekly ? getWeekKey(date) : getMonthKey(date);
     const revenue = Number(r.revenue);
     const isCoupon = r.coupon_code !== null && r.coupon_code !== '';
 
@@ -267,6 +275,10 @@ function computeRevenueTrend(
   }
 
   return [...bucketMap.values()].sort((a, b) => a.period.localeCompare(b.period));
+}
+
+function getDayKey(date: Date): string {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 }
 
 function getWeekKey(date: Date): string {

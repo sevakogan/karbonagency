@@ -628,11 +628,11 @@ export function ChartGrid({ analytics, loading, period, onPeriodChange, onStatus
           onPeriodChange={onPeriodChange}
         />
         <div className="flex flex-col gap-2">
-          <div className="flex-[2]">
-            <HealthArcs analytics={analytics} onStatusClick={onStatusClick} />
-          </div>
           <div className="flex-1">
             <CouponImpactChart data={analytics?.coupon_impact ?? []} />
+          </div>
+          <div className="flex-[2]">
+            <HealthArcs analytics={analytics} onStatusClick={onStatusClick} />
           </div>
         </div>
       </div>

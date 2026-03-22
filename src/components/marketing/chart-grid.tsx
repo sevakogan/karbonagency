@@ -15,7 +15,6 @@ interface ChartGridProps {
   period: string;
   onPeriodChange: (period: string) => void;
   onStatusClick: (status: 'all' | 'active' | 'at_risk' | 'churned') => void;
-  customers: CustomerRecord[];
 }
 
 const STATUS_COLORS: Record<string, string> = {
@@ -270,24 +269,22 @@ function abbreviateName(fullName: string): string {
   return `${parts[0]} ${parts[parts.length - 1][0]}.`;
 }
 
-function VipScatter({ customers, onStatusClick }: {
-  customers: CustomerRecord[];
+function VipScatter({ scatterData: rawData, onStatusClick }: {
+  scatterData: Array<{ customer_id: string; name: string; total_bookings: number; lifetime_spend: number; days_since_last: number | null; status: string }>;
   onStatusClick: (s: 'all' | 'active' | 'at_risk' | 'churned') => void;
 }) {
   const scatterData = useMemo(() => {
-    return customers
-      .filter((c) => c.total_bookings > 0)
-      .map((c) => ({
-        x: c.total_bookings,
-        y: c.lifetime_spend ?? 0,
-        z: Math.max(60, 300 - (c.days_since_last ?? 999) * 3),
-        name: abbreviateName(c.name),
-        fullName: c.name,
-        status: c.status,
-        days: c.days_since_last ?? 0,
-        fill: SCATTER_COLORS[c.status] ?? '#6b7280',
-      }));
-  }, [customers]);
+    return rawData.map((c) => ({
+      x: c.total_bookings,
+      y: c.lifetime_spend ?? 0,
+      z: Math.max(60, 300 - (c.days_since_last ?? 999) * 3),
+      name: abbreviateName(c.name),
+      fullName: c.name,
+      status: c.status,
+      days: c.days_since_last ?? 0,
+      fill: SCATTER_COLORS[c.status] ?? '#6b7280',
+    }));
+  }, [rawData]);
 
   const ScatterTooltipContent = ({ active, payload }: any) => {
     if (!active || !payload?.length) return null;
@@ -431,7 +428,7 @@ function CouponImpactChart({ data }: { data: AnalyticsData['coupon_impact'] }) {
   );
 }
 
-export function ChartGrid({ analytics, loading, period, onPeriodChange, onStatusClick, customers }: ChartGridProps) {
+export function ChartGrid({ analytics, loading, period, onPeriodChange, onStatusClick }: ChartGridProps) {
   if (loading) {
     return (
       <div className="grid grid-cols-2 gap-2">
@@ -461,7 +458,7 @@ export function ChartGrid({ analytics, loading, period, onPeriodChange, onStatus
         onStatusClick={onStatusClick}
       />
       <VipScatter
-        customers={customers}
+        scatterData={analytics?.scatter_data ?? []}
         onStatusClick={onStatusClick}
       />
       <CouponImpactChart

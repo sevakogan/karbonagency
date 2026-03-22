@@ -60,6 +60,15 @@ export interface BookingRecord {
   source: string;
 }
 
+export interface ScatterPoint {
+  customer_id: string;
+  name: string;
+  total_bookings: number;
+  lifetime_spend: number;
+  days_since_last: number | null;
+  status: 'active' | 'at_risk' | 'churned';
+}
+
 export interface AnalyticsData {
   summary: {
     total: number;
@@ -70,6 +79,7 @@ export interface AnalyticsData {
     revenue_last_month: number;
     avg_lifetime_value: number;
   };
+  scatter_data: ScatterPoint[];
   revenue_trend: Array<{
     period: string;
     date?: string;
@@ -191,6 +201,7 @@ export function MarketingCommandCenter() {
             revenue_last_month: raw.revenue_last_month ?? 0,
             avg_lifetime_value: raw.avg_lifetime_value ?? 0,
           },
+          scatter_data: (raw.scatter_data ?? []).filter((c: any) => c.total_bookings > 0),
           revenue_trend: raw.revenue_trend ?? [],
           coupon_impact: (raw.coupon_analysis ?? []).map((c: any) => ({
             code: c.code,
@@ -284,7 +295,6 @@ export function MarketingCommandCenter() {
         period={chartPeriod}
         onPeriodChange={setChartPeriod}
         onStatusClick={(status) => updateFilter('status', status)}
-        customers={customers}
       />
 
       {/* Active filters bar */}

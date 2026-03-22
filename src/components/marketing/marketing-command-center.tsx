@@ -184,27 +184,9 @@ export function MarketingCommandCenter() {
             active: sd.active ?? 0,
             at_risk: sd.at_risk ?? 0,
             churned: sd.churned ?? 0,
-            revenue_this_month: (() => {
-              const now = new Date();
-              const monthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
-              return (raw.revenue_trend ?? [])
-                .filter((r: any) => (r.date ?? '') >= monthStart)
-                .reduce((s: number, r: any) => s + (r.revenue ?? 0), 0);
-            })(),
-            revenue_last_month: (() => {
-              const now = new Date();
-              const lm = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-              const lmStart = `${lm.getFullYear()}-${String(lm.getMonth() + 1).padStart(2, '0')}-01`;
-              const lmEnd = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
-              return (raw.revenue_trend ?? [])
-                .filter((r: any) => (r.date ?? '') >= lmStart && (r.date ?? '') < lmEnd)
-                .reduce((s: number, r: any) => s + (r.revenue ?? 0), 0);
-            })(),
-            avg_lifetime_value: (() => {
-              const total = (sd.active ?? 0) + (sd.at_risk ?? 0) + (sd.churned ?? 0);
-              const totalRev = raw.scatter_data?.reduce((s: number, c: any) => s + (c.lifetime_spend ?? 0), 0) ?? 0;
-              return total > 0 ? Math.round(totalRev / total) : 0;
-            })(),
+            revenue_this_month: raw.revenue_this_month ?? (raw.revenue_trend ?? []).reduce((s: number, r: any) => s + (r.revenue ?? 0), 0),
+            revenue_last_month: raw.revenue_last_month ?? 0,
+            avg_lifetime_value: raw.avg_lifetime_value ?? 0,
           },
           revenue_trend: raw.revenue_trend ?? [],
           coupon_impact: (raw.coupon_analysis ?? []).map((c: any) => ({
@@ -220,16 +202,21 @@ export function MarketingCommandCenter() {
       .finally(() => setAnalyticsLoading(false));
   }, [filters.period]);
 
-  // Live polling — refresh every 5 min
+  // Live polling — refresh every 5 min with countdown
+  const [countdown, setCountdown] = useState(300);
+
   useEffect(() => {
-    const tick = () => setTimeAgo(formatTimeAgo(lastUpdated));
+    const tick = () => {
+      setTimeAgo(formatTimeAgo(lastUpdated));
+      setCountdown((prev) => (prev <= 1 ? 300 : prev - 1));
+    };
     tick();
-    const clockTimer = setInterval(tick, 30_000); // update "X min ago" every 30s
+    const clockTimer = setInterval(tick, 1_000); // every 1s for countdown
 
     pollRef.current = setInterval(() => {
-      // Re-trigger customer + analytics fetches by bumping a hidden counter
       setFilters((prev) => ({ ...prev }));
       setLastUpdated(new Date());
+      setCountdown(300);
     }, 300_000); // 5 min
 
     return () => {
@@ -270,8 +257,11 @@ export function MarketingCommandCenter() {
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75" style={{ backgroundColor: 'var(--system-green)' }} />
             <span className="relative inline-flex rounded-full h-2 w-2" style={{ backgroundColor: 'var(--system-green)' }} />
           </span>
-          <span className="text-[10px] font-medium" style={{ color: 'var(--text-tertiary)' }}>
+          <span className="text-[10px] font-semibold" style={{ color: 'var(--text-primary)' }}>
             Live &middot; {timeAgo}
+          </span>
+          <span className="text-[10px] font-medium tabular-nums" style={{ color: 'var(--text-secondary)' }}>
+            Next update {Math.floor(countdown / 60)}:{String(countdown % 60).padStart(2, '0')}
           </span>
         </div>
       </div>

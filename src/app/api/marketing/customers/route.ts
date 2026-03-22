@@ -8,6 +8,9 @@ import { createSupabaseServer } from '@/lib/supabase-server';
 // Auth: Supabase session OR INGEST_API_KEY header.
 // ──────────────────────────────────────────────────────
 
+// Employees — excluded from customer list and revenue
+const EMPLOYEE_SHIFTOS_IDS = [79299]; // Alejandro Cordones
+
 interface CustomerRow {
   id: string;
   company_id: string;
@@ -102,6 +105,11 @@ export async function GET(request: NextRequest) {
 
     if (companyId) {
       query = query.eq('company_id', companyId);
+    }
+
+    // Exclude employees
+    for (const empId of EMPLOYEE_SHIFTOS_IDS) {
+      query = query.neq('shiftos_user_id', empId);
     }
 
     if (search) {

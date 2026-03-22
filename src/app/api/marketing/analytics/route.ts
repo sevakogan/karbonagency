@@ -9,6 +9,9 @@ import { createSupabaseServer } from '@/lib/supabase-server';
 // Auth: Supabase session OR INGEST_API_KEY header.
 // ──────────────────────────────────────────────────────
 
+// Employees — excluded from revenue calculations and analytics
+const EMPLOYEE_SHIFTOS_IDS = new Set([79299]); // Alejandro Cordones
+
 const PERIOD_DAYS: Record<string, number | null> = {
   '7d': 7,
   '30d': 30,
@@ -73,8 +76,9 @@ export async function GET(request: NextRequest) {
       fetchCustomers(supabase, companyId),
     ]);
 
-    const reservations = reservationsRes;
-    const customers = customersRes;
+    // Filter out employees
+    const reservations = reservationsRes.filter((r) => !EMPLOYEE_SHIFTOS_IDS.has(Number((r as any).shiftos_user_id ?? 0)));
+    const customers = customersRes.filter((c) => !EMPLOYEE_SHIFTOS_IDS.has(Number(c.shiftos_user_id ?? 0)));
 
     // ── Revenue trend ──
     const revenueTrend = computeRevenueTrend(reservations, periodDays);
@@ -104,12 +108,35 @@ export async function GET(request: NextRequest) {
       };
     });
 
+    // Compute monthly revenue from reservations
+    const now2 = new Date();
+    const thisMonthStart = new Date(now2.getFullYear(), now2.getMonth(), 1);
+    const lastMonthStart = new Date(now2.getFullYear(), now2.getMonth() - 1, 1);
+    const revenueThisMonth = reservations
+      .filter((r) => new Date(r.booking_time) >= thisMonthStart)
+      .reduce((s, r) => s + Number(r.revenue ?? 0), 0);
+    const revenueLastMonth = reservations
+      .filter((r) => {
+        const d = new Date(r.booking_time);
+        return d >= lastMonthStart && d < thisMonthStart;
+      })
+      .reduce((s, r) => s + Number(r.revenue ?? 0), 0);
+
+    // Avg lifetime value from ALL customers with bookings
+    const custWithBookings = customers.filter((c) => c.total_bookings > 0);
+    const avgLTV = custWithBookings.length > 0
+      ? Math.round(custWithBookings.reduce((s, c) => s + c.total_revenue, 0) / custWithBookings.length)
+      : 0;
+
     return NextResponse.json({
       revenue_trend: revenueTrend,
       status_distribution: statusDist,
       spend_tiers: spendTiers,
       coupon_analysis: couponAnalysis,
       scatter_data: scatterData,
+      revenue_this_month: revenueThisMonth,
+      revenue_last_month: revenueLastMonth,
+      avg_lifetime_value: avgLTV,
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Unknown error';
@@ -147,7 +174,7 @@ async function fetchReservations(
   while (true) {
     let query = supabase
       .from('shiftos_reservations')
-      .select('id, customer_id, calendar_name, revenue, booking_time, coupon_code')
+      .select('id, customer_id, shiftos_user_id, calendar_name, revenue, booking_time, coupon_code')
       .eq('company_id', companyId)
       .eq('paid', true)
       .order('booking_time', { ascending: true })

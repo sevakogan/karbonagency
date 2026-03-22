@@ -9,7 +9,9 @@ import { createSupabaseServer } from '@/lib/supabase-server';
 // ──────────────────────────────────────────────────────
 
 // Employees — excluded from customer list and revenue
-const EMPLOYEE_SHIFTOS_IDS = [79299]; // Alejandro Cordones
+// Employees — excluded from customer list and revenue
+// Alejandro Cordones (employee), 305 Staff Nick (manager)
+const EMPLOYEE_SHIFTOS_IDS = [79299, 71048];
 
 interface CustomerRow {
   id: string;

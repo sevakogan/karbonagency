@@ -10,7 +10,9 @@ import { createSupabaseServer } from '@/lib/supabase-server';
 // ──────────────────────────────────────────────────────
 
 // Employees — excluded from revenue calculations and analytics
-const EMPLOYEE_SHIFTOS_IDS = new Set([79299]); // Alejandro Cordones
+// Employees — excluded from revenue and analytics
+// Alejandro Cordones (employee), 305 Staff Nick (manager)
+const EMPLOYEE_SHIFTOS_IDS = new Set([79299, 71048]);
 
 const PERIOD_DAYS: Record<string, number | null> = {
   '7d': 7,
@@ -22,6 +24,7 @@ const PERIOD_DAYS: Record<string, number | null> = {
 interface ReservationRow {
   id: string;
   customer_id: string;
+  shiftos_user_id: number;
   calendar_name: string;
   revenue: number;
   booking_time: string;
@@ -77,7 +80,7 @@ export async function GET(request: NextRequest) {
     ]);
 
     // Filter out employees
-    const reservations = reservationsRes.filter((r) => !EMPLOYEE_SHIFTOS_IDS.has(Number((r as any).shiftos_user_id ?? 0)));
+    const reservations = reservationsRes.filter((r) => !EMPLOYEE_SHIFTOS_IDS.has(r.shiftos_user_id));
     const customers = customersRes.filter((c) => !EMPLOYEE_SHIFTOS_IDS.has(Number(c.shiftos_user_id ?? 0)));
 
     // ── Revenue trend ──
@@ -108,14 +111,16 @@ export async function GET(request: NextRequest) {
       };
     });
 
-    // Compute monthly revenue from reservations
+    // Fetch ALL reservations (no period cutoff) for monthly revenue
+    const allReservations = (await fetchReservations(supabase, companyId, null))
+      .filter((r) => !EMPLOYEE_SHIFTOS_IDS.has(r.shiftos_user_id));
     const now2 = new Date();
     const thisMonthStart = new Date(now2.getFullYear(), now2.getMonth(), 1);
     const lastMonthStart = new Date(now2.getFullYear(), now2.getMonth() - 1, 1);
-    const revenueThisMonth = reservations
+    const revenueThisMonth = allReservations
       .filter((r) => new Date(r.booking_time) >= thisMonthStart)
       .reduce((s, r) => s + Number(r.revenue ?? 0), 0);
-    const revenueLastMonth = reservations
+    const revenueLastMonth = allReservations
       .filter((r) => {
         const d = new Date(r.booking_time);
         return d >= lastMonthStart && d < thisMonthStart;

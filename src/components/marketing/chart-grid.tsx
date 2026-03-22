@@ -1169,7 +1169,7 @@ function ReviewsCard({ data }: { data: ReviewsData | null | undefined }) {
         <div className="flex flex-col gap-0.5">
           <StarRow rating={data.overall_rating} />
           <span className="text-[10px] font-medium" style={{ color: 'var(--text-tertiary)' }}>
-            {(data.total_reviews ?? 0).toLocaleString()} reviews
+            {((data.total_reviews ?? 0) ?? 0).toLocaleString()} reviews
             {delta !== 0 && (
               <span style={{ color: delta > 0 ? '#22c55e' : '#ef4444', marginLeft: 6 }}>
                 {delta > 0 ? '+' : ''}{n(delta).toFixed(2)} vs avg
@@ -1190,7 +1190,7 @@ function ReviewsCard({ data }: { data: ReviewsData | null | undefined }) {
             {n(data.platforms?.google?.rating).toFixed(1)}
           </span>
           <span className="text-[10px] ml-1" style={{ color: 'var(--text-tertiary)' }}>
-            ({data.platforms.google.count})
+            ({(data.platforms?.google?.count ?? 0)})
           </span>
         </div>
         <div className="rounded-lg px-2.5 py-2" style={{ background: 'var(--fill-quaternary)' }}>
@@ -1202,16 +1202,16 @@ function ReviewsCard({ data }: { data: ReviewsData | null | undefined }) {
             {n(data.platforms?.yelp?.rating).toFixed(1)}
           </span>
           <span className="text-[10px] ml-1" style={{ color: 'var(--text-tertiary)' }}>
-            ({data.platforms.yelp.count})
+            ({(data.platforms?.yelp?.count ?? 0)})
           </span>
         </div>
       </div>
 
       {/* Recent reviews */}
-      {data.recent.length > 0 && (
+      {((data.recent ?? []).length) > 0 && (
         <div className="space-y-1.5">
           <p className="text-[8px] font-semibold uppercase tracking-wider" style={{ color: 'var(--text-tertiary)' }}>Recent</p>
-          {data.recent.slice(0, 3).map((review, i) => (
+          {(data.recent ?? []).slice(0, 3).map((review, i) => (
             <div key={i} className="rounded-lg px-2.5 py-1.5" style={{ background: 'var(--fill-quaternary)' }}>
               <div className="flex items-center justify-between mb-0.5">
                 <span className="text-[10px] font-semibold" style={{ color: 'var(--text-primary)' }}>{review.author}</span>
@@ -1221,7 +1221,7 @@ function ReviewsCard({ data }: { data: ReviewsData | null | undefined }) {
                 </div>
               </div>
               <p className="text-[10px] leading-snug" style={{ color: 'var(--text-secondary)' }}>
-                {review.text.length > 120 ? `${review.text.slice(0, 120)}...` : review.text}
+                {(review.text ?? "").length > 120 ? `${(review.text ?? "").slice(0, 120)}...` : review.text}
               </p>
             </div>
           ))}
@@ -1244,8 +1244,8 @@ function OrganicSearchCard({ data }: { data: OrganicData | null | undefined }) {
     );
   }
 
-  const dailyData = data.daily ?? [];
-  const topQueries = (data.top_queries ?? []).slice(0, 5);
+  const dailyData = data?.daily ?? [];
+  const topQueries = (data?.top_queries ?? []).slice(0, 5);
 
   return (
     <ChartCard title="Organic Search">

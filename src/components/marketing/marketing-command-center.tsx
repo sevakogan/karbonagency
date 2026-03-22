@@ -253,35 +253,18 @@ export function MarketingCommandCenter() {
 
   // Fetch reviews, organic, and creatives data
   useEffect(() => {
-    fetch('/api/marketing/reviews')
-      .then((r) => (r.ok ? r.json() : null))
-      .then((data) => setReviewsData(data ?? null))
-      .catch(() => setReviewsData(null));
-
-    fetch('/api/marketing/organic')
-      .then((r) => (r.ok ? r.json() : null))
-      .then((data) => setOrganicData(data ?? null))
-      .catch(() => setOrganicData(null));
-
-    fetch('/api/meta/creative-performance')
-      .then((r) => (r.ok ? r.json() : null))
-      .then((data) => setCreativesData(data ?? null))
-      .catch(() => setCreativesData(null));
-
-    fetch('/api/marketing/cohorts')
-      .then((r) => (r.ok ? r.json() : null))
-      .then((data) => setCohortData(data ?? null))
-      .catch(() => setCohortData(null));
-
-    fetch('/api/marketing/churn')
-      .then((r) => (r.ok ? r.json() : null))
-      .then((data) => setChurnData(data ?? null))
-      .catch(() => setChurnData(null));
-
-    fetch('/api/marketing/forecast')
-      .then((r) => (r.ok ? r.json() : null))
-      .then((data) => setForecastData(data ?? null))
-      .catch(() => setForecastData(null));
+    const safeFetch = (url: string, setter: (v: any) => void) => {
+      fetch(url)
+        .then((r) => (r.ok ? r.json() : null))
+        .then((data) => setter(data?.error ? null : data ?? null))
+        .catch(() => setter(null));
+    };
+    safeFetch('/api/marketing/reviews', setReviewsData);
+    safeFetch('/api/marketing/organic', setOrganicData);
+    safeFetch('/api/meta/creative-performance', setCreativesData);
+    safeFetch('/api/marketing/cohorts', setCohortData);
+    safeFetch('/api/marketing/churn', setChurnData);
+    safeFetch('/api/marketing/forecast', setForecastData);
   }, []);
 
   // Live polling — refresh every 5 min with countdown

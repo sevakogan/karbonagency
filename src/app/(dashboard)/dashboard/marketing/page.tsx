@@ -1,5 +1,5 @@
 import { createSupabaseServer } from '@/lib/supabase-server';
-import { MarketingCommandCenter } from '@/components/marketing/marketing-command-center';
+import { MarketingPageClient } from '@/components/marketing/marketing-page-client';
 
 export const dynamic = 'force-dynamic';
 
@@ -27,5 +27,13 @@ export default async function MarketingPage() {
     );
   }
 
-  return <MarketingCommandCenter />;
+  // Get Shift Arcade Miami company for the shared header
+  const { data: company } = await supabase
+    .from('clients')
+    .select('*')
+    .ilike('name', '%shift%arcade%')
+    .limit(1)
+    .single();
+
+  return <MarketingPageClient company={company} />;
 }

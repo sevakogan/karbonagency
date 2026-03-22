@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, RefreshCw, Settings, Plug, Megaphone } from 'lucide-react';
+import { ArrowLeft, RefreshCw, Settings, Plug, BarChart3, Megaphone } from 'lucide-react';
 import type { Company } from '@/types';
 
 interface Props {
@@ -12,6 +12,7 @@ interface Props {
   refreshing: boolean;
   onRefresh: () => void;
   lastSyncedAt?: string | null;
+  activeTab?: 'dashboard' | 'marketing';
 }
 
 export function DashboardHeader({
@@ -21,11 +22,13 @@ export function DashboardHeader({
   refreshing,
   onRefresh,
   lastSyncedAt,
+  activeTab = 'dashboard',
 }: Props) {
   const router = useRouter();
   const initial = (company.company_name ?? company.name)?.[0]?.toUpperCase() ?? '?';
 
   return (
+    <>
     <div className="flex items-center justify-between gap-4">
       {/* Left: back + company info */}
       <div className="flex items-center gap-3">
@@ -78,16 +81,6 @@ export function DashboardHeader({
 
       {/* Right: actions */}
       <div className="flex items-center gap-2">
-        <Link
-          href="/dashboard/marketing"
-          className="flex h-8 items-center gap-1.5 rounded-lg
-                     bg-[var(--accent)] px-3 text-xs font-semibold text-white
-                     transition-opacity hover:opacity-90"
-        >
-          <Megaphone size={13} />
-          Marketing
-        </Link>
-
         <button
           onClick={onRefresh}
           disabled={refreshing}
@@ -120,5 +113,34 @@ export function DashboardHeader({
         </Link>
       </div>
     </div>
+
+    {/* Tabs: Dashboard / Marketing */}
+    <div className="flex gap-1 mt-3 p-1 rounded-xl w-fit" style={{ background: 'var(--fill-quaternary)' }}>
+      <Link
+        href={`/dashboard/companies/${company.id}`}
+        className="flex items-center gap-1.5 rounded-lg px-4 py-1.5 text-xs font-semibold transition-all"
+        style={{
+          background: activeTab === 'dashboard' ? 'var(--bg-primary)' : 'transparent',
+          color: activeTab === 'dashboard' ? 'var(--text-primary)' : 'var(--text-secondary)',
+          boxShadow: activeTab === 'dashboard' ? 'var(--shadow-card)' : 'none',
+        }}
+      >
+        <BarChart3 size={13} />
+        Dashboard
+      </Link>
+      <Link
+        href="/dashboard/marketing"
+        className="flex items-center gap-1.5 rounded-lg px-4 py-1.5 text-xs font-semibold transition-all"
+        style={{
+          background: activeTab === 'marketing' ? 'var(--bg-primary)' : 'transparent',
+          color: activeTab === 'marketing' ? 'var(--text-primary)' : 'var(--text-secondary)',
+          boxShadow: activeTab === 'marketing' ? 'var(--shadow-card)' : 'none',
+        }}
+      >
+        <Megaphone size={13} />
+        Marketing
+      </Link>
+    </div>
+    </>
   );
 }

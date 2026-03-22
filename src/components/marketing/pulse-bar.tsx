@@ -90,9 +90,9 @@ export function PulseBar({ analytics, loading, activeStatus, onStatusClick }: Pu
   const deltaIsUp = revenueDelta >= 0;
 
   return (
-    <div className="grid grid-cols-6 gap-1.5">
+    <div className="grid grid-cols-7 gap-1.5">
       <PulseCard
-        label="Total Customers"
+        label="Total"
         value={summary?.total ?? 0}
         icon={<Users size={12} />}
         active={activeStatus === 'all'}
@@ -104,19 +104,29 @@ export function PulseBar({ analytics, loading, activeStatus, onStatusClick }: Pu
         label="Active"
         value={summary?.active ?? 0}
         icon={<UserCheck size={12} />}
-        accentColor="var(--system-green)"
+        accentColor="#22c55e"
         active={activeStatus === 'active'}
         onClick={() => onStatusClick('active')}
         loading={loading}
       />
 
       <PulseCard
-        label="At Risk"
-        value={summary?.at_risk ?? 0}
+        label="Med Risk"
+        value={summary?.medium_risk ?? 0}
         icon={<AlertTriangle size={12} />}
-        accentColor="var(--system-amber)"
-        active={activeStatus === 'at_risk'}
-        onClick={() => onStatusClick('at_risk')}
+        accentColor="#fbbf24"
+        active={activeStatus === ('medium_risk' as any)}
+        onClick={() => onStatusClick('medium_risk' as any)}
+        loading={loading}
+      />
+
+      <PulseCard
+        label="High Risk"
+        value={summary?.high_risk ?? 0}
+        icon={<AlertTriangle size={12} />}
+        accentColor="#f97316"
+        active={activeStatus === ('high_risk' as any)}
+        onClick={() => onStatusClick('high_risk' as any)}
         loading={loading}
       />
 
@@ -124,7 +134,7 @@ export function PulseBar({ analytics, loading, activeStatus, onStatusClick }: Pu
         label="Churned"
         value={summary?.churned ?? 0}
         icon={<UserX size={12} />}
-        accentColor="var(--system-red)"
+        accentColor="#ef4444"
         active={activeStatus === 'churned'}
         onClick={() => onStatusClick('churned')}
         loading={loading}

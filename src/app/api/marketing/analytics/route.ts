@@ -349,9 +349,10 @@ function getMonthKey(date: Date): string {
 function computeStatusDistribution(
   customers: readonly CustomerRow[],
   now: Date,
-): { active: number; at_risk: number; churned: number } {
+): { active: number; medium_risk: number; high_risk: number; churned: number } {
   let active = 0;
-  let atRisk = 0;
+  let mediumRisk = 0;
+  let highRisk = 0;
   let churned = 0;
 
   for (const c of customers) {
@@ -360,11 +361,12 @@ function computeStatusDistribution(
       : null;
     const status = computeStatus(daysSince, false);
     if (status === 'active') active += 1;
-    else if (status === 'at_risk') atRisk += 1;
+    else if (status === 'medium_risk') mediumRisk += 1;
+    else if (status === 'high_risk') highRisk += 1;
     else churned += 1;
   }
 
-  return { active, at_risk: atRisk, churned };
+  return { active, medium_risk: mediumRisk, high_risk: highRisk, churned };
 }
 
 // ── Spend tiers ──────────────────────────────────────
@@ -455,10 +457,11 @@ function computeCouponAnalysis(
 function computeStatus(
   daysSinceLast: number | null,
   hasFutureBooking: boolean,
-): 'active' | 'at_risk' | 'churned' {
+): 'active' | 'medium_risk' | 'high_risk' | 'churned' {
   if (hasFutureBooking) return 'active';
   if (daysSinceLast === null) return 'churned';
   if (daysSinceLast < 30) return 'active';
-  if (daysSinceLast < 60) return 'at_risk';
+  if (daysSinceLast < 60) return 'medium_risk';
+  if (daysSinceLast < 90) return 'high_risk';
   return 'churned';
 }

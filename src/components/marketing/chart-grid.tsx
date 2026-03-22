@@ -34,7 +34,8 @@ function usePeriodToggle(externalPeriod: string, onExternalChange: (p: string) =
 
 const STATUS_COLORS: Record<string, string> = {
   active: '#22c55e',
-  at_risk: '#eab308',
+  medium_risk: '#fbbf24',
+  high_risk: '#f97316',
   churned: '#ef4444',
 };
 
@@ -132,6 +133,20 @@ function ChartTooltipContent({ active, payload, label }: any) {
           <span className="font-semibold">{typeof entry.value === 'number' ? entry.value.toLocaleString() : entry.value}</span>
         </p>
       ))}
+      {payload.length > 1 && (() => {
+        const revenueEntries = payload.filter((e: any) => e.name !== 'Bookings');
+        if (revenueEntries.length > 1) {
+          const total = revenueEntries.reduce((s: number, e: any) => s + (e.value ?? 0), 0);
+          return (
+            <p className="flex items-center gap-1.5 mt-1 pt-1" style={{ borderTop: '1px solid var(--separator)' }}>
+              <span className="w-2 h-2" />
+              <span className="font-bold">Total:</span>
+              <span className="font-bold">${total.toLocaleString()}</span>
+            </p>
+          );
+        }
+        return null;
+      })()}
     </div>
   );
 }
@@ -281,27 +296,31 @@ function RevenueTrendChart({ data, period, onPeriodChange }: {
 function useHealthInsight(summary: AnalyticsData['summary'] | undefined): string {
   return useMemo(() => {
     if (!summary) return 'Loading customer health data...';
-    const total = summary.total || (summary.active + summary.at_risk + summary.churned);
+    const total = summary.total || (summary.active + (summary.medium_risk ?? 0) + (summary.high_risk ?? 0) + summary.churned);
     if (total === 0) return 'No customer data available yet';
 
     const churnedPct = Math.round((summary.churned / total) * 100);
-    const atRiskPct = Math.round((summary.at_risk / total) * 100);
+    const highRiskPct = Math.round(((summary.high_risk ?? 0) / total) * 100);
+    const mediumRiskPct = Math.round(((summary.medium_risk ?? 0) / total) * 100);
     const activePct = Math.round((summary.active / total) * 100);
 
-    if (churnedPct > 80) {
-      return `\u26A0\uFE0F ${churnedPct}% of customers haven't returned in 60+ days. Consider a win-back campaign`;
+    if (churnedPct > 70) {
+      return `⚠️ ${churnedPct}% of customers haven't returned in 90+ days. Consider a win-back campaign`;
     }
-    if (atRiskPct > 20) {
-      return `${summary.at_risk} customers are slipping — they visited 30-60 days ago but have no future booking`;
+    if (highRiskPct > 10) {
+      return `⚠️ ${summary.high_risk ?? 0} customers are high risk — visited 60-90 days ago with no future booking`;
+    }
+    if (mediumRiskPct > 15) {
+      return `${summary.medium_risk ?? 0} customers are slipping (30-60 days) — a timely offer could bring them back`;
     }
     if (activePct > 50) {
       return `Strong retention — ${activePct}% of your customer base is active`;
     }
-    return `${activePct}% active, ${atRiskPct}% at risk, ${churnedPct}% churned — monitor at-risk segment`;
+    return `${activePct}% active, ${mediumRiskPct}% medium risk, ${highRiskPct}% high risk, ${churnedPct}% churned`;
   }, [summary]);
 }
 
-const HEALTH_COLORS = { active: '#06d6a0', at_risk: '#ffd166', churned: '#ef476f' };
+const HEALTH_COLORS = { active: '#06d6a0', medium_risk: '#fbbf24', high_risk: '#f97316', churned: '#ef476f' };
 
 interface HealthProps {
   analytics: AnalyticsData | null;
@@ -312,11 +331,12 @@ function useHealthData(analytics: AnalyticsData | null) {
   return useMemo(() => {
     const s = analytics?.summary;
     const active = s?.active ?? 0;
-    const atRisk = s?.at_risk ?? 0;
+    const mediumRisk = s?.medium_risk ?? 0;
+    const highRisk = s?.high_risk ?? 0;
     const churned = s?.churned ?? 0;
-    const total = active + atRisk + churned;
+    const total = active + mediumRisk + highRisk + churned;
     const score = total > 0 ? Math.round((active / total) * 100) : 0;
-    return { active, atRisk, churned, total, score };
+    return { active, mediumRisk, highRisk, churned, total, score };
   }, [analytics]);
 }
 
@@ -391,18 +411,20 @@ function RadialArc({ pct, color, count, label, onClick }: {
 }
 
 function HealthArcs({ analytics, onStatusClick }: HealthProps) {
-  const { active, atRisk, churned, total } = useHealthData(analytics);
+  const { active, mediumRisk, highRisk, churned, total } = useHealthData(analytics);
   const insight = useHealthInsight(analytics?.summary);
 
   const activePct = total > 0 ? (active / total) * 100 : 0;
-  const atRiskPct = total > 0 ? (atRisk / total) * 100 : 0;
+  const mediumRiskPct = total > 0 ? (mediumRisk / total) * 100 : 0;
+  const highRiskPct = total > 0 ? (highRisk / total) * 100 : 0;
   const churnedPct = total > 0 ? (churned / total) * 100 : 0;
 
   return (
     <ChartCard title="Customer Health">
-      <div className="flex justify-around items-end py-3">
+      <div className="flex justify-around items-end py-2">
         <RadialArc pct={activePct} color={HEALTH_COLORS.active} count={active} label="Active" onClick={() => onStatusClick('active')} />
-        <RadialArc pct={atRiskPct} color={HEALTH_COLORS.at_risk} count={atRisk} label="At Risk" onClick={() => onStatusClick('at_risk')} />
+        <RadialArc pct={mediumRiskPct} color={HEALTH_COLORS.medium_risk} count={mediumRisk} label="Medium Risk" onClick={() => onStatusClick('medium_risk' as any)} />
+        <RadialArc pct={highRiskPct} color={HEALTH_COLORS.high_risk} count={highRisk} label="High Risk" onClick={() => onStatusClick('high_risk' as any)} />
         <RadialArc pct={churnedPct} color={HEALTH_COLORS.churned} count={churned} label="Churned" onClick={() => onStatusClick('churned')} />
       </div>
       <InsightBar text={insight} />
@@ -410,11 +432,10 @@ function HealthArcs({ analytics, onStatusClick }: HealthProps) {
   );
 }
 
-/* ── Original HealthRing (preserved for restoration) ──────────────── */
-
 const SCATTER_COLORS: Record<string, string> = {
   active: '#06d6a0',
-  at_risk: '#ffd166',
+  medium_risk: '#fbbf24',
+  high_risk: '#f97316',
   churned: '#ef476f',
 };
 
@@ -444,7 +465,8 @@ function VipScatter({ scatterData: rawData, onStatusClick }: {
   const ScatterTooltipContent = ({ active, payload }: any) => {
     if (!active || !payload?.length) return null;
     const d = payload[0].payload;
-    const statusLabel = d.status === 'active' ? '🟢 Active' : d.status === 'at_risk' ? '🟡 At Risk' : '🔴 Churned';
+    const statusLabels: Record<string, string> = { active: '🟢 Active', medium_risk: '🟡 Medium Risk', high_risk: '🟠 High Risk', churned: '🔴 Churned' };
+    const statusLabel = statusLabels[d.status] ?? d.status;
     return (
       <div
         className="rounded-xl px-3.5 py-2.5 text-xs shadow-lg"
@@ -467,7 +489,8 @@ function VipScatter({ scatterData: rawData, onStatusClick }: {
 
   // Split by status for different colored scatter series
   const activeData = useMemo(() => scatterData.filter((d) => d.status === 'active'), [scatterData]);
-  const atRiskData = useMemo(() => scatterData.filter((d) => d.status === 'at_risk'), [scatterData]);
+  const mediumRiskData = useMemo(() => scatterData.filter((d) => d.status === 'medium_risk'), [scatterData]);
+  const highRiskData = useMemo(() => scatterData.filter((d) => d.status === 'high_risk'), [scatterData]);
   const churnedData = useMemo(() => scatterData.filter((d) => d.status === 'churned'), [scatterData]);
 
   const scatterInsight = useMemo(() => {
@@ -495,9 +518,10 @@ function VipScatter({ scatterData: rawData, onStatusClick }: {
       <div className="h-56 relative">
         {/* Legend */}
         <div className="absolute top-0 right-0 flex gap-3 text-[9px] font-semibold z-10" style={{ color: 'var(--text-primary)' }}>
-          <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full shadow-sm" style={{ background: SCATTER_COLORS.active }} />Active ({activeData.length})</span>
-          <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full shadow-sm" style={{ background: SCATTER_COLORS.at_risk }} />At Risk ({atRiskData.length})</span>
-          <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full shadow-sm" style={{ background: SCATTER_COLORS.churned }} />Churned ({churnedData.length})</span>
+          <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full" style={{ background: SCATTER_COLORS.active }} />Active ({activeData.length})</span>
+          <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full" style={{ background: SCATTER_COLORS.medium_risk }} />Med ({mediumRiskData.length})</span>
+          <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full" style={{ background: SCATTER_COLORS.high_risk }} />High ({highRiskData.length})</span>
+          <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full" style={{ background: SCATTER_COLORS.churned }} />Churned ({churnedData.length})</span>
         </div>
         <ResponsiveContainer width="100%" height="100%">
           <ScatterChart margin={{ top: 20, right: 12, bottom: 8, left: 0 }}>
@@ -533,9 +557,19 @@ function VipScatter({ scatterData: rawData, onStatusClick }: {
               cursor="pointer"
             />
             <Scatter
-              name="At Risk"
-              data={atRiskData}
-              fill={SCATTER_COLORS.at_risk}
+              name="Medium Risk"
+              data={mediumRiskData}
+              fill={SCATTER_COLORS.medium_risk}
+              fillOpacity={0.8}
+              strokeWidth={1.5}
+              stroke="rgba(255,255,255,0.4)"
+              onClick={(point) => point?.status && onStatusClick(point.status as any)}
+              cursor="pointer"
+            />
+            <Scatter
+              name="High Risk"
+              data={highRiskData}
+              fill={SCATTER_COLORS.high_risk}
               fillOpacity={0.8}
               strokeWidth={1.5}
               stroke="rgba(255,255,255,0.4)"

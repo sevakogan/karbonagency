@@ -27,9 +27,10 @@ const SORT_OPTIONS = [
 ];
 
 const STATUS_DOT: Record<string, { color: string; label: string }> = {
-  active: { color: 'var(--system-green)', label: 'Active' },
-  at_risk: { color: 'var(--system-amber)', label: 'At Risk' },
-  churned: { color: 'var(--system-red)', label: 'Churned' },
+  active: { color: '#22c55e', label: 'Active' },
+  medium_risk: { color: '#fbbf24', label: 'Med Risk' },
+  high_risk: { color: '#f97316', label: 'High Risk' },
+  churned: { color: '#ef4444', label: 'Churned' },
 };
 
 const PAGE_SIZE = 20;

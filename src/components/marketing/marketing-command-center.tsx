@@ -18,7 +18,7 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { error: string |
 }
 
 export interface MarketingFilters {
-  status: 'all' | 'active' | 'at_risk' | 'churned';
+  status: 'all' | 'active' | 'medium_risk' | 'high_risk' | 'churned';
   search: string;
   sort: string;
   order: 'asc' | 'desc';
@@ -70,7 +70,8 @@ export interface AnalyticsData {
   summary: {
     total: number;
     active: number;
-    at_risk: number;
+    medium_risk: number;
+    high_risk: number;
     churned: number;
     revenue_this_month: number;
     revenue_last_month: number;
@@ -192,9 +193,10 @@ export function MarketingCommandCenter() {
         const sd = raw.status_distribution ?? {};
         const mapped: AnalyticsData = {
           summary: {
-            total: (sd.active ?? 0) + (sd.at_risk ?? 0) + (sd.churned ?? 0),
+            total: (sd.active ?? 0) + (sd.medium_risk ?? 0) + (sd.high_risk ?? 0) + (sd.churned ?? 0),
             active: sd.active ?? 0,
-            at_risk: sd.at_risk ?? 0,
+            medium_risk: sd.medium_risk ?? 0,
+            high_risk: sd.high_risk ?? 0,
             churned: sd.churned ?? 0,
             revenue_this_month: raw.revenue_this_month ?? (raw.revenue_trend ?? []).reduce((s: number, r: any) => s + (r.revenue ?? 0), 0),
             revenue_last_month: raw.revenue_last_month ?? 0,

@@ -991,16 +991,16 @@ export function ChartGrid({ analytics, loading, period, onPeriodChange, onStatus
         period={period}
         onPeriodChange={onPeriodChange}
       />
-      {/* Row 2: Customer Health + P&L */}
-      <div className="grid grid-cols-2 gap-2">
-        <HealthArcs analytics={analytics} onStatusClick={onStatusClick} />
-        <PnlCard analytics={analytics} />
-      </div>
-      {/* Row 3: Customer Value Map — full width */}
+      {/* Row 2: Customer Value Map — full width */}
       <VipScatter
         scatterData={analytics?.scatter_data ?? []}
         onStatusClick={onStatusClick}
       />
+      {/* Row 3: Customer Health + P&L */}
+      <div className="grid grid-cols-2 gap-2">
+        <HealthArcs analytics={analytics} onStatusClick={onStatusClick} />
+        <PnlCard analytics={analytics} />
+      </div>
       {/* Row 4: Merchant Fees + Franchise Fees + Coupon */}
       <div className="grid grid-cols-3 gap-2">
         <FeesChart analytics={analytics} />

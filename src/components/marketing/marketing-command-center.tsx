@@ -100,6 +100,12 @@ export interface AnalyticsData {
     repeat: number;
     repeat_rate: number;
   }>;
+  sim_utilization: {
+    by_sim: Array<{ name: string; tier: string; bookings: number; pct: number }>;
+    by_week: Array<Record<string, string | number>>;
+    total_bookings: number;
+    avg_per_sim_per_day: number;
+  } | null;
 }
 
 const DEFAULT_FILTERS: MarketingFilters = {

@@ -348,7 +348,6 @@ export function ShiftOSAnalyticsPanel({ companyId }: ShiftOSAnalyticsPanelProps)
       <RevenueHero data={data} />
       <CustomerHealthGrid data={data} />
       <TopVouchers vouchers={data.topVouchers} />
-      <SimulatorUtilization simulators={data.simulators} />
     </div>
   );
 }

@@ -33,6 +33,19 @@ interface ReservationRow {
   coupon_code: string | null;
 }
 
+// ── Sim tiers ────────────────────────────────────────
+const SIM_TIERS: Record<string, string> = {
+  'Hamilton-Mia': 'Ultimate',
+  'Verstappen-Mia': 'Ultimate',
+  'Norris-Mia': 'Haptic',
+  'Piastri-Mia': 'Haptic',
+  'Russell-Mia': 'Haptic',
+  'Leclerc-Mia': 'Haptic',
+  'Antonelli-Mia': 'Non-Motion',
+  'Sainz-Mia': 'Non-Motion',
+};
+const ALL_SIM_NAMES = Object.keys(SIM_TIERS);
+
 interface CustomerRow {
   id: string;
   shiftos_user_id: number;
@@ -82,13 +95,15 @@ export async function GET(request: NextRequest) {
     const supabase = getAdminSupabase();
 
     // ── Fetch data in parallel ──
-    const [reservationsRes, customersRes] = await Promise.all([
+    const [reservationsRes, allReservationsRes, customersRes] = await Promise.all([
       fetchReservations(supabase, companyId, cutoff),
+      fetchReservations(supabase, companyId, null), // all reservations for sim utilization
       fetchCustomers(supabase, companyId),
     ]);
 
     // Filter out employees
     const reservations = reservationsRes.filter((r) => !EMPLOYEE_SHIFTOS_IDS.has(r.shiftos_user_id));
+    const allReservations = allReservationsRes.filter((r) => !EMPLOYEE_SHIFTOS_IDS.has(r.shiftos_user_id));
     const customers = customersRes.filter((c) => !EMPLOYEE_SHIFTOS_IDS.has(c.shiftos_user_id));
 
     // ── Revenue trend ──
@@ -102,6 +117,9 @@ export async function GET(request: NextRequest) {
 
     // ── Coupon analysis ──
     const couponAnalysis = computeCouponAnalysis(reservations, customers);
+
+    // ── Sim utilization (all-time, no date filter) ──
+    const simUtilization = computeSimUtilization(allReservations);
 
     // ── Scatter data (all customers) ──
     const scatterData = customers.map((c) => {
@@ -200,6 +218,7 @@ export async function GET(request: NextRequest) {
       status_distribution: statusDist,
       spend_tiers: spendTiers,
       coupon_analysis: couponAnalysis,
+      sim_utilization: simUtilization,
       scatter_data: scatterData,
       revenue_this_month: revenueThisMonth,
       revenue_last_month: revenueLastMonth,
@@ -481,6 +500,90 @@ function computeCouponAnalysis(
   return stats
     .sort((a, b) => b.uses - a.uses)
     .slice(0, 8);
+}
+
+// ── Sim utilization ──────────────────────────────────
+
+interface SimUtilBySimEntry {
+  name: string;
+  tier: string;
+  bookings: number;
+  pct: number;
+}
+
+interface SimUtilByWeekEntry {
+  week: string;
+  [simName: string]: string | number; // week is string, rest are numbers
+}
+
+interface SimUtilization {
+  by_sim: SimUtilBySimEntry[];
+  by_week: SimUtilByWeekEntry[];
+  total_bookings: number;
+  avg_per_sim_per_day: number;
+}
+
+function computeSimUtilization(reservations: readonly ReservationRow[]): SimUtilization {
+  const simCounts = new Map<string, number>();
+  const weekSimCounts = new Map<string, Map<string, number>>();
+
+  // Initialize all sims to 0
+  for (const name of ALL_SIM_NAMES) {
+    simCounts.set(name, 0);
+  }
+
+  let totalBookings = 0;
+
+  for (const r of reservations) {
+    if (!r.calendar_name) continue;
+    // Split comma-separated sim names
+    const sims = r.calendar_name.split(',').map((s) => s.trim());
+    const weekKey = getWeekKey(new Date(r.booking_time));
+
+    for (const sim of sims) {
+      if (!SIM_TIERS[sim]) continue; // skip unknown sims
+      simCounts.set(sim, (simCounts.get(sim) ?? 0) + 1);
+      totalBookings += 1;
+
+      const weekMap = weekSimCounts.get(weekKey) ?? new Map<string, number>();
+      weekMap.set(sim, (weekMap.get(sim) ?? 0) + 1);
+      weekSimCounts.set(weekKey, weekMap);
+    }
+  }
+
+  const bySim: SimUtilBySimEntry[] = ALL_SIM_NAMES.map((name) => {
+    const bookings = simCounts.get(name) ?? 0;
+    return {
+      name,
+      tier: SIM_TIERS[name],
+      bookings,
+      pct: totalBookings > 0 ? Math.round((bookings / totalBookings) * 100) : 0,
+    };
+  }).sort((a, b) => b.bookings - a.bookings);
+
+  const byWeek: SimUtilByWeekEntry[] = [...weekSimCounts.entries()]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([week, simMap]) => {
+      const entry: SimUtilByWeekEntry = { week };
+      for (const name of ALL_SIM_NAMES) {
+        entry[name] = simMap.get(name) ?? 0;
+      }
+      return entry;
+    });
+
+  // Calculate avg per sim per day
+  let daySpan = 1;
+  if (reservations.length > 0) {
+    const dates = reservations.map((r) => new Date(r.booking_time).getTime());
+    const minDate = Math.min(...dates);
+    const maxDate = Math.max(...dates);
+    daySpan = Math.max(1, Math.round((maxDate - minDate) / (1000 * 60 * 60 * 24)));
+  }
+  const avgPerSimPerDay = ALL_SIM_NAMES.length > 0
+    ? Math.round((totalBookings / ALL_SIM_NAMES.length / daySpan) * 10) / 10
+    : 0;
+
+  return { by_sim: bySim, by_week: byWeek, total_bookings: totalBookings, avg_per_sim_per_day: avgPerSimPerDay };
 }
 
 // ── Shared utility ───────────────────────────────────

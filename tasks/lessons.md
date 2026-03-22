@@ -32,3 +32,8 @@
 **Mistake:** Alejandro Cordones and 305 Staff Nick showing in scatter plot and revenue despite being employees
 **Correct approach:** Employee ShiftOS IDs (79299, 71048) must be excluded from ALL queries — customers API, analytics API, scatter data, revenue calculations. Their "reservations" are calendar blocks, not real bookings. Only count as revenue if a matching Square charge exists at the same time.
 **Rule:** ALWAYS filter out EMPLOYEE_SHIFTOS_IDS from every query that touches shiftos_customers or shiftos_reservations. The employee list lives in both /api/marketing/customers/route.ts and /api/marketing/analytics/route.ts. When adding new employees, update BOTH files. Employee bookings = blocks, not revenue, unless matched with a Square payment.
+
+## 2026-03-21 — Revenue = actual payments only, NEVER estimated from bookings
+**Mistake:** Calculated revenue as sim_slots × price_per_slot. This is WRONG because: (1) APEX members pay monthly, not per session, (2) employee blocks are not revenue, (3) comps/promos are free.
+**Correct approach:** Revenue MUST come from actual payment processors (Stripe/Square). ShiftOS "paid=true" only means the booking is confirmed, NOT that money was charged. Until Square/Stripe is connected, revenue should show as $0 or "Connect payment processor".
+**Rule:** NEVER estimate revenue from booking counts × price. Revenue = Stripe charges + Square transactions ONLY. ShiftOS data gives us VISITS, not REVENUE. The `revenue` field in shiftos_reservations should stay 0 until we have real payment data from Square/Stripe to backfill it.

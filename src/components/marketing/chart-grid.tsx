@@ -188,7 +188,7 @@ function RevenueTrendChart({ data, period, onPeriodChange }: {
       title="Revenue Trend"
       trailing={<PeriodToggle value={period} onChange={onPeriodChange} />}
     >
-      <div className="h-52">
+      <div className="h-64">
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={data} margin={{ top: 4, right: 4, left: -10, bottom: 0 }}>
             <defs>

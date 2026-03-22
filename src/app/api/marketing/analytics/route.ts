@@ -35,6 +35,7 @@ interface ReservationRow {
 
 interface CustomerRow {
   id: string;
+  shiftos_user_id: number;
   first_name: string;
   last_name: string;
   total_bookings: number;
@@ -88,7 +89,7 @@ export async function GET(request: NextRequest) {
 
     // Filter out employees
     const reservations = reservationsRes.filter((r) => !EMPLOYEE_SHIFTOS_IDS.has(r.shiftos_user_id));
-    const customers = customersRes.filter((c) => !EMPLOYEE_SHIFTOS_IDS.has(Number(c.shiftos_user_id ?? 0)));
+    const customers = customersRes.filter((c) => !EMPLOYEE_SHIFTOS_IDS.has(c.shiftos_user_id));
 
     // ── Revenue trend ──
     const revenueTrend = computeRevenueTrend(reservations, periodDays);
@@ -217,7 +218,7 @@ async function fetchCustomers(
   while (true) {
     const { data, error } = await supabase
       .from('shiftos_customers')
-      .select('id, first_name, last_name, total_bookings, total_revenue, last_booking_at')
+      .select('id, shiftos_user_id, first_name, last_name, total_bookings, total_revenue, last_booking_at')
       .eq('company_id', companyId)
       .range(from, from + PAGE - 1);
     if (error) throw new Error(`Customers query failed: ${error.message}`);

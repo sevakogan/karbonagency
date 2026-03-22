@@ -27,3 +27,8 @@
 **Mistake:** Revenue this month was pulling data without proper Miami filtering
 **Correct approach:** ALL ShiftOS data queries must filter by company_id (Shift Arcade Miami UUID: 950d0b84-63fa-409b-ad4f-ca1fdae25c7c) AND only use the 8 Miami calendar IDs. Never show data from other locations.
 **Rule:** EVERY query touching shiftos_customers or shiftos_reservations MUST include .eq('company_id', MIAMI_COMPANY_ID). Revenue calculations must only count paid=true reservations from Miami calendars (Hamilton-Mia, Verstappen-Mia, Norris-Mia, Piastri-Mia, Russell-Mia, Leclerc-Mia, Antonelli-Mia, Sainz-Mia).
+
+## 2026-03-21 — Employee bookings are blocks, not revenue
+**Mistake:** Alejandro Cordones and 305 Staff Nick showing in scatter plot and revenue despite being employees
+**Correct approach:** Employee ShiftOS IDs (79299, 71048) must be excluded from ALL queries — customers API, analytics API, scatter data, revenue calculations. Their "reservations" are calendar blocks, not real bookings. Only count as revenue if a matching Square charge exists at the same time.
+**Rule:** ALWAYS filter out EMPLOYEE_SHIFTOS_IDS from every query that touches shiftos_customers or shiftos_reservations. The employee list lives in both /api/marketing/customers/route.ts and /api/marketing/analytics/route.ts. When adding new employees, update BOTH files. Employee bookings = blocks, not revenue, unless matched with a Square payment.

@@ -189,7 +189,7 @@ function RevenueTrendChart({ data, period, onPeriodChange }: {
       title="Revenue Trend"
       trailing={<PeriodToggle value={period} onChange={onPeriodChange} />}
     >
-      <div className="h-52">
+      <div className="h-60 -mx-1">
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={data} margin={{ top: 4, right: 4, left: -10, bottom: 0 }}>
             <defs>
@@ -560,7 +560,7 @@ function CouponImpactChart({ data }: { data: AnalyticsData['coupon_impact'] }) {
 
   return (
     <ChartCard title="Coupon Impact">
-      <div className="h-52">
+      <div className="h-28">
         {chartData.length === 0 ? (
           <div className="h-full flex items-center justify-center">
             <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
@@ -628,12 +628,8 @@ export function ChartGrid({ analytics, loading, period, onPeriodChange, onStatus
           onPeriodChange={onPeriodChange}
         />
         <div className="flex flex-col gap-2">
-          <div className="flex-1">
-            <CouponImpactChart data={analytics?.coupon_impact ?? []} />
-          </div>
-          <div className="flex-[2]">
-            <HealthArcs analytics={analytics} onStatusClick={onStatusClick} />
-          </div>
+          <HealthArcs analytics={analytics} onStatusClick={onStatusClick} />
+          <CouponImpactChart data={analytics?.coupon_impact ?? []} />
         </div>
       </div>
       {/* Row 2: Customer Value Map — full width */}

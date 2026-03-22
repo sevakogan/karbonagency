@@ -3,6 +3,9 @@ import { getAdminSupabase } from '@/lib/supabase-admin';
 import type { ShiftUser, ShiftReservation } from '@/lib/shiftos/client';
 import type { ShiftOSPriceMapEntry } from '@/lib/shiftos/types';
 
+// Allow up to 5 minutes for bootstrap (Pro plan)
+export const maxDuration = 300;
+
 // ──────────────────────────────────────────────────────
 // POST /api/shiftos/bootstrap
 // One-time bulk pull of ALL Miami customers + reservations

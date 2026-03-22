@@ -259,9 +259,9 @@ function HealthRing({ analytics, onStatusClick }: {
 }
 
 const SCATTER_COLORS: Record<string, string> = {
-  active: '#10b981',
-  at_risk: '#f59e0b',
-  churned: '#f43f5e',
+  active: '#06d6a0',
+  at_risk: '#ffd166',
+  churned: '#ef476f',
 };
 
 function abbreviateName(fullName: string): string {
@@ -313,57 +313,72 @@ function VipScatter({ customers, onStatusClick }: {
     );
   };
 
+  // Split by status for different colored scatter series
+  const activeData = useMemo(() => scatterData.filter((d) => d.status === 'active'), [scatterData]);
+  const atRiskData = useMemo(() => scatterData.filter((d) => d.status === 'at_risk'), [scatterData]);
+  const churnedData = useMemo(() => scatterData.filter((d) => d.status === 'churned'), [scatterData]);
+
   return (
     <ChartCard title="Customer Value Map">
       <div className="h-56 relative">
-        {/* Quadrant labels */}
-        <div className="absolute inset-4 pointer-events-none grid grid-cols-2 grid-rows-2 text-[7px] font-bold uppercase tracking-widest z-0 opacity-20" style={{ color: 'var(--text-primary)' }}>
-          <span className="self-start">💰 Big Spenders</span>
-          <span className="self-start text-right">🏆 VIPs</span>
-          <span className="self-end">👋 One-timers</span>
-          <span className="self-end text-right">🔄 Regulars</span>
-        </div>
         {/* Legend */}
-        <div className="absolute top-1 right-1 flex gap-3 text-[8px] font-medium z-10" style={{ color: 'var(--text-secondary)' }}>
-          <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full" style={{ background: SCATTER_COLORS.active }} />Active</span>
-          <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full" style={{ background: SCATTER_COLORS.at_risk }} />At Risk</span>
-          <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full" style={{ background: SCATTER_COLORS.churned }} />Churned</span>
+        <div className="absolute top-0 right-0 flex gap-3 text-[9px] font-semibold z-10" style={{ color: 'var(--text-primary)' }}>
+          <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full shadow-sm" style={{ background: SCATTER_COLORS.active }} />Active ({activeData.length})</span>
+          <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full shadow-sm" style={{ background: SCATTER_COLORS.at_risk }} />At Risk ({atRiskData.length})</span>
+          <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full shadow-sm" style={{ background: SCATTER_COLORS.churned }} />Churned ({churnedData.length})</span>
         </div>
         <ResponsiveContainer width="100%" height="100%">
-          <ScatterChart margin={{ top: 16, right: 8, bottom: 4, left: -6 }}>
-            <CartesianGrid strokeDasharray="2 4" stroke="var(--separator)" opacity={0.15} />
+          <ScatterChart margin={{ top: 20, right: 12, bottom: 8, left: 0 }}>
+            <CartesianGrid strokeDasharray="2 4" stroke="var(--separator)" opacity={0.12} />
             <XAxis
               type="number"
               dataKey="x"
               name="Visits"
-              label={{ value: 'Visits →', position: 'insideBottomRight', offset: -4, style: { fill: 'var(--text-secondary)', fontSize: 9, fontWeight: 600 } }}
               tick={{ fill: 'var(--text-secondary)', fontSize: 9 }}
               tickLine={false}
-              axisLine={false}
+              axisLine={{ stroke: 'var(--separator)', strokeWidth: 0.5 }}
             />
             <YAxis
               type="number"
               dataKey="y"
               name="Spend"
-              label={{ value: 'Spend ↑', position: 'insideTopLeft', offset: 4, style: { fill: 'var(--text-secondary)', fontSize: 9, fontWeight: 600 } }}
               tick={{ fill: 'var(--text-secondary)', fontSize: 9 }}
               tickLine={false}
-              axisLine={false}
+              axisLine={{ stroke: 'var(--separator)', strokeWidth: 0.5 }}
               tickFormatter={formatShort}
+              width={45}
             />
-            <ZAxis type="number" dataKey="z" range={[40, 250]} />
+            <ZAxis type="number" dataKey="z" range={[60, 300]} />
             <Tooltip content={<ScatterTooltipContent />} />
             <Scatter
-              data={scatterData}
-              onClick={(point) => {
-                if (point?.status) {
-                  onStatusClick(point.status as 'active' | 'at_risk' | 'churned');
-                }
-              }}
+              name="Active"
+              data={activeData}
+              fill={SCATTER_COLORS.active}
+              fillOpacity={0.8}
+              strokeWidth={1.5}
+              stroke="rgba(255,255,255,0.4)"
+              onClick={(point) => point?.status && onStatusClick(point.status as any)}
               cursor="pointer"
-              fillOpacity={0.85}
-              strokeWidth={1}
-              stroke="rgba(255,255,255,0.3)"
+            />
+            <Scatter
+              name="At Risk"
+              data={atRiskData}
+              fill={SCATTER_COLORS.at_risk}
+              fillOpacity={0.8}
+              strokeWidth={1.5}
+              stroke="rgba(255,255,255,0.4)"
+              onClick={(point) => point?.status && onStatusClick(point.status as any)}
+              cursor="pointer"
+            />
+            <Scatter
+              name="Churned"
+              data={churnedData}
+              fill={SCATTER_COLORS.churned}
+              fillOpacity={0.8}
+              strokeWidth={1.5}
+              stroke="rgba(255,255,255,0.4)"
+              onClick={(point) => point?.status && onStatusClick(point.status as any)}
+              cursor="pointer"
             />
           </ScatterChart>
         </ResponsiveContainer>

@@ -1,14 +1,11 @@
 'use client';
 
 import { useState, useEffect, useCallback, useMemo, useRef, Component, type ReactNode } from 'react';
-import dynamic from 'next/dynamic';
 import { PulseBar } from './pulse-bar';
+import { ChartGrid } from './chart-grid';
 import { ActiveFilters } from './active-filters';
 import { CustomerList } from './customer-list';
 import { formatTimeAgo } from '@/hooks/use-live-poll';
-
-// Dynamic import for Recharts components (no SSR)
-const ChartGrid = dynamic(() => import('./chart-grid').then(m => ({ default: m.ChartGrid })), { ssr: false, loading: () => <div className="h-64 flex items-center justify-center text-xs" style={{ color: 'var(--text-tertiary)' }}>Loading charts...</div> });
 
 // Error boundary to prevent crashes
 class ErrorBoundary extends Component<{ children: ReactNode }, { error: string | null }> {

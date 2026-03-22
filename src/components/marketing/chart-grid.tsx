@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState, useRef, useCallback } from 'react';
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell,
@@ -15,6 +15,21 @@ interface ChartGridProps {
   period: string;
   onPeriodChange: (period: string) => void;
   onStatusClick: (status: 'all' | 'active' | 'at_risk' | 'churned') => void;
+}
+
+// Internal period state to prevent parent re-render on period toggle
+function usePeriodToggle(externalPeriod: string, onExternalChange: (p: string) => void) {
+  const [localPeriod, setLocalPeriod] = useState(externalPeriod);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const handleChange = useCallback((p: string) => {
+    setLocalPeriod(p); // instant UI update
+    // Debounce the external change to prevent re-mount
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    timeoutRef.current = setTimeout(() => onExternalChange(p), 50);
+  }, [onExternalChange]);
+
+  return { period: localPeriod, setPeriod: handleChange };
 }
 
 const STATUS_COLORS: Record<string, string> = {

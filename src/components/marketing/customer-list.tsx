@@ -233,6 +233,17 @@ export function CustomerList({ customers, loading, totalCount, filters, onFilter
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [searchInput, setSearchInput] = useState(filters.search);
+
+  const sort = filters.sort;
+  const order = filters.order;
+  const onSortChange = useCallback((key: string) => {
+    if (sort === key) {
+      onFilterChange('order', order === 'desc' ? 'asc' : 'desc');
+    } else {
+      onFilterChange('sort', key);
+      onFilterChange('order', 'desc');
+    }
+  }, [sort, order, onFilterChange]);
   const searchTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Debounced search
@@ -462,16 +473,28 @@ export function CustomerList({ customers, loading, totalCount, filters, onFilter
                       className="w-3.5 h-3.5 rounded accent-[var(--accent)]"
                     />
                   </th>
-                  <th className="py-2 px-2 text-[9px] font-semibold uppercase tracking-wider" style={{ color: 'var(--text-quaternary)' }}>St</th>
-                  <th className="py-2 px-2 text-[9px] font-semibold uppercase tracking-wider" style={{ color: 'var(--text-quaternary)' }}>Name</th>
-                  <th className="py-2 px-2 text-[9px] font-semibold uppercase tracking-wider" style={{ color: 'var(--text-quaternary)' }}>Email</th>
-                  <th className="py-2 px-2 text-[9px] font-semibold uppercase tracking-wider" style={{ color: 'var(--text-quaternary)' }}>Phone</th>
-                  <th className="py-2 px-2 text-[9px] font-semibold uppercase tracking-wider" style={{ color: 'var(--text-quaternary)' }}>Lifetime</th>
-                  <th className="py-2 px-2 text-[9px] font-semibold uppercase tracking-wider" style={{ color: 'var(--text-quaternary)' }}>Visits</th>
-                  <th className="py-2 px-2 text-[9px] font-semibold uppercase tracking-wider" style={{ color: 'var(--text-quaternary)' }}>30d</th>
-                  <th className="py-2 px-2 text-[9px] font-semibold uppercase tracking-wider" style={{ color: 'var(--text-quaternary)' }}>Last</th>
-                  <th className="py-2 px-2 text-[9px] font-semibold uppercase tracking-wider" style={{ color: 'var(--text-quaternary)' }}>Avg Gap</th>
-                  <th className="py-2 px-2 text-[9px] font-semibold uppercase tracking-wider" style={{ color: 'var(--text-quaternary)' }}>Trend</th>
+                  {[
+                    { label: 'St', key: 'status' },
+                    { label: 'Name', key: 'name' },
+                    { label: 'Email', key: 'email' },
+                    { label: 'Phone', key: 'phone' },
+                    { label: 'Lifetime', key: 'lifetime_spend' },
+                    { label: 'Visits', key: 'total_bookings' },
+                    { label: '30d', key: 'thirty_day_spend' },
+                    { label: 'Last', key: 'days_since_last' },
+                    { label: 'Avg Gap', key: 'avg_gap_days' },
+                    { label: 'Trend', key: '' },
+                  ].map((col) => (
+                    <th
+                      key={col.label}
+                      className="py-2 px-2 text-[9px] font-semibold uppercase tracking-wider select-none"
+                      style={{ color: sort === col.key ? 'var(--accent)' : 'var(--text-secondary)', cursor: col.key ? 'pointer' : 'default' }}
+                      onClick={() => col.key && onSortChange(col.key)}
+                    >
+                      {col.label}
+                      {sort === col.key && <span className="ml-0.5">{order === 'desc' ? '↓' : '↑'}</span>}
+                    </th>
+                  ))}
                 </tr>
               </thead>
               <tbody>

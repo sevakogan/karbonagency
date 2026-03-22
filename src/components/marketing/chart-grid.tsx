@@ -619,24 +619,23 @@ export function ChartGrid({ analytics, loading, period, onPeriodChange, onStatus
 
   return (
     <div className="flex flex-col gap-2">
-      {/* Row 1: Revenue Trend (left 2/3) + Health & Coupon stacked (right 1/3) */}
-      <div className="grid gap-2" style={{ gridTemplateColumns: '2fr 1fr' }}>
+      {/* Row 1: Revenue Trend + Customer Health — 50/50 */}
+      <div className="grid grid-cols-2 gap-2">
         <RevenueTrendChart
           data={analytics?.revenue_trend ?? []}
           period={period}
           onPeriodChange={onPeriodChange}
         />
-        <div className="flex flex-col gap-2">
-          <HealthArcs analytics={analytics} onStatusClick={onStatusClick} />
-          <CouponImpactChart
-            data={analytics?.coupon_impact ?? []}
-          />
-        </div>
+        <HealthArcs analytics={analytics} onStatusClick={onStatusClick} />
       </div>
       {/* Row 2: Customer Value Map — full width */}
       <VipScatter
         scatterData={analytics?.scatter_data ?? []}
         onStatusClick={onStatusClick}
+      />
+      {/* Row 3: Coupon Impact — full width */}
+      <CouponImpactChart
+        data={analytics?.coupon_impact ?? []}
       />
     </div>
   );

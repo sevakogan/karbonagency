@@ -12,6 +12,8 @@ interface CompanyCardProps {
   totalSpend?: number;
   totalImpressions?: number;
   totalConversions?: number;
+  totalRevenue?: number;
+  revenueThisMonth?: number;
   connectedPlatforms?: number;
   syncStatus?: IntegrationStatus;
   sparklineData?: number[];
@@ -41,6 +43,8 @@ export function CompanyCard({
   totalSpend = 0,
   totalImpressions = 0,
   totalConversions = 0,
+  totalRevenue = 0,
+  revenueThisMonth = 0,
   connectedPlatforms = 0,
   syncStatus = 'disconnected',
   sparklineData = [],
@@ -112,39 +116,39 @@ export function CompanyCard({
             </div>
           ) : (
             <>
-              {/* Metrics row */}
+              {/* Metrics row — revenue first, then ad metrics */}
               <div className="flex items-center justify-between">
                 <div className="flex gap-[var(--space-4)]">
+                  <MetricTooltip metricKey="revenue" value={totalRevenue}>
+                    <div>
+                      <div className="kpi-label">Revenue</div>
+                      <div
+                        className="font-semibold"
+                        style={{ fontSize: 'var(--text-subhead)', color: 'var(--system-green)', fontVariantNumeric: 'tabular-nums' }}
+                      >
+                        ${totalRevenue >= 1000 ? `${(totalRevenue / 1000).toFixed(1)}k` : totalRevenue.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                      </div>
+                    </div>
+                  </MetricTooltip>
+                  <MetricTooltip metricKey="month_revenue" value={revenueThisMonth}>
+                    <div>
+                      <div className="kpi-label">This Mo.</div>
+                      <div
+                        className="font-semibold"
+                        style={{ fontSize: 'var(--text-subhead)', color: 'var(--text-primary)', fontVariantNumeric: 'tabular-nums' }}
+                      >
+                        ${revenueThisMonth >= 1000 ? `${(revenueThisMonth / 1000).toFixed(1)}k` : revenueThisMonth.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                      </div>
+                    </div>
+                  </MetricTooltip>
                   <MetricTooltip metricKey="spend" value={totalSpend}>
                     <div>
-                      <div className="kpi-label">Spend</div>
+                      <div className="kpi-label">Ad Spend</div>
                       <div
                         className="font-semibold"
                         style={{ fontSize: 'var(--text-subhead)', color: 'var(--text-primary)', fontVariantNumeric: 'tabular-nums' }}
                       >
                         ${totalSpend.toLocaleString(undefined, { maximumFractionDigits: 0 })}
-                      </div>
-                    </div>
-                  </MetricTooltip>
-                  <MetricTooltip metricKey="impressions" value={totalImpressions}>
-                    <div>
-                      <div className="kpi-label">Impr.</div>
-                      <div
-                        className="font-semibold"
-                        style={{ fontSize: 'var(--text-subhead)', color: 'var(--text-primary)', fontVariantNumeric: 'tabular-nums' }}
-                      >
-                        {totalImpressions >= 1000 ? `${(totalImpressions / 1000).toFixed(1)}k` : totalImpressions}
-                      </div>
-                    </div>
-                  </MetricTooltip>
-                  <MetricTooltip metricKey="conversions" value={totalConversions}>
-                    <div>
-                      <div className="kpi-label">Conv.</div>
-                      <div
-                        className="font-semibold"
-                        style={{ fontSize: 'var(--text-subhead)', color: 'var(--text-primary)', fontVariantNumeric: 'tabular-nums' }}
-                      >
-                        {totalConversions}
                       </div>
                     </div>
                   </MetricTooltip>

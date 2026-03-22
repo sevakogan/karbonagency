@@ -114,8 +114,8 @@ export function CompanyDashboard({ company, integrations, dailyMetrics }: Props)
     dashData.kpis.reach.value > 0 ? 1 : 0,
   ].reduce((a, b) => a + b, 0);
 
-  const roas = dashData.kpis.spend.value > 0
-    ? `${((dashData.kpis.conversions.value * 136) / dashData.kpis.spend.value).toFixed(1)}x`
+  const roas = dashData.kpis.spend.value > 0 && marketingData.revenueThisMonth > 0
+    ? `${(marketingData.revenueThisMonth / dashData.kpis.spend.value).toFixed(1)}x`
     : '—';
   const cpa = dashData.kpis.conversions.value > 0
     ? `$${(dashData.kpis.spend.value / dashData.kpis.conversions.value).toFixed(0)}`
@@ -144,13 +144,11 @@ export function CompanyDashboard({ company, integrations, dailyMetrics }: Props)
         icon: '\u{1F4A1}', color: '#FF9F0A',
       });
     }
-    if (dashData.kpis.spend.value > 0) {
-      const estRoas = dashData.kpis.conversions.value > 0
-        ? ((dashData.kpis.conversions.value * 136) / dashData.kpis.spend.value).toFixed(1)
-        : '0';
+    if (dashData.kpis.spend.value > 0 && marketingData.revenueThisMonth > 0) {
+      const realRoas = (marketingData.revenueThisMonth / dashData.kpis.spend.value).toFixed(1);
       insights.push({
-        type: 'forecast', confidence: 0.71,
-        text: `Estimated ROAS: ${estRoas}x based on $136 avg ticket`,
+        type: 'forecast', confidence: 0.95,
+        text: `True ROAS: ${realRoas}x — $${Math.round(marketingData.revenueThisMonth).toLocaleString()} revenue vs $${Math.round(dashData.kpis.spend.value).toLocaleString()} ad spend`,
         icon: '\u{1F52E}', color: '#64D2FF',
       });
     }
@@ -165,9 +163,10 @@ export function CompanyDashboard({ company, integrations, dailyMetrics }: Props)
       });
     }
     return insights.slice(0, 5);
-  }, [dashData]);
+  }, [dashData, marketingData]);
 
   const channelData = useMemo(() => {
+    const totalPlatformSpend = dashData.platformBreakdown.reduce((s, p) => s + p.spend, 0);
     return dashData.platformBreakdown.map((p) => ({
       name: p.name,
       icon: PLATFORM_ICONS[p.slug] ?? '\u{1F4CA}',
@@ -175,7 +174,7 @@ export function CompanyDashboard({ company, integrations, dailyMetrics }: Props)
       clicks: p.clicks,
       sessions: p.clicks,
       bookings: p.conversions,
-      revenue: p.conversions * 136,
+      revenue: totalPlatformSpend > 0 ? Math.round(marketingData.revenueThisMonth * (p.spend / totalPlatformSpend)) : 0,
       color: PLATFORM_COLORS[p.slug] ?? '#888',
       daily: dashData.chartData.map((d) => (d[`clicks_${p.slug}`] as number) ?? 0),
       ctr: p.impressions > 0 ? `${((p.clicks / p.impressions) * 100).toFixed(1)}%` : '\u2014',
@@ -184,14 +183,14 @@ export function CompanyDashboard({ company, integrations, dailyMetrics }: Props)
         ? `+${dashData.kpis.clicks.delta.value.toFixed(0)}%`
         : `-${dashData.kpis.clicks.delta.value.toFixed(0)}%`,
     }));
-  }, [dashData]);
+  }, [dashData, marketingData]);
 
   const funnelSteps = useMemo(() => [
     { label: 'Ad Impressions', value: dashData.kpis.impressions.value, color: '#0A84FF' },
     { label: 'Clicks / Sessions', value: dashData.kpis.clicks.value, color: '#64D2FF' },
     { label: 'Bookings', value: dashData.kpis.conversions.value, color: '#30D158' },
-    { label: 'Est. Revenue', value: Math.round(dashData.kpis.conversions.value * 136), prefix: '$', color: '#FF9F0A' },
-  ], [dashData]);
+    { label: 'Revenue', value: Math.round(marketingData.revenueThisMonth), prefix: '$', color: '#FF9F0A' },
+  ], [dashData, marketingData]);
 
   const funnelConvRates = useMemo(() => {
     const clickRate = dashData.kpis.impressions.value > 0
@@ -206,9 +205,18 @@ export function CompanyDashboard({ company, integrations, dailyMetrics }: Props)
     ];
   }, [dashData]);
 
+  // Build a lookup from marketing revenue trend, keyed by date
+  const revenueTrendMap = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const r of marketingData.revenueTrend) {
+      map.set(r.period, r.revenue);
+    }
+    return map;
+  }, [marketingData.revenueTrend]);
+
   const dailyRevenueData = useMemo(
-    () => dashData.chartData.map((d) => d.conversions * 136),
-    [dashData.chartData],
+    () => dashData.chartData.map((d) => revenueTrendMap.get(d.date as string) ?? 0),
+    [dashData.chartData, revenueTrendMap],
   );
   const dailySessionsData = useMemo(
     () => dashData.chartData.map((d) => d.clicks),
@@ -233,23 +241,52 @@ export function CompanyDashboard({ company, integrations, dailyMetrics }: Props)
     [channelData],
   );
 
-  // --- Revenue: fetch from ShiftOS analytics ---
+  // --- Revenue: fetch from real marketing analytics + ShiftOS analytics ---
+  const [marketingData, setMarketingData] = useState<{
+    revenueThisMonth: number;
+    revenueLifetime: number;
+    shiftosRevenue: number;
+    squareRevenue: number;
+    avgLTV: number;
+    totalCustomerBookings: number;
+    revenueTrend: Array<{ period: string; revenue: number }>;
+  }>({ revenueThisMonth: 0, revenueLifetime: 0, shiftosRevenue: 0, squareRevenue: 0, avgLTV: 0, totalCustomerBookings: 0, revenueTrend: [] });
   const [todayRevenue, setTodayRevenue] = useState(0);
+
   useEffect(() => {
     if (!company.id) return;
-    fetch(`/api/shiftos/analytics?companyId=${company.id}`)
-      .then(r => r.ok ? r.json() : null)
-      .then(d => { if (d?.revenue?.today != null) setTodayRevenue(d.revenue.today); })
-      .catch(() => {});
+    // Fetch both in parallel — marketing analytics (source of truth) + today's live revenue
+    Promise.all([
+      fetch(`/api/marketing/analytics?companyId=${company.id}&period=30d`).then(r => r.ok ? r.json() : null),
+      fetch(`/api/shiftos/analytics?companyId=${company.id}`).then(r => r.ok ? r.json() : null),
+    ]).then(([mktg, shiftos]) => {
+      if (mktg) {
+        setMarketingData({
+          revenueThisMonth: mktg.revenue_this_month ?? 0,
+          revenueLifetime: mktg.revenue_lifetime ?? 0,
+          shiftosRevenue: mktg.pnl?.shiftos_revenue ?? 0,
+          squareRevenue: mktg.pnl?.square_revenue ?? 0,
+          avgLTV: mktg.avg_lifetime_value ?? 0,
+          totalCustomerBookings: (mktg.revenue_trend ?? []).reduce((s: number, r: { bookings?: number }) => s + (r.bookings ?? 0), 0),
+          revenueTrend: (mktg.revenue_trend ?? []).map((r: { period: string; revenue: number }) => ({
+            period: r.period,
+            revenue: r.revenue ?? 0,
+          })),
+        });
+      }
+      if (shiftos?.revenue?.today != null) {
+        setTodayRevenue(shiftos.revenue.today);
+      }
+    }).catch(() => {});
   }, [company.id]);
 
   const revenueData = {
-    totalRevenue: todayRevenue,
-    shiftOSRevenue: todayRevenue,
-    squareRevenue: 0,
-    transactions: dashData.kpis.conversions.value,
-    avgTicket: todayRevenue > 0 && dashData.kpis.conversions.value > 0
-      ? todayRevenue / dashData.kpis.conversions.value
+    totalRevenue: marketingData.revenueThisMonth,
+    shiftOSRevenue: marketingData.shiftosRevenue,
+    squareRevenue: marketingData.squareRevenue,
+    transactions: marketingData.totalCustomerBookings,
+    avgTicket: marketingData.totalCustomerBookings > 0
+      ? marketingData.revenueLifetime / marketingData.totalCustomerBookings
       : 0,
   };
 
@@ -306,11 +343,11 @@ export function CompanyDashboard({ company, integrations, dailyMetrics }: Props)
 
         {/* 4. KPI STRIP */}
         <div className="grid grid-cols-7 gap-2">
-          <KpiStripCard label="Revenue Today" value={`$${fmt(todayRevenue)}`} accent />
+          <KpiStripCard label="Revenue (Month)" value={`$${fmt(marketingData.revenueThisMonth)}`} accent />
+          <KpiStripCard label="Revenue Today" value={`$${fmt(todayRevenue)}`} />
           <KpiStripCard label="Ad Spend" value={`$${fmt(dashData.kpis.spend.value)}`} d={dashData.kpis.spend.delta} />
-          <KpiStripCard label="Impressions" value={fmt(dashData.kpis.impressions.value)} d={dashData.kpis.impressions.delta} />
+          <KpiStripCard label="True ROAS" value={roas} />
           <KpiStripCard label="Clicks" value={fmt(dashData.kpis.clicks.value)} d={dashData.kpis.clicks.delta} />
-          <KpiStripCard label="CTR" value={`${dashData.kpis.ctr.value.toFixed(1)}%`} d={dashData.kpis.ctr.delta} />
           <KpiStripCard label="CPC" value={`$${fmt(dashData.kpis.cpc.value)}`} d={dashData.kpis.cpc.delta} />
           <KpiStripCard label="Bookings" value={fmt(dashData.kpis.conversions.value)} d={dashData.kpis.conversions.delta} />
         </div>
@@ -351,7 +388,7 @@ export function CompanyDashboard({ company, integrations, dailyMetrics }: Props)
           <div className="grid grid-cols-2 gap-2">
             <BentoCard>
               <p className="text-[9px] font-semibold uppercase tracking-wider mb-2" style={{ color: 'var(--text-tertiary)' }}>
-                Daily Revenue (est.)
+                Daily Revenue
               </p>
               <AreaChartSvg data={dailyRevenueData} color="#30D158" labels={chartLabels} />
             </BentoCard>

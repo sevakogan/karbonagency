@@ -137,30 +137,35 @@ export async function GET(request: NextRequest) {
       };
     });
 
-    // Pull monthly revenue from daily_metrics (imported from CSV — real ShiftOS + Square data)
+    // Pull monthly revenue from actual reservations (source of truth)
     const now2 = new Date();
-    const thisMonthStr = `${now2.getFullYear()}-${String(now2.getMonth() + 1).padStart(2, '0')}`;
-    const lastMonth = new Date(now2.getFullYear(), now2.getMonth() - 1, 1);
-    const lastMonthStr = `${lastMonth.getFullYear()}-${String(lastMonth.getMonth() + 1).padStart(2, '0')}`;
+    const thisMonthStart = new Date(now2.getFullYear(), now2.getMonth(), 1).toISOString();
+    const nextMonthStart = new Date(now2.getFullYear(), now2.getMonth() + 1, 1).toISOString();
+    const lastMonthStart = new Date(now2.getFullYear(), now2.getMonth() - 1, 1).toISOString();
 
-    const { data: thisMonthMetrics } = await supabase
-      .from('daily_metrics')
-      .select('cost_per_conversion')
-      .eq('client_id', companyId)
-      .eq('platform', 'shiftos')
-      .gte('date', `${thisMonthStr}-01`)
-      .lt('date', `${thisMonthStr}-32`);
+    const [{ data: thisMonthRes }, { data: lastMonthRes }] = await Promise.all([
+      supabase
+        .from('shiftos_reservations')
+        .select('revenue, shiftos_user_id')
+        .eq('company_id', companyId)
+        .eq('paid', true)
+        .gte('booking_time', thisMonthStart)
+        .lt('booking_time', nextMonthStart),
+      supabase
+        .from('shiftos_reservations')
+        .select('revenue, shiftos_user_id')
+        .eq('company_id', companyId)
+        .eq('paid', true)
+        .gte('booking_time', lastMonthStart)
+        .lt('booking_time', thisMonthStart),
+    ]);
 
-    const { data: lastMonthMetrics } = await supabase
-      .from('daily_metrics')
-      .select('cost_per_conversion')
-      .eq('client_id', companyId)
-      .eq('platform', 'shiftos')
-      .gte('date', `${lastMonthStr}-01`)
-      .lt('date', `${lastMonthStr}-32`);
-
-    const revenueThisMonth = (thisMonthMetrics ?? []).reduce((s, m) => s + Number(m.cost_per_conversion ?? 0), 0);
-    const revenueLastMonth = (lastMonthMetrics ?? []).reduce((s, m) => s + Number(m.cost_per_conversion ?? 0), 0);
+    const revenueThisMonth = (thisMonthRes ?? [])
+      .filter((r) => !EMPLOYEE_SHIFTOS_IDS.has(r.shiftos_user_id))
+      .reduce((s, r) => s + Number(r.revenue ?? 0), 0);
+    const revenueLastMonth = (lastMonthRes ?? [])
+      .filter((r) => !EMPLOYEE_SHIFTOS_IDS.has(r.shiftos_user_id))
+      .reduce((s, r) => s + Number(r.revenue ?? 0), 0);
 
     // Avg lifetime value from ALL customers with bookings
     const custWithBookings = customers.filter((c) => c.total_bookings > 0);

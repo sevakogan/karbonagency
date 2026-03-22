@@ -68,10 +68,14 @@ export default async function DashboardOverview({
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
     const since = thirtyDaysAgo.toISOString().split("T")[0];
 
-    // Get integrations + metrics in parallel
-    const [{ data: allIntegrations }, { data: allMetrics }] = await Promise.all([
+    // Get integrations + ad metrics + reservation revenue in parallel
+    const now = new Date();
+    const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+    const [{ data: allIntegrations }, { data: allMetrics }, { data: allRevenue }, { data: monthRevenue }] = await Promise.all([
       adminDb.from("company_integrations").select("company_id, status, is_enabled"),
       adminDb.from("daily_metrics").select("client_id, spend, impressions, clicks, conversions").gte("date", since),
+      adminDb.from("shiftos_reservations").select("company_id, revenue").eq("paid", true),
+      adminDb.from("shiftos_reservations").select("company_id, revenue").eq("paid", true).gte("booking_time", thisMonthStart),
     ]);
 
     const integrationsByCompany = (allIntegrations ?? []).reduce(
@@ -97,7 +101,24 @@ export default async function DashboardOverview({
       {} as Record<string, { spend: number; impressions: number; clicks: number; conversions: number }>
     );
 
+    // Aggregate reservation revenue by company
+    const revenueByCompany = (allRevenue ?? []).reduce(
+      (acc, r) => {
+        acc[r.company_id] = (acc[r.company_id] ?? 0) + (Number(r.revenue) || 0);
+        return acc;
+      },
+      {} as Record<string, number>,
+    );
+    const monthRevenueByCompany = (monthRevenue ?? []).reduce(
+      (acc, r) => {
+        acc[r.company_id] = (acc[r.company_id] ?? 0) + (Number(r.revenue) || 0);
+        return acc;
+      },
+      {} as Record<string, number>,
+    );
+
     let globalSpend = 0, globalImpressions = 0, globalClicks = 0, globalConversions = 0;
+    let globalRevenue = 0, globalMonthRevenue = 0;
 
     const companiesWithMetrics = companies.map((company: Company) => {
       const companyIntegrations = integrationsByCompany[company.id] ?? [];
@@ -106,16 +127,22 @@ export default async function DashboardOverview({
       const syncStatus: IntegrationStatus = hasError ? "error" : connectedCount > 0 ? "connected" : "disconnected";
 
       const m = metricsByCompany[company.id] ?? { spend: 0, impressions: 0, clicks: 0, conversions: 0 };
+      const companyRevenue = revenueByCompany[company.id] ?? 0;
+      const companyMonthRevenue = monthRevenueByCompany[company.id] ?? 0;
       globalSpend += m.spend;
       globalImpressions += m.impressions;
       globalClicks += m.clicks;
       globalConversions += m.conversions;
+      globalRevenue += companyRevenue;
+      globalMonthRevenue += companyMonthRevenue;
 
       return {
         company,
         totalSpend: m.spend,
         totalImpressions: m.impressions,
         totalConversions: m.conversions,
+        totalRevenue: companyRevenue,
+        revenueThisMonth: companyMonthRevenue,
         connectedPlatforms: connectedCount,
         syncStatus,
         sparklineData: [] as number[],
@@ -130,7 +157,9 @@ export default async function DashboardOverview({
           totalImpressions: globalImpressions,
           totalClicks: globalClicks,
           totalConversions: globalConversions,
-          avgRoas: 0,
+          totalRevenue: globalRevenue,
+          revenueThisMonth: globalMonthRevenue,
+          avgRoas: globalRevenue > 0 && globalSpend > 0 ? globalRevenue / globalSpend : 0,
           avgCpc: globalClicks > 0 ? globalSpend / globalClicks : 0,
         }}
         userName={profile?.full_name ?? undefined}

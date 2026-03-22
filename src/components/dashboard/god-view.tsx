@@ -16,6 +16,8 @@ interface CompanyWithMetrics {
   totalSpend: number;
   totalImpressions: number;
   totalConversions: number;
+  totalRevenue: number;
+  revenueThisMonth: number;
   connectedPlatforms: number;
   syncStatus: IntegrationStatus;
   sparklineData: number[];
@@ -28,6 +30,8 @@ interface GodViewProps {
     totalImpressions: number;
     totalClicks: number;
     totalConversions: number;
+    totalRevenue: number;
+    revenueThisMonth: number;
     avgRoas: number;
     avgCpc: number;
   };
@@ -41,11 +45,11 @@ export function GodView({ companies, globalKpis, userName }: GodViewProps) {
   const active = companies.filter((c) => c.company.setup_step === null);
 
   const kpis = [
-    { metricKey: 'spend', label: 'Total Spend', value: globalKpis.totalSpend, format: 'currency' as const },
-    { metricKey: 'impressions', label: 'Impressions', value: globalKpis.totalImpressions, format: 'number' as const },
-    { metricKey: 'clicks', label: 'Clicks', value: globalKpis.totalClicks, format: 'number' as const },
+    { metricKey: 'revenue', label: 'Total Revenue', value: globalKpis.totalRevenue, format: 'currency' as const },
+    { metricKey: 'month_revenue', label: 'This Month', value: globalKpis.revenueThisMonth, format: 'currency' as const },
+    { metricKey: 'spend', label: 'Ad Spend', value: globalKpis.totalSpend, format: 'currency' as const },
+    { metricKey: 'roas', label: 'True ROAS', value: globalKpis.avgRoas, format: 'multiplier' as const },
     { metricKey: 'conversions', label: 'Conversions', value: globalKpis.totalConversions, format: 'number' as const },
-    { metricKey: 'roas', label: 'Avg ROAS', value: globalKpis.avgRoas, format: 'multiplier' as const },
     { metricKey: 'cpc', label: 'Avg CPC', value: globalKpis.avgCpc, format: 'currency' as const },
   ];
 
@@ -145,6 +149,8 @@ export function GodView({ companies, globalKpis, userName }: GodViewProps) {
               totalSpend={item.totalSpend}
               totalImpressions={item.totalImpressions}
               totalConversions={item.totalConversions}
+              totalRevenue={item.totalRevenue}
+              revenueThisMonth={item.revenueThisMonth}
               connectedPlatforms={item.connectedPlatforms}
               syncStatus={item.syncStatus}
               sparklineData={item.sparklineData}

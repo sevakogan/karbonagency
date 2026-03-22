@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, RefreshCw, Settings, Plug } from 'lucide-react';
+import { ArrowLeft, RefreshCw, Settings, Plug, Megaphone } from 'lucide-react';
 import type { Company } from '@/types';
 
 interface Props {
@@ -78,6 +78,16 @@ export function DashboardHeader({
 
       {/* Right: actions */}
       <div className="flex items-center gap-2">
+        <Link
+          href="/dashboard/marketing"
+          className="flex h-8 items-center gap-1.5 rounded-lg
+                     bg-[var(--accent)] px-3 text-xs font-semibold text-white
+                     transition-opacity hover:opacity-90"
+        >
+          <Megaphone size={13} />
+          Marketing
+        </Link>
+
         <button
           onClick={onRefresh}
           disabled={refreshing}

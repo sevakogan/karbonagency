@@ -71,7 +71,8 @@ export interface AnalyticsData {
     avg_lifetime_value: number;
   };
   revenue_trend: Array<{
-    date: string;
+    period: string;
+    date?: string;
     revenue: number;
     bookings: number;
     coupon_revenue: number;

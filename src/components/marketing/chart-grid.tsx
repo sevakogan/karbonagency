@@ -146,8 +146,8 @@ function RevenueTrendChart({ data, period, onPeriodChange }: {
             </defs>
             <CartesianGrid strokeDasharray="3 3" stroke="var(--separator)" opacity={0.3} />
             <XAxis
-              dataKey="date"
-              tick={{ fill: 'var(--text-quaternary)', fontSize: 9 }}
+              dataKey="period"
+              tick={{ fill: 'var(--text-secondary)', fontSize: 9 }}
               tickLine={false}
               axisLine={false}
             />
@@ -258,62 +258,86 @@ function HealthRing({ analytics, onStatusClick }: {
   );
 }
 
+const SCATTER_COLORS: Record<string, string> = {
+  active: '#10b981',
+  at_risk: '#f59e0b',
+  churned: '#f43f5e',
+};
+
+function abbreviateName(fullName: string): string {
+  const parts = (fullName || '').trim().split(' ');
+  if (parts.length < 2) return parts[0] ?? '?';
+  return `${parts[0]} ${parts[parts.length - 1][0]}.`;
+}
+
 function VipScatter({ customers, onStatusClick }: {
   customers: CustomerRecord[];
   onStatusClick: (s: 'all' | 'active' | 'at_risk' | 'churned') => void;
 }) {
   const scatterData = useMemo(() => {
-    return customers.map((c) => ({
-      x: c.total_bookings,
-      y: c.lifetime_spend,
-      z: Math.max(40, 200 - c.days_since_last * 2),
-      name: c.name,
-      status: c.status,
-      days: c.days_since_last,
-      fill: STATUS_COLORS[c.status] ?? '#888',
-    }));
+    return customers
+      .filter((c) => c.total_bookings > 0)
+      .map((c) => ({
+        x: c.total_bookings,
+        y: c.lifetime_spend ?? 0,
+        z: Math.max(60, 300 - (c.days_since_last ?? 999) * 3),
+        name: abbreviateName(c.name),
+        fullName: c.name,
+        status: c.status,
+        days: c.days_since_last ?? 0,
+        fill: SCATTER_COLORS[c.status] ?? '#6b7280',
+      }));
   }, [customers]);
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const ScatterTooltipContent = ({ active, payload }: any) => {
     if (!active || !payload?.length) return null;
     const d = payload[0].payload;
+    const statusLabel = d.status === 'active' ? '🟢 Active' : d.status === 'at_risk' ? '🟡 At Risk' : '🔴 Churned';
     return (
       <div
-        className="rounded-lg px-3 py-2 text-xs"
+        className="rounded-xl px-3.5 py-2.5 text-xs shadow-lg"
         style={{
-          background: 'var(--glass-bg-heavy)',
-          border: '1px solid var(--glass-border-strong)',
-          backdropFilter: 'blur(20px)',
-          color: 'var(--text-primary)',
+          background: '#1a1a2e',
+          border: '1px solid rgba(255,255,255,0.1)',
+          color: '#fff',
         }}
       >
-        <p className="font-semibold">{d.name}</p>
-        <p style={{ color: 'var(--text-secondary)' }}>Spend: ${(d.y ?? 0).toLocaleString()}</p>
-        <p style={{ color: 'var(--text-secondary)' }}>Bookings: {d.x}</p>
-        <p style={{ color: 'var(--text-secondary)' }}>Last visit: {d.days}d ago</p>
+        <p className="font-bold text-sm mb-1">{d.fullName}</p>
+        <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 text-[11px] opacity-80">
+          <span>Spend</span><span className="font-semibold text-right">${(d.y ?? 0).toLocaleString()}</span>
+          <span>Visits</span><span className="font-semibold text-right">{d.x}</span>
+          <span>Last visit</span><span className="font-semibold text-right">{d.days}d ago</span>
+          <span>Status</span><span className="text-right">{statusLabel}</span>
+        </div>
       </div>
     );
   };
 
   return (
-    <ChartCard title="VIP Scatter">
-      <div className="h-52 relative">
-        {/* Subtle quadrant watermarks */}
-        <div className="absolute inset-3 pointer-events-none grid grid-cols-2 grid-rows-2 text-[8px] font-medium z-0" style={{ color: 'var(--text-quaternary)' }}>
-          <span className="self-start">Low-freq / High-spend</span>
-          <span className="self-start text-right">VIP</span>
-          <span className="self-end">New / Casual</span>
-          <span className="self-end text-right">Frequent / Low-spend</span>
+    <ChartCard title="Customer Value Map">
+      <div className="h-56 relative">
+        {/* Quadrant labels */}
+        <div className="absolute inset-4 pointer-events-none grid grid-cols-2 grid-rows-2 text-[7px] font-bold uppercase tracking-widest z-0 opacity-20" style={{ color: 'var(--text-primary)' }}>
+          <span className="self-start">💰 Big Spenders</span>
+          <span className="self-start text-right">🏆 VIPs</span>
+          <span className="self-end">👋 One-timers</span>
+          <span className="self-end text-right">🔄 Regulars</span>
+        </div>
+        {/* Legend */}
+        <div className="absolute top-1 right-1 flex gap-3 text-[8px] font-medium z-10" style={{ color: 'var(--text-secondary)' }}>
+          <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full" style={{ background: SCATTER_COLORS.active }} />Active</span>
+          <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full" style={{ background: SCATTER_COLORS.at_risk }} />At Risk</span>
+          <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full" style={{ background: SCATTER_COLORS.churned }} />Churned</span>
         </div>
         <ResponsiveContainer width="100%" height="100%">
-          <ScatterChart margin={{ top: 8, right: 8, bottom: 0, left: -10 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="var(--separator)" opacity={0.2} />
+          <ScatterChart margin={{ top: 16, right: 8, bottom: 4, left: -6 }}>
+            <CartesianGrid strokeDasharray="2 4" stroke="var(--separator)" opacity={0.15} />
             <XAxis
               type="number"
               dataKey="x"
-              name="Bookings"
-              tick={{ fill: 'var(--text-quaternary)', fontSize: 9 }}
+              name="Visits"
+              label={{ value: 'Visits →', position: 'insideBottomRight', offset: -4, style: { fill: 'var(--text-secondary)', fontSize: 9, fontWeight: 600 } }}
+              tick={{ fill: 'var(--text-secondary)', fontSize: 9 }}
               tickLine={false}
               axisLine={false}
             />
@@ -321,12 +345,13 @@ function VipScatter({ customers, onStatusClick }: {
               type="number"
               dataKey="y"
               name="Spend"
-              tick={{ fill: 'var(--text-quaternary)', fontSize: 9 }}
+              label={{ value: 'Spend ↑', position: 'insideTopLeft', offset: 4, style: { fill: 'var(--text-secondary)', fontSize: 9, fontWeight: 600 } }}
+              tick={{ fill: 'var(--text-secondary)', fontSize: 9 }}
               tickLine={false}
               axisLine={false}
               tickFormatter={formatShort}
             />
-            <ZAxis type="number" dataKey="z" range={[30, 200]} />
+            <ZAxis type="number" dataKey="z" range={[40, 250]} />
             <Tooltip content={<ScatterTooltipContent />} />
             <Scatter
               data={scatterData}
@@ -336,6 +361,9 @@ function VipScatter({ customers, onStatusClick }: {
                 }
               }}
               cursor="pointer"
+              fillOpacity={0.85}
+              strokeWidth={1}
+              stroke="rgba(255,255,255,0.3)"
             />
           </ScatterChart>
         </ResponsiveContainer>

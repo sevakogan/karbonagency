@@ -139,7 +139,25 @@ export function MarketingCommandCenter() {
     fetch(`/api/marketing/customers?${queryString}`)
       .then((r) => (r.ok ? r.json() : { customers: [], total: 0 }))
       .then((data) => {
-        setCustomers(data.customers ?? []);
+        // Ensure all array/number fields have safe defaults
+        const safe = (data.customers ?? []).map((c: any) => ({
+          ...c,
+          lifetime_spend: c.lifetime_spend ?? c.total_revenue ?? 0,
+          thirty_day_spend: c.thirty_day_spend ?? c.spend_30d ?? 0,
+          total_bookings: c.total_bookings ?? 0,
+          days_since_last: c.days_since_last ?? 999,
+          avg_gap_days: c.avg_gap_days ?? c.avg_booking_gap ?? 0,
+          coupon_codes: c.coupon_codes ?? [],
+          monthly_spend: c.monthly_spend ?? [],
+          bookings: c.bookings ?? c.booking_history ?? [],
+          name: c.name ?? `${c.first_name ?? ''} ${c.last_name ?? ''}`.trim(),
+          status: c.status ?? 'churned',
+          first_booking_date: c.first_booking_date ?? c.first_booking_at ?? '',
+          last_booking_date: c.last_booking_date ?? c.last_booking_at ?? '',
+          next_predicted_date: c.next_predicted_date ?? c.next_future_booking ?? null,
+          sparkline_4w: c.sparkline_4w ?? [],
+        }));
+        setCustomers(safe);
         setTotalCount(data.total ?? 0);
       })
       .catch(() => {

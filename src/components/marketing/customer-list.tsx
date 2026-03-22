@@ -35,7 +35,7 @@ const STATUS_DOT: Record<string, { color: string; label: string }> = {
 const PAGE_SIZE = 20;
 
 function Sparkline({ data }: { data: number[] }) {
-  if (data.length < 2) return null;
+  if (!data || data.length < 2) return null;
   const max = Math.max(...data, 1);
   const barCount = data.length;
   const barW = 100 / barCount;
@@ -144,7 +144,7 @@ function CustomerCard({
                   Next: {new Date(customer.next_predicted_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                 </span>
               )}
-              {customer.coupon_codes.length > 0 && (
+              {(customer.coupon_codes ?? []).length > 0 && (
                 <span className="flex items-center gap-0.5">
                   <Star size={9} /> {customer.coupon_codes[0]}
                 </span>

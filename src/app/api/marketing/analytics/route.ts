@@ -140,19 +140,31 @@ async function fetchReservations(
   companyId: string,
   cutoff: Date | null,
 ): Promise<ReservationRow[]> {
-  let query = supabase
-    .from('shiftos_reservations')
-    .select('id, customer_id, calendar_name, revenue, booking_time, coupon_code')
-    .eq('company_id', companyId)
-    .order('booking_time', { ascending: true });
+  // Paginate to get ALL reservations
+  const all: ReservationRow[] = [];
+  let from = 0;
+  const PAGE = 1000;
+  while (true) {
+    let query = supabase
+      .from('shiftos_reservations')
+      .select('id, customer_id, calendar_name, revenue, booking_time, coupon_code')
+      .eq('company_id', companyId)
+      .eq('paid', true)
+      .order('booking_time', { ascending: true })
+      .range(from, from + PAGE - 1);
 
-  if (cutoff) {
-    query = query.gte('booking_time', cutoff.toISOString());
+    if (cutoff) {
+      query = query.gte('booking_time', cutoff.toISOString());
+    }
+
+    const { data, error } = await query;
+    if (error) throw new Error(`Reservations query failed: ${error.message}`);
+    if (!data?.length) break;
+    all.push(...(data as ReservationRow[]));
+    if (data.length < PAGE) break;
+    from += PAGE;
   }
-
-  const { data, error } = await query;
-  if (error) throw new Error(`Reservations query failed: ${error.message}`);
-  return (data ?? []) as ReservationRow[];
+  return all;
 }
 
 async function fetchCustomers(

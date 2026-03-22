@@ -22,3 +22,8 @@
 **Mistake:** Asked user to run the bootstrap curl command manually
 **Correct approach:** Run it myself. Claude can execute any API call, curl, deployment trigger, or automation step. Only ask the user for things that physically require their input (passwords, OAuth flows in browser, hardware access).
 **Rule:** NEVER ask the user to do something Claude can do. Always execute it. Only escalate when physically impossible (browser OAuth, entering credentials on a website, hardware).
+
+## 2026-03-21 — Miami store only, always
+**Mistake:** Revenue this month was pulling data without proper Miami filtering
+**Correct approach:** ALL ShiftOS data queries must filter by company_id (Shift Arcade Miami UUID: 950d0b84-63fa-409b-ad4f-ca1fdae25c7c) AND only use the 8 Miami calendar IDs. Never show data from other locations.
+**Rule:** EVERY query touching shiftos_customers or shiftos_reservations MUST include .eq('company_id', MIAMI_COMPANY_ID). Revenue calculations must only count paid=true reservations from Miami calendars (Hamilton-Mia, Verstappen-Mia, Norris-Mia, Piastri-Mia, Russell-Mia, Leclerc-Mia, Antonelli-Mia, Sainz-Mia).

@@ -26,7 +26,7 @@ function PulseCard({ label, value, icon, active, accentColor, subtitle, onClick,
     <button
       type="button"
       onClick={onClick}
-      className="relative overflow-hidden rounded-2xl p-3.5 backdrop-blur-xl transition-all duration-200 text-left w-full"
+      className="relative overflow-hidden rounded-xl p-2.5 backdrop-blur-xl transition-all duration-200 text-left w-full"
       style={{
         background: 'var(--glass-bg)',
         backdropFilter: 'blur(var(--glass-blur)) saturate(var(--glass-saturate))',
@@ -60,7 +60,7 @@ function PulseCard({ label, value, icon, active, accentColor, subtitle, onClick,
         <div className="skeleton h-6 w-16 rounded" />
       ) : (
         <p
-          className="text-lg font-bold tabular-nums leading-tight"
+          className="text-base font-bold tabular-nums leading-tight"
           style={{ color: active ? accentColor : 'var(--text-primary)' }}
         >
           {value}
@@ -90,7 +90,7 @@ export function PulseBar({ analytics, loading, activeStatus, onStatusClick }: Pu
   const deltaIsUp = revenueDelta >= 0;
 
   return (
-    <div className="grid grid-cols-6 gap-2">
+    <div className="grid grid-cols-6 gap-1.5">
       <PulseCard
         label="Total Customers"
         value={summary?.total ?? 0}

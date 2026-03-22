@@ -209,13 +209,13 @@ function RevenueTrendChart({ data, period, onPeriodChange }: {
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={filteredData} margin={{ top: 4, right: 4, left: -10, bottom: 0 }}>
             <defs>
-              <linearGradient id="revGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="var(--system-green)" stopOpacity={0.3} />
-                <stop offset="95%" stopColor="var(--system-green)" stopOpacity={0} />
+              <linearGradient id="shiftosGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="#818cf8" stopOpacity={0.4} />
+                <stop offset="95%" stopColor="#818cf8" stopOpacity={0.02} />
               </linearGradient>
-              <linearGradient id="couponGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="var(--system-purple)" stopOpacity={0.3} />
-                <stop offset="95%" stopColor="var(--system-purple)" stopOpacity={0} />
+              <linearGradient id="squareGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="#06d6a0" stopOpacity={0.4} />
+                <stop offset="95%" stopColor="#06d6a0" stopOpacity={0.02} />
               </linearGradient>
             </defs>
             <CartesianGrid strokeDasharray="3 3" stroke="var(--separator)" opacity={0.3} />
@@ -227,7 +227,7 @@ function RevenueTrendChart({ data, period, onPeriodChange }: {
             />
             <YAxis
               yAxisId="left"
-              tick={{ fill: 'var(--text-quaternary)', fontSize: 9 }}
+              tick={{ fill: 'var(--text-secondary)', fontSize: 9 }}
               tickLine={false}
               axisLine={false}
               tickFormatter={formatShort}
@@ -235,7 +235,7 @@ function RevenueTrendChart({ data, period, onPeriodChange }: {
             <YAxis
               yAxisId="right"
               orientation="right"
-              tick={{ fill: 'var(--text-quaternary)', fontSize: 9 }}
+              tick={{ fill: 'var(--text-secondary)', fontSize: 9 }}
               tickLine={false}
               axisLine={false}
             />
@@ -243,22 +243,22 @@ function RevenueTrendChart({ data, period, onPeriodChange }: {
             <Area
               yAxisId="left"
               type="monotone"
-              dataKey="coupon_revenue"
+              dataKey="shiftos_revenue"
               stackId="1"
-              stroke="var(--system-purple)"
-              fill="url(#couponGrad)"
+              stroke="#818cf8"
+              fill="url(#shiftosGrad)"
               strokeWidth={1.5}
-              name="Coupon Rev"
+              name="ShiftOS (Stripe)"
             />
             <Area
               yAxisId="left"
               type="monotone"
-              dataKey="revenue"
+              dataKey="square_revenue"
               stackId="1"
-              stroke="var(--system-green)"
-              fill="url(#revGrad)"
+              stroke="#06d6a0"
+              fill="url(#squareGrad)"
               strokeWidth={1.5}
-              name="Revenue"
+              name="Square (iPad)"
             />
             <Area
               yAxisId="right"

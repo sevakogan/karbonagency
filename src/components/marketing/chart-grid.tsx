@@ -626,16 +626,15 @@ export function ChartGrid({ analytics, loading, period, onPeriodChange, onStatus
           period={period}
           onPeriodChange={onPeriodChange}
         />
-        <HealthArcs analytics={analytics} onStatusClick={onStatusClick} />
+        <div className="flex flex-col gap-2">
+          <HealthArcs analytics={analytics} onStatusClick={onStatusClick} />
+          <CouponImpactChart data={analytics?.coupon_impact ?? []} />
+        </div>
       </div>
       {/* Row 2: Customer Value Map — full width */}
       <VipScatter
         scatterData={analytics?.scatter_data ?? []}
         onStatusClick={onStatusClick}
-      />
-      {/* Row 3: Coupon Impact — full width */}
-      <CouponImpactChart
-        data={analytics?.coupon_impact ?? []}
       />
     </div>
   );

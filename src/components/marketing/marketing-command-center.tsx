@@ -101,6 +101,8 @@ export function MarketingCommandCenter() {
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [analyticsLoading, setAnalyticsLoading] = useState(true);
+  // Separate chart period from filters to avoid full page re-render
+  const [chartPeriod, setChartPeriod] = useState<string>('30d');
   const [lastUpdated, setLastUpdated] = useState(new Date());
   const [timeAgo, setTimeAgo] = useState('just now');
   const pollRef = useRef<NodeJS.Timeout | null>(null);
@@ -168,11 +170,11 @@ export function MarketingCommandCenter() {
       .finally(() => setLoading(false));
   }, [queryString]);
 
-  // Fetch analytics
+  // Fetch analytics (driven by chartPeriod, NOT filters — avoids full re-render)
   useEffect(() => {
     setAnalyticsLoading(true);
     const params = new URLSearchParams();
-    params.set('period', filters.period);
+    params.set('period', chartPeriod);
     fetch(`/api/marketing/analytics?${params.toString()}`)
       .then((r) => (r.ok ? r.json() : null))
       .then((raw) => {
@@ -201,7 +203,7 @@ export function MarketingCommandCenter() {
       })
       .catch(() => setAnalytics(null))
       .finally(() => setAnalyticsLoading(false));
-  }, [filters.period]);
+  }, [chartPeriod]);
 
   // Live polling — refresh every 5 min with countdown
   const [countdown, setCountdown] = useState(300);
@@ -279,8 +281,8 @@ export function MarketingCommandCenter() {
       <ChartGrid
         analytics={analytics}
         loading={analyticsLoading}
-        period={filters.period}
-        onPeriodChange={(p) => updateFilter('period', p)}
+        period={chartPeriod}
+        onPeriodChange={setChartPeriod}
         onStatusClick={(status) => updateFilter('status', status)}
         customers={customers}
       />

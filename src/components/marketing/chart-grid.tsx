@@ -9,6 +9,13 @@ import {
 } from 'recharts';
 import type { AnalyticsData, CustomerRecord } from './marketing-command-center';
 
+// Safe number helper — prevents "Cannot read properties of undefined (reading 'toFixed'/'toLocaleString')"
+function n(v: unknown): number {
+  if (typeof v === 'number' && !isNaN(v)) return v;
+  const parsed = Number(v);
+  return isNaN(parsed) ? 0 : parsed;
+}
+
 export interface ReviewsData {
   overall_rating: number;
   total_reviews: number;
@@ -733,7 +740,7 @@ function PnlMiniCard({ value, label, color, pct }: {
       </span>
       {pct > 0 && (
         <span className="text-[8px] font-medium tabular-nums" style={{ color: 'var(--text-tertiary)' }}>
-          {pct.toFixed(1)}%
+          {n(pct).toFixed(1)}%
         </span>
       )}
       <div className="w-full h-1 rounded-full mt-0.5 overflow-hidden" style={{ background: 'rgba(255,255,255,0.06)' }}>
@@ -805,7 +812,7 @@ function PnlCard({ analytics }: { analytics: AnalyticsData | null }) {
               key={seg.label}
               className="h-full first:rounded-l-full last:rounded-r-full transition-all"
               style={{ width: `${seg.pct}%`, background: seg.color }}
-              title={`${seg.label}: ${seg.pct.toFixed(1)}%`}
+              title={`${seg.label}: ${n(seg.pct).toFixed(1)}%`}
             />
           ))}
         </div>
@@ -814,7 +821,7 @@ function PnlCard({ analytics }: { analytics: AnalyticsData | null }) {
             <div key={seg.label} className="flex items-center gap-1">
               <span className="w-1.5 h-1.5 rounded-full" style={{ background: seg.color }} />
               <span className="text-[8px] font-medium" style={{ color: 'var(--text-tertiary)' }}>
-                {seg.label} ({seg.pct.toFixed(1)}%)
+                {seg.label} ({n(seg.pct).toFixed(1)}%)
               </span>
             </div>
           ))}
@@ -947,19 +954,19 @@ function FeesChart({ analytics }: { analytics: AnalyticsData | null }) {
               <span className="w-2 h-2 rounded-full" style={{ background: '#ef476f' }} />
               <span style={{ color: 'var(--text-secondary)' }}>Stripe (2.9% + 30¢)</span>
             </span>
-            <span className="text-xs font-semibold tabular-nums" style={{ color: '#ef476f' }}>-${fees.stripe.toLocaleString()}</span>
+            <span className="text-xs font-semibold tabular-nums" style={{ color: '#ef476f' }}>-${n(fees.stripe).toLocaleString()}</span>
           </div>
           <div className="flex justify-between items-baseline">
             <span className="text-[10px] font-medium flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full" style={{ background: '#ffd166' }} />
               <span style={{ color: 'var(--text-secondary)' }}>Square (2.6% + 10¢)</span>
             </span>
-            <span className="text-xs font-semibold tabular-nums" style={{ color: '#ffd166' }}>-${fees.square.toLocaleString()}</span>
+            <span className="text-xs font-semibold tabular-nums" style={{ color: '#ffd166' }}>-${n(fees.square).toLocaleString()}</span>
           </div>
           <div className="h-px" style={{ background: 'var(--separator)' }} />
           <div className="flex justify-between items-baseline">
             <span className="text-[10px] font-bold" style={{ color: 'var(--text-primary)' }}>Total Fees</span>
-            <span className="text-xs font-bold tabular-nums" style={{ color: 'var(--text-primary)' }}>${fees.total.toLocaleString()} ({lifetime > 0 ? ((fees.total / lifetime) * 100).toFixed(1) : 0}%)</span>
+            <span className="text-xs font-bold tabular-nums" style={{ color: 'var(--text-primary)' }}>${n(fees.total).toLocaleString()} ({lifetime > 0 ? ((fees.total / lifetime) * 100).toFixed(1) : 0}%)</span>
           </div>
         </div>
       </div>
@@ -1001,19 +1008,19 @@ function FranchiseFeesChart({ analytics }: { analytics: AnalyticsData | null }) 
               <span className="w-2 h-2 rounded-full" style={{ background: '#f97316' }} />
               <span style={{ color: 'var(--text-secondary)' }}>Royalty (7%)</span>
             </span>
-            <span className="text-xs font-semibold tabular-nums" style={{ color: '#f97316' }}>-${franchise.royalty.toLocaleString()}</span>
+            <span className="text-xs font-semibold tabular-nums" style={{ color: '#f97316' }}>-${n(franchise.royalty).toLocaleString()}</span>
           </div>
           <div className="flex justify-between items-baseline">
             <span className="text-[10px] font-medium flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full" style={{ background: '#fb923c' }} />
               <span style={{ color: 'var(--text-secondary)' }}>Marketing (1%)</span>
             </span>
-            <span className="text-xs font-semibold tabular-nums" style={{ color: '#fb923c' }}>-${franchise.marketing.toLocaleString()}</span>
+            <span className="text-xs font-semibold tabular-nums" style={{ color: '#fb923c' }}>-${n(franchise.marketing).toLocaleString()}</span>
           </div>
           <div className="h-px" style={{ background: 'var(--separator)' }} />
           <div className="flex justify-between items-baseline">
             <span className="text-[10px] font-bold" style={{ color: 'var(--text-primary)' }}>Total Franchise</span>
-            <span className="text-xs font-bold tabular-nums" style={{ color: '#f97316' }}>${franchise.total.toLocaleString()} ({lifetime > 0 ? ((franchise.total / lifetime) * 100).toFixed(0) : 0}%)</span>
+            <span className="text-xs font-bold tabular-nums" style={{ color: '#f97316' }}>${n(franchise.total).toLocaleString()} ({lifetime > 0 ? ((franchise.total / lifetime) * 100).toFixed(0) : 0}%)</span>
           </div>
         </div>
       </div>
@@ -1149,7 +1156,7 @@ function ReviewsCard({ data }: { data: ReviewsData | null | undefined }) {
   }
 
   const delta = data.historical_avg > 0
-    ? +(data.overall_rating - data.historical_avg).toFixed(2)
+    ? +(n(data.overall_rating) - n(data.historical_avg)).toFixed(2)
     : 0;
 
   return (
@@ -1157,7 +1164,7 @@ function ReviewsCard({ data }: { data: ReviewsData | null | undefined }) {
       {/* Overall rating */}
       <div className="flex items-center gap-3 mb-3">
         <span className="text-4xl font-black tabular-nums leading-none" style={{ color: 'var(--text-primary)' }}>
-          {data.overall_rating.toFixed(1)}
+          {n(data.overall_rating).toFixed(1)}
         </span>
         <div className="flex flex-col gap-0.5">
           <StarRow rating={data.overall_rating} />
@@ -1165,7 +1172,7 @@ function ReviewsCard({ data }: { data: ReviewsData | null | undefined }) {
             {(data.total_reviews ?? 0).toLocaleString()} reviews
             {delta !== 0 && (
               <span style={{ color: delta > 0 ? '#22c55e' : '#ef4444', marginLeft: 6 }}>
-                {delta > 0 ? '+' : ''}{delta.toFixed(2)} vs avg
+                {delta > 0 ? '+' : ''}{n(delta).toFixed(2)} vs avg
               </span>
             )}
           </span>
@@ -1180,7 +1187,7 @@ function ReviewsCard({ data }: { data: ReviewsData | null | undefined }) {
             <span className="text-[9px] font-semibold uppercase tracking-wider" style={{ color: 'var(--text-tertiary)' }}>Google</span>
           </div>
           <span className="text-sm font-bold tabular-nums" style={{ color: '#4285F4' }}>
-            {data.platforms.google.rating.toFixed(1)}
+            {n(data.platforms?.google?.rating).toFixed(1)}
           </span>
           <span className="text-[10px] ml-1" style={{ color: 'var(--text-tertiary)' }}>
             ({data.platforms.google.count})
@@ -1192,7 +1199,7 @@ function ReviewsCard({ data }: { data: ReviewsData | null | undefined }) {
             <span className="text-[9px] font-semibold uppercase tracking-wider" style={{ color: 'var(--text-tertiary)' }}>Yelp</span>
           </div>
           <span className="text-sm font-bold tabular-nums" style={{ color: '#FF1A1A' }}>
-            {data.platforms.yelp.rating.toFixed(1)}
+            {n(data.platforms?.yelp?.rating).toFixed(1)}
           </span>
           <span className="text-[10px] ml-1" style={{ color: 'var(--text-tertiary)' }}>
             ({data.platforms.yelp.count})
@@ -1316,9 +1323,9 @@ function OrganicSearchCard({ data }: { data: OrganicData | null | undefined }) {
                       {q.query.length > 35 ? `${q.query.slice(0, 35)}...` : q.query}
                     </td>
                     <td className="text-right tabular-nums" style={{ color: '#34A853' }}>{q.clicks}</td>
-                    <td className="text-right tabular-nums" style={{ color: 'var(--text-secondary)' }}>{q.impressions.toLocaleString()}</td>
-                    <td className="text-right tabular-nums" style={{ color: 'var(--text-secondary)' }}>{q.ctr.toFixed(1)}%</td>
-                    <td className="text-right tabular-nums" style={{ color: 'var(--text-secondary)' }}>{q.position.toFixed(1)}</td>
+                    <td className="text-right tabular-nums" style={{ color: 'var(--text-secondary)' }}>{n(q.impressions).toLocaleString()}</td>
+                    <td className="text-right tabular-nums" style={{ color: 'var(--text-secondary)' }}>{n(q.ctr).toFixed(1)}%</td>
+                    <td className="text-right tabular-nums" style={{ color: 'var(--text-secondary)' }}>{n(q.position).toFixed(1)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -1401,12 +1408,12 @@ function CreativePerformanceCard({ data }: { data: CreativesData | null | undefi
                   <td className="text-right tabular-nums" style={{ color: 'var(--text-primary)' }}>${(c.spend ?? 0).toLocaleString()}</td>
                   <td className="text-right tabular-nums" style={{ color: 'var(--text-secondary)' }}>{(c.impressions ?? 0).toLocaleString()}</td>
                   <td className="text-right tabular-nums" style={{ color: 'var(--text-secondary)' }}>{(c.clicks ?? 0).toLocaleString()}</td>
-                  <td className="text-right tabular-nums" style={{ color: 'var(--text-secondary)' }}>{c.ctr.toFixed(2)}%</td>
-                  <td className="text-right tabular-nums" style={{ color: 'var(--text-secondary)' }}>${c.cpc.toFixed(2)}</td>
+                  <td className="text-right tabular-nums" style={{ color: 'var(--text-secondary)' }}>{n(c.ctr).toFixed(2)}%</td>
+                  <td className="text-right tabular-nums" style={{ color: 'var(--text-secondary)' }}>${n(c.cpc).toFixed(2)}</td>
                   <td className="text-right tabular-nums" style={{ color: 'var(--text-primary)' }}>{c.conversions}</td>
                   {hasRoas && (
                     <td className="text-right tabular-nums font-semibold" style={{ color: (c.roas ?? 0) >= 1 ? '#22c55e' : '#ef4444' }}>
-                      {c.roas !== undefined && c.roas !== null ? `${c.roas.toFixed(2)}x` : '—'}
+                      {c.roas !== undefined && c.roas !== null ? `${n(c.roas).toFixed(2)}x` : '—'}
                     </td>
                   )}
                 </tr>

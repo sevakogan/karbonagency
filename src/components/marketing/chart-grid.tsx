@@ -47,14 +47,15 @@ const PERIOD_OPTIONS: Array<{ label: string; value: string }> = [
   { label: 'All', value: 'all' },
 ];
 
-function ChartCard({ title, trailing, children }: {
+function ChartCard({ title, trailing, children, className }: {
   title: string;
   trailing?: React.ReactNode;
   children: React.ReactNode;
+  className?: string;
 }) {
   return (
     <div
-      className="relative overflow-hidden rounded-2xl p-3.5 backdrop-blur-xl"
+      className={`relative overflow-hidden rounded-2xl p-3.5 backdrop-blur-xl flex flex-col ${className ?? ''}`}
       style={{
         background: 'var(--glass-bg)',
         backdropFilter: 'blur(var(--glass-blur)) saturate(var(--glass-saturate))',
@@ -187,8 +188,9 @@ function RevenueTrendChart({ data, period, onPeriodChange }: {
     <ChartCard
       title="Revenue Trend"
       trailing={<PeriodToggle value={period} onChange={onPeriodChange} />}
+      className="h-full"
     >
-      <div className="h-64">
+      <div className="flex-1 min-h-[200px]">
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={data} margin={{ top: 4, right: 4, left: -10, bottom: 0 }}>
             <defs>
@@ -619,17 +621,17 @@ export function ChartGrid({ analytics, loading, period, onPeriodChange, onStatus
 
   return (
     <div className="flex flex-col gap-2">
-      {/* Row 1: Revenue Trend + Customer Health — 50/50 */}
-      <div className="grid grid-cols-2 gap-2">
-        <RevenueTrendChart
-          data={analytics?.revenue_trend ?? []}
-          period={period}
-          onPeriodChange={onPeriodChange}
-        />
-        <div className="flex flex-col gap-2">
-          <HealthArcs analytics={analytics} onStatusClick={onStatusClick} />
-          <CouponImpactChart data={analytics?.coupon_impact ?? []} />
+      {/* Row 1+2: Revenue Trend spanning 2 rows left, Health + Coupon stacked right */}
+      <div className="grid grid-cols-2 grid-rows-2 gap-2">
+        <div className="row-span-2">
+          <RevenueTrendChart
+            data={analytics?.revenue_trend ?? []}
+            period={period}
+            onPeriodChange={onPeriodChange}
+          />
         </div>
+        <HealthArcs analytics={analytics} onStatusClick={onStatusClick} />
+        <CouponImpactChart data={analytics?.coupon_impact ?? []} />
       </div>
       {/* Row 2: Customer Value Map — full width */}
       <VipScatter

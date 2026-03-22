@@ -188,8 +188,9 @@ function RevenueTrendChart({ data, period, onPeriodChange }: {
     <ChartCard
       title="Revenue Trend"
       trailing={<PeriodToggle value={period} onChange={onPeriodChange} />}
+      className="h-full"
     >
-      <div className="h-60 -mx-1">
+      <div className="flex-1 -mx-1 -mb-1">
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={data} margin={{ top: 4, right: 4, left: -10, bottom: 0 }}>
             <defs>
@@ -620,8 +621,8 @@ export function ChartGrid({ analytics, loading, period, onPeriodChange, onStatus
 
   return (
     <div className="flex flex-col gap-2">
-      {/* Row 1: Revenue Trend left, Health + Coupon stacked right */}
-      <div className="grid grid-cols-2 gap-2">
+      {/* Row 1: Revenue Trend left (chart fills card), Health + Coupon stacked right */}
+      <div className="grid grid-cols-2 gap-2" style={{ minHeight: '340px' }}>
         <RevenueTrendChart
           data={analytics?.revenue_trend ?? []}
           period={period}

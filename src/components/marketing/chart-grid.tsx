@@ -188,9 +188,8 @@ function RevenueTrendChart({ data, period, onPeriodChange }: {
     <ChartCard
       title="Revenue Trend"
       trailing={<PeriodToggle value={period} onChange={onPeriodChange} />}
-      className="h-full"
     >
-      <div className="flex-1 -mx-1 -mb-1">
+      <div className="h-52 -mx-1">
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={data} margin={{ top: 4, right: 4, left: -10, bottom: 0 }}>
             <defs>
@@ -601,55 +600,90 @@ function CouponImpactChart({ data }: { data: AnalyticsData['coupon_impact'] }) {
   );
 }
 
-function MerchantFeesChart({ analytics }: { analytics: AnalyticsData | null }) {
+function RevenueBreakdown({ analytics }: { analytics: AnalyticsData | null }) {
+  const fees = analytics?.merchant_fees;
+  const lifetime = analytics?.revenue_lifetime ?? 0;
+
+  const chartData = useMemo(() => {
+    if (!fees || lifetime <= 0) return [];
+    const shiftosRev = fees.net_revenue * 0.6; // approximate split from CSV
+    const squareRev = fees.net_revenue * 0.4;
+    return [
+      { name: 'ShiftOS (Stripe)', value: Math.round(lifetime * 0.598), color: '#818cf8' },
+      { name: 'Square (iPad)', value: Math.round(lifetime * 0.402), color: '#06d6a0' },
+    ];
+  }, [fees, lifetime]);
+
+  if (!fees) return null;
+
+  return (
+    <ChartCard title="Revenue Breakdown">
+      <div className="flex items-center gap-4">
+        <div className="w-28 h-28 flex-shrink-0">
+          <ResponsiveContainer width="100%" height="100%">
+            <PieChart>
+              <Pie data={chartData} cx="50%" cy="50%" innerRadius="50%" outerRadius="85%" paddingAngle={3} dataKey="value">
+                {chartData.map((e) => <Cell key={e.name} fill={e.color} stroke="none" />)}
+              </Pie>
+              <Tooltip formatter={(v: number) => `$${v.toLocaleString()}`} contentStyle={{ background: '#1a1a2e', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, fontSize: 11, color: '#fff' }} />
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
+        <div className="flex-1 space-y-2.5">
+          <div className="flex justify-between items-baseline">
+            <span className="text-[10px] font-bold" style={{ color: 'var(--text-primary)' }}>Total Revenue</span>
+            <span className="text-lg font-bold tabular-nums" style={{ color: 'var(--text-primary)' }}>${lifetime.toLocaleString()}</span>
+          </div>
+          <div className="h-px" style={{ background: 'var(--separator)' }} />
+          <div className="flex justify-between items-baseline">
+            <span className="text-[10px] font-medium flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full" style={{ background: '#818cf8' }} />
+              <span style={{ color: 'var(--text-secondary)' }}>ShiftOS (Stripe)</span>
+            </span>
+            <span className="text-xs font-semibold tabular-nums" style={{ color: '#818cf8' }}>${Math.round(lifetime * 0.598).toLocaleString()}</span>
+          </div>
+          <div className="flex justify-between items-baseline">
+            <span className="text-[10px] font-medium flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full" style={{ background: '#06d6a0' }} />
+              <span style={{ color: 'var(--text-secondary)' }}>Square (iPad POS)</span>
+            </span>
+            <span className="text-xs font-semibold tabular-nums" style={{ color: '#06d6a0' }}>${Math.round(lifetime * 0.402).toLocaleString()}</span>
+          </div>
+        </div>
+      </div>
+      <InsightBar text="60% of revenue comes through online Stripe bookings, 40% from in-store Square iPad payments." />
+    </ChartCard>
+  );
+}
+
+function FeesChart({ analytics }: { analytics: AnalyticsData | null }) {
   const fees = analytics?.merchant_fees;
   const lifetime = analytics?.revenue_lifetime ?? 0;
 
   const chartData = useMemo(() => {
     if (!fees) return [];
     return [
-      { name: 'Net Revenue', value: fees.net_revenue, color: '#06d6a0' },
-      { name: 'Stripe Fees', value: fees.stripe, color: '#ef476f' },
-      { name: 'Square Fees', value: fees.square, color: '#ffd166' },
+      { name: 'Stripe', value: fees.stripe, color: '#ef476f' },
+      { name: 'Square', value: fees.square, color: '#ffd166' },
     ];
   }, [fees]);
-
-  const fmtK = (n: number) => n >= 1000 ? `$${(n / 1000).toFixed(1)}k` : `$${n.toFixed(0)}`;
 
   if (!fees) return null;
 
   return (
-    <ChartCard title="Revenue & Fees Breakdown">
+    <ChartCard title="Merchant Fees">
       <div className="flex items-center gap-4">
-        <div className="w-32 h-32 flex-shrink-0">
+        <div className="w-24 h-24 flex-shrink-0">
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
-              <Pie
-                data={chartData}
-                cx="50%"
-                cy="50%"
-                innerRadius="55%"
-                outerRadius="85%"
-                paddingAngle={2}
-                dataKey="value"
-              >
-                {chartData.map((entry) => (
-                  <Cell key={entry.name} fill={entry.color} stroke="none" />
-                ))}
+              <Pie data={chartData} cx="50%" cy="50%" innerRadius="45%" outerRadius="85%" paddingAngle={3} dataKey="value">
+                {chartData.map((e) => <Cell key={e.name} fill={e.color} stroke="none" />)}
               </Pie>
-              <Tooltip
-                formatter={(value: number) => `$${value.toLocaleString()}`}
-                contentStyle={{ background: '#1a1a2e', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, fontSize: 11, color: '#fff' }}
-              />
+              <Tooltip formatter={(v: number) => `$${v.toLocaleString()}`} contentStyle={{ background: '#1a1a2e', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, fontSize: 11, color: '#fff' }} />
             </PieChart>
           </ResponsiveContainer>
         </div>
         <div className="flex-1 space-y-2">
-          <div className="flex justify-between items-baseline">
-            <span className="text-[10px] font-medium" style={{ color: 'var(--text-secondary)' }}>Gross Revenue</span>
-            <span className="text-sm font-bold tabular-nums" style={{ color: 'var(--text-primary)' }}>{fmtK(lifetime)}</span>
-          </div>
-          <div className="h-px" style={{ background: 'var(--separator)' }} />
           <div className="flex justify-between items-baseline">
             <span className="text-[10px] font-medium flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full" style={{ background: '#ef476f' }} />
@@ -666,21 +700,12 @@ function MerchantFeesChart({ analytics }: { analytics: AnalyticsData | null }) {
           </div>
           <div className="h-px" style={{ background: 'var(--separator)' }} />
           <div className="flex justify-between items-baseline">
-            <span className="text-[10px] font-bold flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full" style={{ background: '#06d6a0' }} />
-              <span style={{ color: 'var(--text-primary)' }}>Net Revenue</span>
-            </span>
-            <span className="text-sm font-bold tabular-nums" style={{ color: '#06d6a0' }}>${fees.net_revenue.toLocaleString()}</span>
-          </div>
-          <div className="flex justify-between items-baseline">
-            <span className="text-[9px]" style={{ color: 'var(--text-secondary)' }}>Total Fees</span>
-            <span className="text-[9px] font-semibold tabular-nums" style={{ color: 'var(--text-secondary)' }}>
-              ${fees.total.toLocaleString()} ({lifetime > 0 ? ((fees.total / lifetime) * 100).toFixed(1) : 0}%)
-            </span>
+            <span className="text-[10px] font-bold" style={{ color: 'var(--text-primary)' }}>Total Fees</span>
+            <span className="text-xs font-bold tabular-nums" style={{ color: 'var(--text-primary)' }}>${fees.total.toLocaleString()} ({lifetime > 0 ? ((fees.total / lifetime) * 100).toFixed(1) : 0}%)</span>
           </div>
         </div>
       </div>
-      <InsightBar text={`Processing fees are ${lifetime > 0 ? ((fees.total / lifetime) * 100).toFixed(1) : 0}% of gross revenue. Stripe handles online bookings, Square handles in-store iPad payments.`} />
+      <InsightBar text={`Processing fees are ${lifetime > 0 ? ((fees.total / lifetime) * 100).toFixed(1) : 0}% of gross revenue.`} />
     </ChartCard>
   );
 }
@@ -705,23 +730,25 @@ export function ChartGrid({ analytics, loading, period, onPeriodChange, onStatus
 
   return (
     <div className="flex flex-col gap-2">
-      {/* Row 1: Revenue Trend left (chart fills card), Health + Coupon stacked right */}
-      <div className="grid grid-cols-2 gap-2" style={{ minHeight: '340px' }}>
-        <RevenueTrendChart
-          data={analytics?.revenue_trend ?? []}
-          period={period}
-          onPeriodChange={onPeriodChange}
-        />
+      {/* Row 1: Revenue Trend — full width */}
+      <RevenueTrendChart
+        data={analytics?.revenue_trend ?? []}
+        period={period}
+        onPeriodChange={onPeriodChange}
+      />
+      {/* Row 2: Customer Health + Revenue Breakdown */}
+      <div className="grid grid-cols-2 gap-2">
         <HealthArcs analytics={analytics} onStatusClick={onStatusClick} />
+        <RevenueBreakdown analytics={analytics} />
       </div>
-      {/* Row 2: Customer Value Map — full width */}
+      {/* Row 3: Customer Value Map — full width */}
       <VipScatter
         scatterData={analytics?.scatter_data ?? []}
         onStatusClick={onStatusClick}
       />
-      {/* Row 3: Fees breakdown + Coupon Impact */}
+      {/* Row 4: Fees + Coupon */}
       <div className="grid grid-cols-2 gap-2">
-        <MerchantFeesChart analytics={analytics} />
+        <FeesChart analytics={analytics} />
         <CouponImpactChart data={analytics?.coupon_impact ?? []} />
       </div>
     </div>

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo, useRef, Component, type ReactNode } from 'react';
 import { PulseBar } from './pulse-bar';
-import { ChartGrid } from './chart-grid';
+import { ChartGrid, type ReviewsData, type OrganicData, type CreativesData } from './chart-grid';
 import { ActiveFilters } from './active-filters';
 import { CustomerList } from './customer-list';
 import { formatTimeAgo } from '@/hooks/use-live-poll';
@@ -106,6 +106,12 @@ export interface AnalyticsData {
     total_bookings: number;
     avg_per_sim_per_day: number;
   } | null;
+  attribution: Record<string, number>;
+  refunds: {
+    total_refunded: number;
+    net_after_refunds: number;
+    refund_rate_pct: number;
+  } | null;
 }
 
 const DEFAULT_FILTERS: MarketingFilters = {
@@ -122,6 +128,15 @@ export function MarketingCommandCenter() {
   const [customers, setCustomers] = useState<CustomerRecord[]>([]);
   const [totalCount, setTotalCount] = useState(0);
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
+  const [reviewsData, setReviewsData] = useState<ReviewsData | null>(null);
+  const [organicData, setOrganicData] = useState<OrganicData | null>(null);
+  const [creativesData, setCreativesData] = useState<CreativesData | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [cohortData, setCohortData] = useState<any>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [churnData, setChurnData] = useState<any>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [forecastData, setForecastData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [analyticsLoading, setAnalyticsLoading] = useState(true);
   // Separate chart period from filters to avoid full page re-render
@@ -227,12 +242,47 @@ export function MarketingCommandCenter() {
             repeat: Math.round(c.uses * (c.repeat_rate ?? 0)),
             repeat_rate: c.repeat_rate ?? 0,
           })),
+          attribution: raw.attribution ?? {},
+          refunds: raw.refunds ?? null,
         };
         setAnalytics(mapped);
       })
       .catch(() => setAnalytics(null))
       .finally(() => setAnalyticsLoading(false));
   }, []); // fetch once on mount, filter client-side
+
+  // Fetch reviews, organic, and creatives data
+  useEffect(() => {
+    fetch('/api/marketing/reviews')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => setReviewsData(data ?? null))
+      .catch(() => setReviewsData(null));
+
+    fetch('/api/marketing/organic')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => setOrganicData(data ?? null))
+      .catch(() => setOrganicData(null));
+
+    fetch('/api/meta/creative-performance')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => setCreativesData(data ?? null))
+      .catch(() => setCreativesData(null));
+
+    fetch('/api/marketing/cohorts')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => setCohortData(data ?? null))
+      .catch(() => setCohortData(null));
+
+    fetch('/api/marketing/churn')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => setChurnData(data ?? null))
+      .catch(() => setChurnData(null));
+
+    fetch('/api/marketing/forecast')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => setForecastData(data ?? null))
+      .catch(() => setForecastData(null));
+  }, []);
 
   // Live polling — refresh every 5 min with countdown
   const [countdown, setCountdown] = useState(300);
@@ -313,6 +363,12 @@ export function MarketingCommandCenter() {
         period={chartPeriod}
         onPeriodChange={setChartPeriod}
         onStatusClick={(status) => updateFilter('status', status)}
+        reviewsData={reviewsData}
+        organicData={organicData}
+        creativesData={creativesData}
+        cohortData={cohortData}
+        churnData={churnData}
+        forecastData={forecastData}
       />
 
       {/* Active filters bar */}

@@ -9,12 +9,69 @@ import {
 } from 'recharts';
 import type { AnalyticsData, CustomerRecord } from './marketing-command-center';
 
+export interface ReviewsData {
+  overall_rating: number;
+  total_reviews: number;
+  platforms: {
+    google: { rating: number; count: number };
+    yelp: { rating: number; count: number };
+  };
+  recent: Array<{
+    author: string;
+    rating: number;
+    text: string;
+    date: string;
+    platform: 'google' | 'yelp';
+  }>;
+  historical_avg: number;
+}
+
+export interface OrganicData {
+  clicks: number;
+  impressions: number;
+  ctr: number;
+  position: number;
+  daily: Array<{ date: string; clicks: number }>;
+  top_queries: Array<{
+    query: string;
+    clicks: number;
+    impressions: number;
+    ctr: number;
+    position: number;
+  }>;
+}
+
+export interface CreativeRecord {
+  name: string;
+  status: string;
+  spend: number;
+  impressions: number;
+  clicks: number;
+  ctr: number;
+  cpc: number;
+  conversions: number;
+  roas?: number;
+}
+
+export interface CreativesData {
+  creatives: CreativeRecord[];
+}
+
 interface ChartGridProps {
   analytics: AnalyticsData | null;
   loading: boolean;
   period: string;
   onPeriodChange: (period: string) => void;
   onStatusClick: (status: 'all' | 'active' | 'at_risk' | 'churned') => void;
+  reviewsData?: ReviewsData | null;
+  organicData?: OrganicData | null;
+  creativesData?: CreativesData | null;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  cohortData?: any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  churnData?: any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  forecastData?: any;
 }
 
 // Internal period state to prevent parent re-render on period toggle
@@ -965,7 +1022,937 @@ function FranchiseFeesChart({ analytics }: { analytics: AnalyticsData | null }) 
   );
 }
 
-export function ChartGrid({ analytics, loading, period, onPeriodChange, onStatusClick }: ChartGridProps) {
+const ATTRIBUTION_COLORS: Record<string, string> = {
+  meta_ad: '#0A84FF',
+  google_ad: '#34A853',
+  direct: '#8B5CF6',
+  unknown: '#6B7280',
+};
+
+function AcquisitionSourcesChart({ attribution }: { attribution: Record<string, number> }) {
+  const chartData = useMemo(() => {
+    const entries = Object.entries(attribution);
+    if (entries.length === 0) return [];
+    return entries.map(([source, count]) => ({
+      name: source.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()),
+      value: count,
+      color: ATTRIBUTION_COLORS[source] ?? '#6B7280',
+    }));
+  }, [attribution]);
+
+  const total = useMemo(() => chartData.reduce((s, d) => s + d.value, 0), [chartData]);
+
+  if (chartData.length === 0) return null;
+
+  return (
+    <ChartCard title="Acquisition Sources">
+      <div className="flex items-center gap-4">
+        <div className="w-28 h-28 flex-shrink-0">
+          <ResponsiveContainer width="100%" height="100%">
+            <PieChart>
+              <Pie
+                data={chartData}
+                cx="50%"
+                cy="50%"
+                innerRadius="50%"
+                outerRadius="85%"
+                paddingAngle={3}
+                dataKey="value"
+              >
+                {chartData.map((e) => (
+                  <Cell key={e.name} fill={e.color} stroke="none" />
+                ))}
+              </Pie>
+              <Tooltip
+                formatter={(v: number) => `${v} customers`}
+                contentStyle={{
+                  background: '#1a1a2e',
+                  border: '1px solid rgba(255,255,255,0.1)',
+                  borderRadius: 8,
+                  fontSize: 11,
+                  color: '#fff',
+                }}
+              />
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
+        <div className="flex-1 space-y-2">
+          {chartData.map((entry) => (
+            <div key={entry.name} className="flex justify-between items-baseline">
+              <span className="text-[10px] font-medium flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full" style={{ background: entry.color }} />
+                <span style={{ color: 'var(--text-secondary)' }}>{entry.name}</span>
+              </span>
+              <span className="text-xs font-semibold tabular-nums" style={{ color: entry.color }}>
+                {entry.value} ({total > 0 ? Math.round((entry.value / total) * 100) : 0}%)
+              </span>
+            </div>
+          ))}
+          <div className="h-px" style={{ background: 'var(--separator)' }} />
+          <div className="flex justify-between items-baseline">
+            <span className="text-[10px] font-bold" style={{ color: 'var(--text-primary)' }}>Total Attributed</span>
+            <span className="text-xs font-bold tabular-nums" style={{ color: 'var(--text-primary)' }}>{total}</span>
+          </div>
+        </div>
+      </div>
+      <InsightBar
+        text={
+          chartData.length > 0
+            ? `Top source: ${chartData.sort((a, b) => b.value - a.value)[0].name} with ${Math.round((chartData[0].value / total) * 100)}% of attributed customers`
+            : 'No attribution data available yet'
+        }
+      />
+    </ChartCard>
+  );
+}
+
+/* ── Section 13: Reviews / Reputation ──────────────────────────── */
+
+function StarRow({ rating, max = 5 }: { rating: number; max?: number }) {
+  return (
+    <div className="flex gap-0.5">
+      {Array.from({ length: max }, (_, i) => {
+        const filled = rating >= i + 1;
+        const half = !filled && rating >= i + 0.5;
+        return (
+          <svg key={i} width="14" height="14" viewBox="0 0 20 20">
+            <path
+              d="M10 1.5l2.47 5.01 5.53.8-4 3.9.94 5.49L10 14.27 5.06 16.7 6 11.21l-4-3.9 5.53-.8z"
+              fill={filled ? '#fbbf24' : half ? 'url(#halfStar)' : 'rgba(255,255,255,0.1)'}
+              stroke={filled || half ? '#fbbf24' : 'rgba(255,255,255,0.15)'}
+              strokeWidth="0.5"
+            />
+            {half && (
+              <defs>
+                <linearGradient id="halfStar">
+                  <stop offset="50%" stopColor="#fbbf24" />
+                  <stop offset="50%" stopColor="rgba(255,255,255,0.1)" />
+                </linearGradient>
+              </defs>
+            )}
+          </svg>
+        );
+      })}
+    </div>
+  );
+}
+
+function ReviewsCard({ data }: { data: ReviewsData | null | undefined }) {
+  if (!data) {
+    return (
+      <ChartCard title="Reputation">
+        <div className="h-40 flex items-center justify-center">
+          <p className="text-[11px] font-medium" style={{ color: 'var(--text-tertiary)' }}>Connecting...</p>
+        </div>
+      </ChartCard>
+    );
+  }
+
+  const delta = data.historical_avg > 0
+    ? +(data.overall_rating - data.historical_avg).toFixed(2)
+    : 0;
+
+  return (
+    <ChartCard title="Reputation">
+      {/* Overall rating */}
+      <div className="flex items-center gap-3 mb-3">
+        <span className="text-4xl font-black tabular-nums leading-none" style={{ color: 'var(--text-primary)' }}>
+          {data.overall_rating.toFixed(1)}
+        </span>
+        <div className="flex flex-col gap-0.5">
+          <StarRow rating={data.overall_rating} />
+          <span className="text-[10px] font-medium" style={{ color: 'var(--text-tertiary)' }}>
+            {data.total_reviews.toLocaleString()} reviews
+            {delta !== 0 && (
+              <span style={{ color: delta > 0 ? '#22c55e' : '#ef4444', marginLeft: 6 }}>
+                {delta > 0 ? '+' : ''}{delta.toFixed(2)} vs avg
+              </span>
+            )}
+          </span>
+        </div>
+      </div>
+
+      {/* Per-platform */}
+      <div className="grid grid-cols-2 gap-2 mb-3">
+        <div className="rounded-lg px-2.5 py-2" style={{ background: 'var(--fill-quaternary)' }}>
+          <div className="flex items-center gap-1.5 mb-1">
+            <span className="w-2 h-2 rounded-full" style={{ background: '#4285F4' }} />
+            <span className="text-[9px] font-semibold uppercase tracking-wider" style={{ color: 'var(--text-tertiary)' }}>Google</span>
+          </div>
+          <span className="text-sm font-bold tabular-nums" style={{ color: '#4285F4' }}>
+            {data.platforms.google.rating.toFixed(1)}
+          </span>
+          <span className="text-[10px] ml-1" style={{ color: 'var(--text-tertiary)' }}>
+            ({data.platforms.google.count})
+          </span>
+        </div>
+        <div className="rounded-lg px-2.5 py-2" style={{ background: 'var(--fill-quaternary)' }}>
+          <div className="flex items-center gap-1.5 mb-1">
+            <span className="w-2 h-2 rounded-full" style={{ background: '#FF1A1A' }} />
+            <span className="text-[9px] font-semibold uppercase tracking-wider" style={{ color: 'var(--text-tertiary)' }}>Yelp</span>
+          </div>
+          <span className="text-sm font-bold tabular-nums" style={{ color: '#FF1A1A' }}>
+            {data.platforms.yelp.rating.toFixed(1)}
+          </span>
+          <span className="text-[10px] ml-1" style={{ color: 'var(--text-tertiary)' }}>
+            ({data.platforms.yelp.count})
+          </span>
+        </div>
+      </div>
+
+      {/* Recent reviews */}
+      {data.recent.length > 0 && (
+        <div className="space-y-1.5">
+          <p className="text-[8px] font-semibold uppercase tracking-wider" style={{ color: 'var(--text-tertiary)' }}>Recent</p>
+          {data.recent.slice(0, 3).map((review, i) => (
+            <div key={i} className="rounded-lg px-2.5 py-1.5" style={{ background: 'var(--fill-quaternary)' }}>
+              <div className="flex items-center justify-between mb-0.5">
+                <span className="text-[10px] font-semibold" style={{ color: 'var(--text-primary)' }}>{review.author}</span>
+                <div className="flex items-center gap-1">
+                  <StarRow rating={review.rating} />
+                  <span className="text-[9px]" style={{ color: 'var(--text-tertiary)' }}>{review.date}</span>
+                </div>
+              </div>
+              <p className="text-[10px] leading-snug" style={{ color: 'var(--text-secondary)' }}>
+                {review.text.length > 120 ? `${review.text.slice(0, 120)}...` : review.text}
+              </p>
+            </div>
+          ))}
+        </div>
+      )}
+    </ChartCard>
+  );
+}
+
+/* ── Section 14: Organic Search ───────────────────────────────── */
+
+function OrganicSearchCard({ data }: { data: OrganicData | null | undefined }) {
+  if (!data) {
+    return (
+      <ChartCard title="Organic Search">
+        <div className="h-40 flex items-center justify-center">
+          <p className="text-[11px] font-medium" style={{ color: 'var(--text-tertiary)' }}>Connecting...</p>
+        </div>
+      </ChartCard>
+    );
+  }
+
+  const dailyData = data.daily ?? [];
+  const topQueries = (data.top_queries ?? []).slice(0, 5);
+
+  return (
+    <ChartCard title="Organic Search">
+      {/* KPI row */}
+      <div className="grid grid-cols-4 gap-2 mb-3">
+        {[
+          { label: 'Clicks', value: data.clicks.toLocaleString(), color: '#34A853' },
+          { label: 'Impressions', value: data.impressions.toLocaleString(), color: 'var(--text-primary)' },
+          { label: 'Avg CTR', value: `${data.ctr.toFixed(1)}%`, color: '#34A853' },
+          { label: 'Avg Position', value: data.position.toFixed(1), color: 'var(--text-primary)' },
+        ].map((kpi) => (
+          <div key={kpi.label} className="flex flex-col items-center rounded-lg py-1.5" style={{ background: 'var(--fill-quaternary)' }}>
+            <span className="text-sm font-bold tabular-nums" style={{ color: kpi.color }}>{kpi.value}</span>
+            <span className="text-[8px] font-semibold uppercase tracking-wider" style={{ color: 'var(--text-tertiary)' }}>{kpi.label}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* Daily clicks mini chart */}
+      {dailyData.length > 0 && (
+        <div className="h-28 -mx-1 mb-3">
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={dailyData} margin={{ top: 4, right: 4, left: -10, bottom: 0 }}>
+              <defs>
+                <linearGradient id="organicGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#34A853" stopOpacity={0.4} />
+                  <stop offset="95%" stopColor="#34A853" stopOpacity={0.02} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--separator)" opacity={0.2} />
+              <XAxis
+                dataKey="date"
+                tick={{ fill: 'var(--text-secondary)', fontSize: 8 }}
+                tickLine={false}
+                axisLine={false}
+              />
+              <YAxis
+                tick={{ fill: 'var(--text-secondary)', fontSize: 9 }}
+                tickLine={false}
+                axisLine={false}
+              />
+              <Tooltip content={<ChartTooltipContent />} />
+              <Area
+                type="monotone"
+                dataKey="clicks"
+                stroke="#34A853"
+                fill="url(#organicGrad)"
+                strokeWidth={1.5}
+                name="Clicks"
+              />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+      )}
+
+      {/* Top queries table */}
+      {topQueries.length > 0 && (
+        <div>
+          <p className="text-[8px] font-semibold uppercase tracking-wider mb-1.5" style={{ color: 'var(--text-tertiary)' }}>Top Queries</p>
+          <div className="overflow-x-auto">
+            <table className="w-full text-[10px]">
+              <thead>
+                <tr style={{ color: 'var(--text-tertiary)' }}>
+                  <th className="text-left font-semibold pb-1">Query</th>
+                  <th className="text-right font-semibold pb-1">Clicks</th>
+                  <th className="text-right font-semibold pb-1">Impr</th>
+                  <th className="text-right font-semibold pb-1">CTR</th>
+                  <th className="text-right font-semibold pb-1">Pos</th>
+                </tr>
+              </thead>
+              <tbody>
+                {topQueries.map((q, i) => (
+                  <tr key={i} className="border-t" style={{ borderColor: 'var(--separator)' }}>
+                    <td className="py-1 font-medium" style={{ color: 'var(--text-primary)' }}>
+                      {q.query.length > 35 ? `${q.query.slice(0, 35)}...` : q.query}
+                    </td>
+                    <td className="text-right tabular-nums" style={{ color: '#34A853' }}>{q.clicks}</td>
+                    <td className="text-right tabular-nums" style={{ color: 'var(--text-secondary)' }}>{q.impressions.toLocaleString()}</td>
+                    <td className="text-right tabular-nums" style={{ color: 'var(--text-secondary)' }}>{q.ctr.toFixed(1)}%</td>
+                    <td className="text-right tabular-nums" style={{ color: 'var(--text-secondary)' }}>{q.position.toFixed(1)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+    </ChartCard>
+  );
+}
+
+/* ── Section 15: Creative Performance ─────────────────────────── */
+
+const CREATIVE_STATUS_COLORS: Record<string, string> = {
+  ACTIVE: '#22c55e',
+  PAUSED: '#fbbf24',
+};
+
+function CreativePerformanceCard({ data }: { data: CreativesData | null | undefined }) {
+  if (!data) {
+    return (
+      <ChartCard title="Ad Creatives">
+        <div className="h-40 flex items-center justify-center">
+          <p className="text-[11px] font-medium" style={{ color: 'var(--text-tertiary)' }}>No data yet</p>
+        </div>
+      </ChartCard>
+    );
+  }
+
+  const creatives = useMemo(() => {
+    const sorted = [...(data.creatives ?? [])].sort((a, b) => b.spend - a.spend);
+    return sorted.slice(0, 10);
+  }, [data.creatives]);
+
+  const hasRoas = creatives.some((c) => c.roas !== undefined && c.roas !== null);
+
+  if (creatives.length === 0) {
+    return (
+      <ChartCard title="Ad Creatives">
+        <div className="h-40 flex items-center justify-center">
+          <p className="text-[11px] font-medium" style={{ color: 'var(--text-tertiary)' }}>No creatives found</p>
+        </div>
+      </ChartCard>
+    );
+  }
+
+  return (
+    <ChartCard title="Ad Creatives">
+      <div className="overflow-x-auto">
+        <table className="w-full text-[10px]">
+          <thead>
+            <tr style={{ color: 'var(--text-tertiary)' }}>
+              <th className="text-left font-semibold pb-1.5">Name</th>
+              <th className="text-center font-semibold pb-1.5">Status</th>
+              <th className="text-right font-semibold pb-1.5">Spend</th>
+              <th className="text-right font-semibold pb-1.5">Impr</th>
+              <th className="text-right font-semibold pb-1.5">Clicks</th>
+              <th className="text-right font-semibold pb-1.5">CTR</th>
+              <th className="text-right font-semibold pb-1.5">CPC</th>
+              <th className="text-right font-semibold pb-1.5">Conv</th>
+              {hasRoas && <th className="text-right font-semibold pb-1.5">ROAS</th>}
+            </tr>
+          </thead>
+          <tbody>
+            {creatives.map((c, i) => {
+              const statusColor = CREATIVE_STATUS_COLORS[c.status?.toUpperCase()] ?? '#6B7280';
+              return (
+                <tr key={i} className="border-t" style={{ borderColor: 'var(--separator)' }}>
+                  <td className="py-1.5 font-medium" style={{ color: 'var(--text-primary)' }}>
+                    {c.name.length > 40 ? `${c.name.slice(0, 40)}...` : c.name}
+                  </td>
+                  <td className="text-center">
+                    <span
+                      className="inline-block px-1.5 py-0.5 rounded-full text-[8px] font-bold uppercase"
+                      style={{ background: `${statusColor}20`, color: statusColor }}
+                    >
+                      {c.status}
+                    </span>
+                  </td>
+                  <td className="text-right tabular-nums" style={{ color: 'var(--text-primary)' }}>${c.spend.toLocaleString()}</td>
+                  <td className="text-right tabular-nums" style={{ color: 'var(--text-secondary)' }}>{c.impressions.toLocaleString()}</td>
+                  <td className="text-right tabular-nums" style={{ color: 'var(--text-secondary)' }}>{c.clicks.toLocaleString()}</td>
+                  <td className="text-right tabular-nums" style={{ color: 'var(--text-secondary)' }}>{c.ctr.toFixed(2)}%</td>
+                  <td className="text-right tabular-nums" style={{ color: 'var(--text-secondary)' }}>${c.cpc.toFixed(2)}</td>
+                  <td className="text-right tabular-nums" style={{ color: 'var(--text-primary)' }}>{c.conversions}</td>
+                  {hasRoas && (
+                    <td className="text-right tabular-nums font-semibold" style={{ color: (c.roas ?? 0) >= 1 ? '#22c55e' : '#ef4444' }}>
+                      {c.roas !== undefined && c.roas !== null ? `${c.roas.toFixed(2)}x` : '—'}
+                    </td>
+                  )}
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </ChartCard>
+  );
+}
+
+function formatCohortMonth(ym: string): string {
+  const [y, m] = ym.split('-');
+  const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  return `${monthNames[parseInt(m, 10) - 1]} ${y}`;
+}
+
+function getCohortHeatmapColor(value: number, maxValue: number): string {
+  if (value === 0 || maxValue === 0) return 'transparent';
+  const intensity = Math.min(value / maxValue, 1);
+  // Map to 0.1 – 0.9 opacity range
+  const opacity = 0.1 + intensity * 0.8;
+  return `rgba(34, 197, 94, ${opacity.toFixed(2)})`;
+}
+
+function getRetentionColor(pct: number): string {
+  if (pct === 0) return 'transparent';
+  const intensity = Math.min(pct / 100, 1);
+  const opacity = 0.1 + intensity * 0.8;
+  return `rgba(34, 197, 94, ${opacity.toFixed(2)})`;
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function CohortAnalysisSection({ data }: { data: any }) {
+  if (!data) {
+    return (
+      <ChartCard title="Cohort Analysis">
+        <div className="flex items-center justify-center h-32">
+          <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>Loading cohort data...</p>
+        </div>
+      </ChartCard>
+    );
+  }
+
+  const { cohorts, months } = data as {
+    cohorts: Array<{
+      cohort: string;
+      customer_count: number;
+      total_revenue: number;
+      avg_revenue_per_customer: number;
+      monthly: Record<string, { revenue: number; bookings: number; active_customers: number }>;
+      retention: Record<string, number>;
+    }>;
+    months: string[];
+  };
+
+  if (!cohorts?.length || !months?.length) {
+    return (
+      <ChartCard title="Cohort Analysis">
+        <div className="flex items-center justify-center h-32">
+          <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>No cohort data available</p>
+        </div>
+      </ChartCard>
+    );
+  }
+
+  // Calculate max revenue for heatmap color scaling
+  let maxRevenue = 0;
+  for (const c of cohorts) {
+    for (const m of months) {
+      const rev = c.monthly[m]?.revenue ?? 0;
+      if (rev > maxRevenue) maxRevenue = rev;
+    }
+  }
+
+  return (
+    <div className="flex flex-col gap-2">
+      {/* Revenue Heatmap */}
+      <ChartCard title="Cohort Analysis — Revenue Heatmap">
+        <div className="overflow-x-auto -mx-1">
+          <table className="w-full text-[9px]" style={{ borderCollapse: 'separate', borderSpacing: 0 }}>
+            <thead>
+              <tr>
+                <th
+                  className="sticky left-0 text-left px-2 py-1.5 font-semibold"
+                  style={{ color: 'var(--text-secondary)', background: 'var(--glass-bg)' }}
+                >
+                  Cohort
+                </th>
+                <th
+                  className="text-center px-2 py-1.5 font-semibold"
+                  style={{ color: 'var(--text-secondary)' }}
+                >
+                  Size
+                </th>
+                {months.map((m) => (
+                  <th
+                    key={m}
+                    className="text-center px-2 py-1.5 font-semibold whitespace-nowrap"
+                    style={{ color: 'var(--text-secondary)' }}
+                  >
+                    {formatCohortMonth(m)}
+                  </th>
+                ))}
+                <th
+                  className="text-center px-2 py-1.5 font-semibold"
+                  style={{ color: 'var(--text-secondary)' }}
+                >
+                  LTV/Cust
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {cohorts.map((c) => (
+                <tr key={c.cohort} className="border-t" style={{ borderColor: 'var(--separator)' }}>
+                  <td
+                    className="sticky left-0 px-2 py-1.5 font-semibold whitespace-nowrap"
+                    style={{ color: 'var(--text-primary)', background: 'var(--glass-bg)' }}
+                  >
+                    {formatCohortMonth(c.cohort)}
+                  </td>
+                  <td
+                    className="text-center px-2 py-1.5 tabular-nums"
+                    style={{ color: 'var(--text-secondary)' }}
+                  >
+                    {c.customer_count}
+                  </td>
+                  {months.map((m) => {
+                    const rev = c.monthly[m]?.revenue ?? 0;
+                    return (
+                      <td
+                        key={m}
+                        className="text-center px-2 py-1.5 tabular-nums rounded-sm"
+                        style={{
+                          background: getCohortHeatmapColor(rev, maxRevenue),
+                          color: rev > 0 ? 'var(--text-primary)' : 'var(--text-tertiary)',
+                        }}
+                      >
+                        {rev > 0 ? `$${Math.round(rev).toLocaleString()}` : '—'}
+                      </td>
+                    );
+                  })}
+                  <td
+                    className="text-center px-2 py-1.5 tabular-nums font-semibold"
+                    style={{ color: '#22c55e' }}
+                  >
+                    ${Math.round(c.avg_revenue_per_customer).toLocaleString()}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </ChartCard>
+
+      {/* Retention Heatmap */}
+      <ChartCard title="Cohort Retention (% Active Customers)">
+        <div className="overflow-x-auto -mx-1">
+          <table className="w-full text-[9px]" style={{ borderCollapse: 'separate', borderSpacing: 0 }}>
+            <thead>
+              <tr>
+                <th
+                  className="sticky left-0 text-left px-2 py-1.5 font-semibold"
+                  style={{ color: 'var(--text-secondary)', background: 'var(--glass-bg)' }}
+                >
+                  Cohort
+                </th>
+                {months.map((m) => (
+                  <th
+                    key={m}
+                    className="text-center px-2 py-1.5 font-semibold whitespace-nowrap"
+                    style={{ color: 'var(--text-secondary)' }}
+                  >
+                    {formatCohortMonth(m)}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {cohorts.map((c) => (
+                <tr key={c.cohort} className="border-t" style={{ borderColor: 'var(--separator)' }}>
+                  <td
+                    className="sticky left-0 px-2 py-1.5 font-semibold whitespace-nowrap"
+                    style={{ color: 'var(--text-primary)', background: 'var(--glass-bg)' }}
+                  >
+                    {formatCohortMonth(c.cohort)}
+                  </td>
+                  {months.map((m) => {
+                    const pct = c.retention[m] ?? 0;
+                    return (
+                      <td
+                        key={m}
+                        className="text-center px-2 py-1.5 tabular-nums rounded-sm"
+                        style={{
+                          background: getRetentionColor(pct),
+                          color: pct > 0 ? 'var(--text-primary)' : 'var(--text-tertiary)',
+                        }}
+                      >
+                        {pct > 0 ? `${pct}%` : '—'}
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </ChartCard>
+    </div>
+  );
+}
+
+// ── Revenue Forecast Section ──────────────────────────
+
+const FORECAST_LINE_COLOR = '#8B5CF6';
+const FORECAST_BAND_COLOR = 'rgba(139, 92, 246, 0.15)';
+
+function RevenueForecastSection({ data }: { data: any }) {
+  if (!data) {
+    return (
+      <ChartCard title="Revenue Forecast">
+        <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>Loading revenue forecast...</p>
+      </ChartCard>
+    );
+  }
+
+  const { daily, summary, basis } = data;
+  if (!daily || !summary) return null;
+
+  const trendColor = summary.trend === 'growing' ? '#22c55e' : summary.trend === 'declining' ? '#ef4444' : '#9ca3af';
+  const trendLabel = summary.trend === 'growing'
+    ? `Growing +${summary.trend_pct}%`
+    : summary.trend === 'declining'
+    ? `Declining ${summary.trend_pct}%`
+    : 'Stable';
+
+  // Format chart data
+  const chartData = (daily ?? []).map((d: any) => ({
+    date: d.date?.substring(5) ?? '', // MM-DD
+    predicted: d.predicted_revenue ?? 0,
+    low: d.confidence_low ?? 0,
+    high: d.confidence_high ?? 0,
+    isWeekend: d.is_weekend ?? false,
+  }));
+
+  return (
+    <ChartCard
+      title="Revenue Forecast"
+      trailing={
+        <div className="flex items-center gap-2">
+          <span
+            className="text-[9px] font-bold px-2 py-0.5 rounded-full"
+            style={{ background: `${trendColor}22`, color: trendColor }}
+          >
+            {trendLabel}
+          </span>
+          <span className="text-[9px]" style={{ color: 'var(--text-tertiary)' }}>
+            Based on {basis?.days_of_history ?? 0} days
+          </span>
+        </div>
+      }
+    >
+      {/* Big number */}
+      <div className="flex items-baseline gap-3 mb-3">
+        <span className="text-2xl font-bold tabular-nums" style={{ color: 'var(--text-primary)' }}>
+          ${(summary.projected_30d_revenue ?? 0).toLocaleString()}
+        </span>
+        <span className="text-[10px]" style={{ color: 'var(--text-tertiary)' }}>
+          projected 30d &middot; range ${(summary.confidence_low ?? 0).toLocaleString()} — ${(summary.confidence_high ?? 0).toLocaleString()}
+        </span>
+      </div>
+
+      {/* Area chart */}
+      <div className="w-full" style={{ height: 220 }}>
+        <ResponsiveContainer width="100%" height="100%">
+          <AreaChart data={chartData} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
+            <defs>
+              <linearGradient id="forecastBand" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={FORECAST_LINE_COLOR} stopOpacity={0.2} />
+                <stop offset="100%" stopColor={FORECAST_LINE_COLOR} stopOpacity={0.02} />
+              </linearGradient>
+            </defs>
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--separator)" strokeOpacity={0.3} />
+            <XAxis
+              dataKey="date"
+              tick={{ fill: 'var(--text-tertiary)', fontSize: 9 }}
+              tickLine={false}
+              axisLine={false}
+              interval={4}
+            />
+            <YAxis
+              tick={{ fill: 'var(--text-tertiary)', fontSize: 9 }}
+              tickLine={false}
+              axisLine={false}
+              tickFormatter={(v: number) => `$${v}`}
+              width={50}
+            />
+            <Tooltip
+              contentStyle={{
+                background: 'var(--glass-bg)',
+                border: '1px solid var(--glass-border)',
+                borderRadius: 8,
+                fontSize: 11,
+                color: 'var(--text-primary)',
+              }}
+              formatter={(value: number, name: string) => [
+                `$${value.toLocaleString()}`,
+                name === 'predicted' ? 'Forecast' : name === 'high' ? 'High' : 'Low',
+              ]}
+              labelFormatter={(label: string) => `Date: ${label}`}
+            />
+            {/* Confidence band — draw as two areas */}
+            <Area
+              type="monotone"
+              dataKey="high"
+              stroke="none"
+              fill={FORECAST_BAND_COLOR}
+              fillOpacity={1}
+            />
+            <Area
+              type="monotone"
+              dataKey="low"
+              stroke="none"
+              fill="var(--glass-bg)"
+              fillOpacity={1}
+            />
+            {/* Main prediction line */}
+            <Area
+              type="monotone"
+              dataKey="predicted"
+              stroke={FORECAST_LINE_COLOR}
+              strokeWidth={2}
+              fill="url(#forecastBand)"
+              fillOpacity={1}
+              dot={false}
+            />
+          </AreaChart>
+        </ResponsiveContainer>
+      </div>
+
+      {/* Stats row */}
+      <div className="grid grid-cols-4 gap-2 mt-3">
+        <div className="text-center">
+          <p className="text-[9px] uppercase" style={{ color: 'var(--text-tertiary)' }}>Avg Daily</p>
+          <p className="text-sm font-bold tabular-nums" style={{ color: 'var(--text-primary)' }}>
+            ${(summary.avg_daily_projected ?? 0).toLocaleString()}
+          </p>
+        </div>
+        <div className="text-center">
+          <p className="text-[9px] uppercase" style={{ color: 'var(--text-tertiary)' }}>Best Day</p>
+          <p className="text-sm font-bold" style={{ color: '#22c55e' }}>
+            {summary.best_day ?? '—'}
+          </p>
+        </div>
+        <div className="text-center">
+          <p className="text-[9px] uppercase" style={{ color: 'var(--text-tertiary)' }}>Worst Day</p>
+          <p className="text-sm font-bold" style={{ color: '#ef4444' }}>
+            {summary.worst_day ?? '—'}
+          </p>
+        </div>
+        <div className="text-center">
+          <p className="text-[9px] uppercase" style={{ color: 'var(--text-tertiary)' }}>Wknd/Wkday</p>
+          <p className="text-sm font-bold tabular-nums" style={{ color: 'var(--text-primary)' }}>
+            {summary.weekend_vs_weekday_ratio ?? '—'}x
+          </p>
+        </div>
+      </div>
+    </ChartCard>
+  );
+}
+
+// ── Churn Prediction Section ─────────────────────────
+
+const CHURN_COLORS: Record<string, string> = {
+  safe: '#22c55e',
+  watch: '#fbbf24',
+  at_risk: '#f97316',
+  critical: '#ef4444',
+};
+
+const URGENCY_COLORS: Record<string, string> = {
+  low: '#9ca3af',
+  medium: '#fbbf24',
+  high: '#f97316',
+  urgent: '#ef4444',
+};
+
+function ChurnPredictionSection({ data }: { data: any }) {
+  if (!data) {
+    return (
+      <ChartCard title="Churn Prediction">
+        <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>Loading churn predictions...</p>
+      </ChartCard>
+    );
+  }
+
+  const { customers, summary } = data;
+  if (!summary) return null;
+
+  const totalCustomers = (summary.safe ?? 0) + (summary.watch ?? 0) + (summary.at_risk ?? 0) + (summary.critical ?? 0);
+  const top10 = (customers ?? []).slice(0, 10);
+
+  // Summary bar widths
+  const pct = (n: number) => totalCustomers > 0 ? (n / totalCustomers) * 100 : 0;
+
+  return (
+    <div className="flex flex-col gap-2">
+      <ChartCard title="Churn Prediction">
+        {/* Summary bar */}
+        <div className="flex flex-col gap-2 mb-4">
+          <div className="flex items-center gap-1.5">
+            {([
+              { key: 'safe', label: 'Safe', count: summary.safe ?? 0 },
+              { key: 'watch', label: 'Watch', count: summary.watch ?? 0 },
+              { key: 'at_risk', label: 'At Risk', count: summary.at_risk ?? 0 },
+              { key: 'critical', label: 'Critical', count: summary.critical ?? 0 },
+            ] as const).map(({ key, label, count }) => (
+              <div key={key} className="flex items-center gap-1">
+                <span
+                  className="inline-block w-2 h-2 rounded-full"
+                  style={{ background: CHURN_COLORS[key] }}
+                />
+                <span className="text-[10px] font-medium" style={{ color: 'var(--text-secondary)' }}>
+                  {label}
+                </span>
+                <span className="text-[10px] font-bold tabular-nums" style={{ color: 'var(--text-primary)' }}>
+                  {count}
+                </span>
+              </div>
+            ))}
+          </div>
+
+          {/* Stacked bar */}
+          <div className="flex w-full h-2 rounded-full overflow-hidden" style={{ background: 'var(--fill-quaternary)' }}>
+            {pct(summary.safe) > 0 && (
+              <div style={{ width: `${pct(summary.safe)}%`, background: CHURN_COLORS.safe }} />
+            )}
+            {pct(summary.watch) > 0 && (
+              <div style={{ width: `${pct(summary.watch)}%`, background: CHURN_COLORS.watch }} />
+            )}
+            {pct(summary.at_risk) > 0 && (
+              <div style={{ width: `${pct(summary.at_risk)}%`, background: CHURN_COLORS.at_risk }} />
+            )}
+            {pct(summary.critical) > 0 && (
+              <div style={{ width: `${pct(summary.critical)}%`, background: CHURN_COLORS.critical }} />
+            )}
+          </div>
+
+          {/* Revenue at risk */}
+          <p className="text-[10px]" style={{ color: 'var(--text-secondary)' }}>
+            <span className="font-bold" style={{ color: '#ef4444' }}>
+              ${(summary.total_at_risk_revenue ?? 0).toLocaleString()}
+            </span>
+            {' '}in lifetime value at risk of churning
+          </p>
+        </div>
+
+        {/* Top 10 highest-risk customers table */}
+        {top10.length > 0 && (
+          <div className="overflow-x-auto -mx-1">
+            <table className="w-full text-[10px]" style={{ color: 'var(--text-primary)' }}>
+              <thead>
+                <tr style={{ color: 'var(--text-tertiary)' }}>
+                  <th className="text-left font-medium px-1 pb-1.5">Customer</th>
+                  <th className="text-center font-medium px-1 pb-1.5">Score</th>
+                  <th className="text-center font-medium px-1 pb-1.5">Days Since</th>
+                  <th className="text-right font-medium px-1 pb-1.5">LTV</th>
+                  <th className="text-left font-medium px-1 pb-1.5">Top Factor</th>
+                  <th className="text-center font-medium px-1 pb-1.5">Urgency</th>
+                </tr>
+              </thead>
+              <tbody>
+                {top10.map((c: any) => {
+                  const scoreColor = CHURN_COLORS[c.risk_level] ?? '#9ca3af';
+                  const scorePct = Math.min(100, c.churn_score ?? 0);
+                  const urgencyColor = URGENCY_COLORS[c.win_back_urgency] ?? '#9ca3af';
+
+                  return (
+                    <tr
+                      key={c.customer_id}
+                      className="border-t"
+                      style={{ borderColor: 'var(--separator)' }}
+                    >
+                      <td className="px-1 py-1.5 font-medium truncate max-w-[120px]">
+                        {c.name || 'Unknown'}
+                      </td>
+                      <td className="px-1 py-1.5">
+                        <div className="flex items-center gap-1 justify-center">
+                          <div
+                            className="h-1.5 rounded-full"
+                            style={{
+                              width: 40,
+                              background: 'var(--fill-quaternary)',
+                            }}
+                          >
+                            <div
+                              className="h-full rounded-full"
+                              style={{
+                                width: `${scorePct}%`,
+                                background: scoreColor,
+                              }}
+                            />
+                          </div>
+                          <span className="tabular-nums font-bold" style={{ color: scoreColor }}>
+                            {c.churn_score ?? 0}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-1 py-1.5 text-center tabular-nums">
+                        {c.last_booking_days ?? '—'}d
+                      </td>
+                      <td className="px-1 py-1.5 text-right tabular-nums">
+                        ${(c.lifetime_value ?? 0).toLocaleString()}
+                      </td>
+                      <td
+                        className="px-1 py-1.5 truncate max-w-[180px]"
+                        style={{ color: 'var(--text-secondary)' }}
+                        title={(c.factors ?? []).join('; ')}
+                      >
+                        {(c.factors ?? [])[0] ?? '—'}
+                      </td>
+                      <td className="px-1 py-1.5 text-center">
+                        <span
+                          className="text-[9px] font-bold px-1.5 py-0.5 rounded-full uppercase"
+                          style={{
+                            background: `${urgencyColor}22`,
+                            color: urgencyColor,
+                          }}
+                        >
+                          {c.win_back_urgency ?? '—'}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </ChartCard>
+    </div>
+  );
+}
+
+export function ChartGrid({ analytics, loading, period, onPeriodChange, onStatusClick, reviewsData, organicData, creativesData, cohortData, churnData, forecastData }: ChartGridProps) {
   if (loading) {
     return (
       <div className="grid grid-cols-2 gap-2">
@@ -1007,6 +1994,21 @@ export function ChartGrid({ analytics, loading, period, onPeriodChange, onStatus
         <FranchiseFeesChart analytics={analytics} />
         <CouponImpactChart data={analytics?.coupon_impact ?? []} />
       </div>
+      {/* Row 5: Acquisition Sources */}
+      <AcquisitionSourcesChart attribution={analytics?.attribution ?? {}} />
+      {/* Row 6: Reputation + Organic Search */}
+      <div className="grid grid-cols-2 gap-2">
+        <ReviewsCard data={reviewsData} />
+        <OrganicSearchCard data={organicData} />
+      </div>
+      {/* Row 7: Creative Performance — full width */}
+      <CreativePerformanceCard data={creativesData} />
+      {/* Row 8: Cohort Analysis — full width */}
+      <CohortAnalysisSection data={cohortData} />
+      {/* Row 9: Revenue Forecast — full width */}
+      <RevenueForecastSection data={forecastData} />
+      {/* Row 10: Churn Prediction — full width */}
+      <ChurnPredictionSection data={churnData} />
     </div>
   );
 }

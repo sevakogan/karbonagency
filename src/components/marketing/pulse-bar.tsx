@@ -1,6 +1,6 @@
 'use client';
 
-import { Users, UserCheck, AlertTriangle, UserX, DollarSign, TrendingUp, TrendingDown } from 'lucide-react';
+import { Users, UserCheck, AlertTriangle, UserX, DollarSign, TrendingUp, TrendingDown, RotateCcw } from 'lucide-react';
 import type { AnalyticsData } from './marketing-command-center';
 
 interface PulseBarProps {
@@ -90,7 +90,7 @@ export function PulseBar({ analytics, loading, activeStatus, onStatusClick }: Pu
   const deltaIsUp = revenueDelta >= 0;
 
   return (
-    <div className="grid grid-cols-7 gap-1.5">
+    <div className="grid grid-cols-8 gap-1.5">
       <PulseCard
         label="Total"
         value={summary?.total ?? 0}
@@ -164,6 +164,21 @@ export function PulseBar({ analytics, loading, activeStatus, onStatusClick }: Pu
         icon={<DollarSign size={12} />}
         loading={loading}
       />
+
+      {analytics?.refunds && (
+        <PulseCard
+          label="Refund Rate"
+          value={`${analytics.refunds.refund_rate_pct.toFixed(1)}%`}
+          icon={<RotateCcw size={12} />}
+          accentColor={analytics.refunds.refund_rate_pct > 5 ? '#ef4444' : '#22c55e'}
+          loading={loading}
+          subtitle={
+            <span className="text-[9px] font-medium" style={{ color: 'var(--text-tertiary)' }}>
+              ${analytics.refunds.total_refunded.toLocaleString()} refunded
+            </span>
+          }
+        />
+      )}
     </div>
   );
 }

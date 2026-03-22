@@ -2,7 +2,7 @@
   "crons": [
     {
       "path": "/api/sync-meta",
-      "schedule": "0 6 * * *"
+      "schedule": "*/30 * * * *"
     },
     {
       "path": "/api/cron/sync-all",
@@ -27,6 +27,30 @@
     {
       "path": "/api/cron/shiftos-analytics",
       "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/cron/sync-charges",
+      "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/cron/attribution",
+      "schedule": "0 * * * *"
+    },
+    {
+      "path": "/api/cron/sync-gsc",
+      "schedule": "0 */4 * * *"
+    },
+    {
+      "path": "/api/cron/sync-creatives",
+      "schedule": "0 */2 * * *"
+    },
+    {
+      "path": "/api/cron/sync-reviews",
+      "schedule": "0 8 * * *"
+    },
+    {
+      "path": "/api/cron/anomaly-check",
+      "schedule": "0 * * * *"
     }
   ]
 }

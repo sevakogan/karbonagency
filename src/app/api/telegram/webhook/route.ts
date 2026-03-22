@@ -2,6 +2,31 @@ import { NextRequest, NextResponse } from 'next/server';
 import { sendTelegramMessage, type TelegramUpdate } from '@/lib/telegram';
 import { askClaude, generateAdInsight } from '@/lib/ai-summary';
 import { getAdminSupabase } from '@/lib/supabase-admin';
+import { detectAnomalies } from '@/lib/anomaly-detection';
+import { predictChurn } from '@/lib/churn-prediction';
+import { forecastRevenue } from '@/lib/revenue-forecast';
+
+const BOT_SYSTEM_PROMPT = `You are Karbon AI, the business intelligence assistant for Shift Arcade Miami. You have access to:
+- Real-time ad performance (Meta, Google, Instagram)
+- Live booking/reservation data from ShiftOS
+- Square iPad POS revenue data
+- ShiftOS Stripe revenue data
+- Customer lifecycle data (active, medium risk, high risk, churned)
+- Membership/APEX subscriber info
+- P&L breakdown with merchant fees and franchise fees
+- Individual customer history (visits, spend, status)
+- Refund data from ShiftOS charges
+- Ad creative performance from Meta
+- Google/Yelp review data and ratings
+- Organic search / SEO data from Google Search Console
+- Anomaly detection alerts
+- Cohort retention analysis
+- Monthly ad budget pacing
+- Predictive churn model (customer risk scores 0-100, risk levels, win-back urgency)
+- 30-day revenue forecasting with day-of-week seasonality and confidence intervals
+- 8 Miami simulators: Hamilton-Mia, Verstappen-Mia (Ultimate $40), Norris-Mia, Piastri-Mia, Russell-Mia, Leclerc-Mia (Haptic $35), Antonelli-Mia, Sainz-Mia (Non-Motion $30)
+
+Be concise, specific with numbers. Format for Telegram (HTML: <b>bold</b>). Under 250 words. When asked about revenue, use the real revenue data (ShiftOS Stripe + Square iPad). When asked about a specific customer, use the customer data.`;
 
 export async function POST(request: NextRequest) {
   try {
@@ -19,13 +44,19 @@ export async function POST(request: NextRequest) {
       await sendTelegramMessage(chatId,
         `<b>🔴 Karbon Shift Bot</b>\n\n` +
         `I'm your AI marketing assistant powered by Claude.\n\n` +
-        `Ask me anything about ads, bookings, or signups:\n` +
+        `Ask me anything:\n` +
         `• "How are my ads doing?"\n` +
-        `• "How many reservations today?"\n` +
-        `• "Which ads are driving bookings?"\n` +
-        `• "What's my spend this week?"\n` +
+        `• "Which ads are performing best?" — creatives\n` +
+        `• "What's my refund rate?" — refund data\n` +
+        `• "How are my reviews?" — Google/Yelp\n` +
+        `• "Show me organic search" — SEO data\n` +
+        `• "Any anomalies?" — health check\n` +
+        `• "Show me cohorts" — retention\n` +
+        `• "Budget pacing" — spend vs budget\n` +
+        `• "Churn" — who's at risk of leaving\n` +
+        `• "Forecast" — 30-day revenue projection\n` +
         `• "Give me a full report"\n\n` +
-        `I have real-time ad data AND live booking data from ShiftOS.`
+        `I have real-time ad data, booking data, reviews, SEO, and more.`
       );
       return NextResponse.json({ ok: true });
     }
@@ -43,21 +74,133 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ ok: true });
     }
 
+    // ── Topic-specific handlers (fetch extra data for Claude) ──
+    const lower = text.toLowerCase();
+
+    // Refund rate
+    if (lower.includes('refund')) {
+      const refundData = await fetchRefundData();
+      const metricsContext = await getMetricsContext();
+      const answer = await askClaude({
+        systemPrompt: BOT_SYSTEM_PROMPT,
+        userMessage: `${metricsContext}\n\n═══ REFUND DATA ═══\n${refundData}\n\nQuestion: ${text}`,
+        maxTokens: 500,
+      });
+      await sendTelegramMessage(chatId, answer);
+      return NextResponse.json({ ok: true });
+    }
+
+    // Ad creatives
+    if (lower.includes('creative') || lower.includes('which ads') || (lower.includes('ads') && lower.includes('perform'))) {
+      const creativesData = await fetchCreativesData();
+      const metricsContext = await getMetricsContext();
+      const answer = await askClaude({
+        systemPrompt: BOT_SYSTEM_PROMPT,
+        userMessage: `${metricsContext}\n\n═══ AD CREATIVES ═══\n${creativesData}\n\nQuestion: ${text}`,
+        maxTokens: 500,
+      });
+      await sendTelegramMessage(chatId, answer);
+      return NextResponse.json({ ok: true });
+    }
+
+    // Reviews / rating
+    if (lower.includes('review') || lower.includes('rating')) {
+      const reviewData = await fetchReviewsData();
+      const metricsContext = await getMetricsContext();
+      const answer = await askClaude({
+        systemPrompt: BOT_SYSTEM_PROMPT,
+        userMessage: `${metricsContext}\n\n═══ REVIEWS ═══\n${reviewData}\n\nQuestion: ${text}`,
+        maxTokens: 500,
+      });
+      await sendTelegramMessage(chatId, answer);
+      return NextResponse.json({ ok: true });
+    }
+
+    // Organic / SEO
+    if (lower.includes('organic') || lower.includes('seo') || lower.includes('search console')) {
+      const organicData = await fetchOrganicData();
+      const metricsContext = await getMetricsContext();
+      const answer = await askClaude({
+        systemPrompt: BOT_SYSTEM_PROMPT,
+        userMessage: `${metricsContext}\n\n═══ ORGANIC SEARCH ═══\n${organicData}\n\nQuestion: ${text}`,
+        maxTokens: 500,
+      });
+      await sendTelegramMessage(chatId, answer);
+      return NextResponse.json({ ok: true });
+    }
+
+    // Anomalies
+    if (lower.includes('anomal') || lower.includes('anything wrong') || lower.includes('anything off') || lower.includes('issues')) {
+      const anomalies = await detectAnomalies();
+      const anomalyStr = anomalies.length === 0
+        ? 'No anomalies detected. Everything looks normal.'
+        : anomalies.map((a) => `[${a.severity.toUpperCase()}] ${a.message} (${a.metric}: ${a.current} vs baseline ${a.baseline}, ${a.change_pct > 0 ? '+' : ''}${a.change_pct.toFixed(1)}%)`).join('\n');
+      const metricsContext = await getMetricsContext();
+      const answer = await askClaude({
+        systemPrompt: BOT_SYSTEM_PROMPT,
+        userMessage: `${metricsContext}\n\n═══ ANOMALY CHECK ═══\n${anomalyStr}\n\nQuestion: ${text}`,
+        maxTokens: 500,
+      });
+      await sendTelegramMessage(chatId, answer);
+      return NextResponse.json({ ok: true });
+    }
+
+    // Cohorts / retention
+    if (lower.includes('cohort') || lower.includes('retention') || lower.includes('repeat rate')) {
+      const cohortData = await fetchCohortData();
+      const metricsContext = await getMetricsContext();
+      const answer = await askClaude({
+        systemPrompt: BOT_SYSTEM_PROMPT,
+        userMessage: `${metricsContext}\n\n═══ COHORT / RETENTION ═══\n${cohortData}\n\nQuestion: ${text}`,
+        maxTokens: 500,
+      });
+      await sendTelegramMessage(chatId, answer);
+      return NextResponse.json({ ok: true });
+    }
+
+    // Churn prediction
+    if (lower.includes('churn') || lower.includes('who\'s leaving') || lower.includes('at risk customers') || lower.includes('who is leaving')) {
+      const churnStr = await fetchChurnData();
+      const metricsContext = await getMetricsContext();
+      const answer = await askClaude({
+        systemPrompt: BOT_SYSTEM_PROMPT,
+        userMessage: `${metricsContext}\n\n═══ CHURN PREDICTION ═══\n${churnStr}\n\nQuestion: ${text}`,
+        maxTokens: 500,
+      });
+      await sendTelegramMessage(chatId, answer);
+      return NextResponse.json({ ok: true });
+    }
+
+    // Revenue forecast
+    if (lower.includes('forecast') || lower.includes('projection') || lower.includes('next month') || lower.includes('predict revenue')) {
+      const forecastStr = await fetchForecastData();
+      const metricsContext = await getMetricsContext();
+      const answer = await askClaude({
+        systemPrompt: BOT_SYSTEM_PROMPT,
+        userMessage: `${metricsContext}\n\n═══ REVENUE FORECAST ═══\n${forecastStr}\n\nQuestion: ${text}`,
+        maxTokens: 500,
+      });
+      await sendTelegramMessage(chatId, answer);
+      return NextResponse.json({ ok: true });
+    }
+
+    // Budget pacing
+    if (lower.includes('budget') || lower.includes('pacing') || lower.includes('over budget') || lower.includes('underspend')) {
+      const budgetData = await fetchBudgetPacing();
+      const metricsContext = await getMetricsContext();
+      const answer = await askClaude({
+        systemPrompt: BOT_SYSTEM_PROMPT,
+        userMessage: `${metricsContext}\n\n═══ BUDGET PACING ═══\n${budgetData}\n\nQuestion: ${text}`,
+        maxTokens: 500,
+      });
+      await sendTelegramMessage(chatId, answer);
+      return NextResponse.json({ ok: true });
+    }
+
     // Any other message — treat as a question for Claude (enhanced with all data)
     const metricsContext = await getMetricsContext();
     const insight = await askClaude({
-      systemPrompt: `You are Karbon AI, the business intelligence assistant for Shift Arcade Miami. You have access to:
-- Real-time ad performance (Meta, Google, Instagram)
-- Live booking/reservation data from ShiftOS
-- Square iPad POS revenue data
-- ShiftOS Stripe revenue data
-- Customer lifecycle data (active, medium risk, high risk, churned)
-- Membership/APEX subscriber info
-- P&L breakdown with merchant fees and franchise fees
-- Individual customer history (visits, spend, status)
-- 8 Miami simulators: Hamilton-Mia, Verstappen-Mia (Ultimate $40), Norris-Mia, Piastri-Mia, Russell-Mia, Leclerc-Mia (Haptic $35), Antonelli-Mia, Sainz-Mia (Non-Motion $30)
-
-Be concise, specific with numbers. Format for Telegram (HTML: <b>bold</b>). Under 250 words. When asked about revenue, use the real revenue data (ShiftOS Stripe + Square iPad). When asked about a specific customer, use the customer data.`,
+      systemPrompt: BOT_SYSTEM_PROMPT,
       userMessage: `Here is the current data:\n\n${metricsContext}\n\nQuestion: ${text}`,
       maxTokens: 500,
     });
@@ -266,4 +409,244 @@ async function getSystemStatus(): Promise<string> {
     status += '\n';
   }
   return status;
+}
+
+// ── New data fetchers for extended bot commands ──────────
+
+const CID_MIAMI = '950d0b84-63fa-409b-ad4f-ca1fdae25c7c';
+
+async function fetchRefundData(): Promise<string> {
+  try {
+    const supabase = getAdminSupabase();
+    const { data: charges } = await supabase
+      .from('shiftos_charges')
+      .select('amount, refunded')
+      .eq('company_id', CID_MIAMI);
+
+    const all = charges ?? [];
+    const totalCharges = all.length;
+    const totalAmount = all.reduce((s, c) => s + (Number(c.amount) || 0), 0);
+    const refunded = all.filter((c) => c.refunded);
+    const refundCount = refunded.length;
+    const refundAmount = refunded.reduce((s, c) => s + (Number(c.amount) || 0), 0);
+    const refundRate = totalCharges > 0 ? ((refundCount / totalCharges) * 100).toFixed(1) : '0';
+
+    return `Total charges: ${totalCharges}\nTotal charged: $${totalAmount.toFixed(2)}\nRefunds: ${refundCount} ($${refundAmount.toFixed(2)})\nRefund rate: ${refundRate}%\nNet after refunds: $${(totalAmount - refundAmount).toFixed(2)}`;
+  } catch (err) {
+    console.error('fetchRefundData error:', err);
+    return 'Refund data unavailable.';
+  }
+}
+
+async function fetchCreativesData(): Promise<string> {
+  try {
+    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000';
+    const res = await fetch(`${baseUrl}/api/meta/creative-performance`, {
+      headers: { 'x-api-key': process.env.INGEST_API_KEY ?? '' },
+    });
+    if (!res.ok) return 'Creative data unavailable.';
+    const data = await res.json();
+    const creatives = data.creatives ?? data.ads ?? [];
+    if (creatives.length === 0) return 'No ad creatives found.';
+
+    return creatives.slice(0, 10).map((ad: { name: string; status: string; spend: number; impressions: number; clicks: number; ctr: number; conversions: number }) =>
+      `• ${ad.name} (${ad.status}): $${Number(ad.spend).toFixed(2)} spend, ${ad.impressions} impr, ${ad.clicks} clicks, CTR ${Number(ad.ctr).toFixed(2)}%, ${ad.conversions ?? 0} conv`
+    ).join('\n');
+  } catch (err) {
+    console.error('fetchCreativesData error:', err);
+    return 'Creative data unavailable.';
+  }
+}
+
+async function fetchReviewsData(): Promise<string> {
+  try {
+    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000';
+    const res = await fetch(`${baseUrl}/api/marketing/reviews`, {
+      headers: { 'x-api-key': process.env.INGEST_API_KEY ?? '' },
+    });
+    if (!res.ok) return 'Review data unavailable.';
+    const data = await res.json();
+
+    const lines = [
+      `Overall rating: ${data.avg_rating ?? 'N/A'} (${data.total_count ?? 0} reviews)`,
+      `Google: ${data.google_avg ?? 'N/A'} (${data.google_count ?? 0})`,
+      `Yelp: ${data.yelp_avg ?? 'N/A'} (${data.yelp_count ?? 0})`,
+    ];
+
+    if (data.recent && data.recent.length > 0) {
+      lines.push('\nRecent reviews:');
+      for (const r of data.recent.slice(0, 5)) {
+        lines.push(`  • ${r.author_name}: ${r.rating}★ on ${r.platform} — "${(r.text ?? '').slice(0, 80)}"`);
+      }
+    }
+
+    return lines.join('\n');
+  } catch (err) {
+    console.error('fetchReviewsData error:', err);
+    return 'Review data unavailable.';
+  }
+}
+
+async function fetchOrganicData(): Promise<string> {
+  try {
+    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000';
+    const res = await fetch(`${baseUrl}/api/marketing/organic?period=30d`, {
+      headers: { 'x-api-key': process.env.INGEST_API_KEY ?? '' },
+    });
+    if (!res.ok) return 'Organic data unavailable.';
+    const data = await res.json();
+
+    const lines = [
+      `Total clicks (30d): ${data.total_clicks ?? 'N/A'}`,
+      `Total impressions (30d): ${data.total_impressions ?? 'N/A'}`,
+      `Avg CTR: ${data.avg_ctr != null ? `${Number(data.avg_ctr).toFixed(2)}%` : 'N/A'}`,
+      `Avg position: ${data.avg_position != null ? Number(data.avg_position).toFixed(1) : 'N/A'}`,
+    ];
+
+    if (data.top_queries && data.top_queries.length > 0) {
+      lines.push('\nTop queries:');
+      for (const q of data.top_queries.slice(0, 5)) {
+        lines.push(`  • "${q.query}": ${q.clicks} clicks, pos ${Number(q.position).toFixed(1)}`);
+      }
+    }
+
+    return lines.join('\n');
+  } catch (err) {
+    console.error('fetchOrganicData error:', err);
+    return 'Organic data unavailable.';
+  }
+}
+
+async function fetchCohortData(): Promise<string> {
+  try {
+    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000';
+    const res = await fetch(`${baseUrl}/api/marketing/cohorts`, {
+      headers: { 'x-api-key': process.env.INGEST_API_KEY ?? '' },
+    });
+    if (!res.ok) return 'Cohort data unavailable.';
+    const data = await res.json();
+
+    const cohorts = data.cohorts ?? [];
+    if (cohorts.length === 0) return 'No cohort data available.';
+
+    const lines = [`Total cohorts: ${cohorts.length}`];
+    for (const c of cohorts.slice(0, 6)) {
+      const retentionStr = (c.retention_rates ?? []).slice(0, 4).map((r: number) => `${(r * 100).toFixed(0)}%`).join(' → ');
+      lines.push(`  • ${c.cohort_month}: ${c.customer_count} customers, retention: ${retentionStr}`);
+    }
+
+    return lines.join('\n');
+  } catch (err) {
+    console.error('fetchCohortData error:', err);
+    return 'Cohort data unavailable.';
+  }
+}
+
+async function fetchBudgetPacing(): Promise<string> {
+  try {
+    const supabase = getAdminSupabase();
+    const now = new Date();
+    const thisMonthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
+    const today = now.toISOString().split('T')[0];
+    const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+    const dayOfMonth = now.getDate();
+
+    // Get all ad spend this month (exclude shiftos)
+    const { data: monthMetrics } = await supabase
+      .from('daily_metrics')
+      .select('spend, platform')
+      .eq('client_id', CID_MIAMI)
+      .neq('platform', 'shiftos')
+      .gte('date', thisMonthStart)
+      .lte('date', today);
+
+    const totalSpent = (monthMetrics ?? []).reduce((s, m) => s + (Number(m.spend) || 0), 0);
+
+    // Get campaign budgets
+    const { data: campaigns } = await supabase
+      .from('campaigns')
+      .select('name, monthly_cost')
+      .eq('client_id', CID_MIAMI)
+      .eq('status', 'active');
+
+    const totalBudget = (campaigns ?? []).reduce((s, c) => s + (Number(c.monthly_cost) || 0), 0);
+    const pacingPct = totalBudget > 0 ? (totalSpent / totalBudget) * 100 : 0;
+    const expectedPct = (dayOfMonth / daysInMonth) * 100;
+    const dailyAvg = dayOfMonth > 0 ? totalSpent / dayOfMonth : 0;
+    const projectedEom = dailyAvg * daysInMonth;
+
+    const status = pacingPct > expectedPct + 10 ? 'OVER PACING'
+      : pacingPct < expectedPct - 10 ? 'UNDER PACING'
+      : 'ON TRACK';
+
+    return [
+      `Month: ${thisMonthStart.substring(0, 7)} (day ${dayOfMonth}/${daysInMonth})`,
+      `Total budget: $${totalBudget.toFixed(2)}`,
+      `Spent so far: $${totalSpent.toFixed(2)} (${pacingPct.toFixed(1)}%)`,
+      `Expected at this point: ${expectedPct.toFixed(1)}%`,
+      `Daily avg: $${dailyAvg.toFixed(2)}`,
+      `Projected EOM: $${projectedEom.toFixed(2)}`,
+      `Status: ${status}`,
+      campaigns && campaigns.length > 0 ? `\nCampaigns:\n${campaigns.map((c) => `  • ${c.name}: $${Number(c.monthly_cost).toFixed(2)}/mo`).join('\n')}` : '',
+    ].filter(Boolean).join('\n');
+  } catch (err) {
+    console.error('fetchBudgetPacing error:', err);
+    return 'Budget data unavailable.';
+  }
+}
+
+async function fetchChurnData(): Promise<string> {
+  try {
+    const result = await predictChurn();
+    const { summary, customers } = result;
+
+    const lines = [
+      `Summary: ${summary.safe} safe, ${summary.watch} watch, ${summary.at_risk} at risk, ${summary.critical} critical`,
+      `Revenue at risk: $${summary.total_at_risk_revenue.toLocaleString()}`,
+      '',
+      'Top 5 highest-risk customers:',
+    ];
+
+    for (const c of customers.slice(0, 5)) {
+      lines.push(`  • ${c.name} — score ${c.churn_score}/100 (${c.risk_level}) — $${c.lifetime_value} LTV — ${c.last_booking_days}d since last visit — urgency: ${c.win_back_urgency}`);
+      lines.push(`    Factors: ${c.factors.join(', ')}`);
+    }
+
+    return lines.join('\n');
+  } catch (err) {
+    console.error('fetchChurnData error:', err);
+    return 'Churn data unavailable.';
+  }
+}
+
+async function fetchForecastData(): Promise<string> {
+  try {
+    const result = await forecastRevenue();
+    const { summary, basis } = result;
+
+    const trendStr = summary.trend === 'growing'
+      ? `Growing +${summary.trend_pct}%`
+      : summary.trend === 'declining'
+      ? `Declining ${summary.trend_pct}%`
+      : 'Stable';
+
+    const lines = [
+      `Projected 30-day revenue: $${summary.projected_30d_revenue.toLocaleString()}`,
+      `Confidence range: $${summary.confidence_low.toLocaleString()} — $${summary.confidence_high.toLocaleString()}`,
+      `Avg daily projected: $${summary.avg_daily_projected.toLocaleString()}`,
+      `Trend: ${trendStr}`,
+      `Best day: ${summary.best_day}`,
+      `Worst day: ${summary.worst_day}`,
+      `Weekend vs weekday ratio: ${summary.weekend_vs_weekday_ratio}x`,
+      '',
+      `Based on ${basis.days_of_history} days of history`,
+      `Recent 7d avg: $${basis.avg_daily_revenue_7d}/day`,
+      `Recent 30d avg: $${basis.avg_daily_revenue_30d}/day`,
+    ];
+
+    return lines.join('\n');
+  } catch (err) {
+    console.error('fetchForecastData error:', err);
+    return 'Forecast data unavailable.';
+  }
 }

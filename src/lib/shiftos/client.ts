@@ -87,3 +87,53 @@ export async function getUserById(userId: number): Promise<ShiftUser> {
   const data = await apiGet(`/users/${userId}/`) as ShiftUser;
   return data;
 }
+
+// ── Charges (Stripe-confirmed payments) ──────────────────
+
+export interface ShiftCharge {
+  id: string;
+  user: number;
+  location: string;
+  charge_id: string | null; // Stripe charge_id
+  status: string;
+  amount_cents: number;
+  amount_captured: number;
+  amount_refunded: number;
+  receipt_url: string | null;
+  notes: string | null;
+  created: string;
+}
+
+/**
+ * Fetch recent charges from ShiftOS, filtered to Miami only.
+ * Uses created__gte / created__lte for the time window.
+ */
+export async function getMiamiCharges(
+  since: string,
+  until: string,
+): Promise<ShiftCharge[]> {
+  const data = await apiGet(
+    `/accounting/charges/?created__gte=${since}&created__lte=${until}&ordering=-created&limit=200`,
+  ) as { results: ShiftCharge[] };
+
+  // Miami only
+  return (data.results ?? []).filter(
+    (c) => c.location === MIAMI_LOCATION_ID,
+  );
+}
+
+/**
+ * Fetch multiple users by ID in parallel (for CAPI enrichment).
+ */
+export async function getUsersByIds(userIds: number[]): Promise<Map<number, ShiftUser>> {
+  const unique = [...new Set(userIds)];
+  const results = await Promise.all(
+    unique.map((id) => getUserById(id).catch(() => null)),
+  );
+  const map = new Map<number, ShiftUser>();
+  for (let i = 0; i < unique.length; i++) {
+    const user = results[i];
+    if (user) map.set(unique[i], user);
+  }
+  return map;
+}

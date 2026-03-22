@@ -1,6 +1,7 @@
 import type { SyncResult, PlatformSlug } from '@/types';
 import { syncMetaAds } from './meta-ads';
 import { syncGoogleAnalytics } from './google-analytics';
+import { syncSearchConsole } from './google-search-console';
 import { syncInstagram } from './instagram';
 import { syncShiftOS } from './shiftos';
 
@@ -14,6 +15,7 @@ export type SyncFunction = (
 const syncRegistry: Partial<Record<PlatformSlug, SyncFunction>> = {
   meta_ads: syncMetaAds,
   google_analytics: syncGoogleAnalytics,
+  google_search_console: syncSearchConsole,
   instagram: syncInstagram,
   shiftos: syncShiftOS,
 };

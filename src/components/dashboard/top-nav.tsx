@@ -18,6 +18,7 @@ const adminTabs: TabItem[] = [
   { label: "Overview", href: "/dashboard" },
   { label: "CRM", href: "/dashboard/leads" },
   { label: "Marketing", href: "/dashboard/marketing" },
+  { label: "Lifeline", href: "/dashboard/lifeline" },
 ];
 
 const clientTabs: TabItem[] = [

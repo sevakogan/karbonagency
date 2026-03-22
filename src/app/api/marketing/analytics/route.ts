@@ -216,6 +216,42 @@ export async function GET(request: NextRequest) {
     const totalDeductions = totalMerchantFees + totalFranchiseFees;
     const netProfit = totalLifetimeRevenue - totalDeductions;
 
+    // Attribution breakdown
+    const { data: attrData } = await supabase
+      .from('shiftos_customers')
+      .select('attribution_source')
+      .eq('company_id', companyId)
+      .not('attribution_source', 'is', null);
+
+    const attribution: Record<string, number> = {};
+    for (const row of attrData ?? []) {
+      const src = row.attribution_source ?? 'unknown';
+      attribution[src] = (attribution[src] ?? 0) + 1;
+    }
+
+    // Refund tracking from shiftos_charges
+    let refunds: { total_refunded: number; net_after_refunds: number; refund_rate_pct: number } | null = null;
+    try {
+      const { data: chargeData } = await supabase
+        .from('shiftos_charges')
+        .select('amount_cents, amount_refunded, net_amount_cents')
+        .eq('company_id', companyId);
+
+      if (chargeData) {
+        const totalGrossCharges = chargeData.reduce((s, c) => s + (c.amount_cents ?? 0), 0) / 100;
+        const totalRefunds = chargeData.reduce((s, c) => s + (c.amount_refunded ?? 0), 0) / 100;
+        const netAfterRefunds = chargeData.reduce((s, c) => s + (c.net_amount_cents ?? 0), 0) / 100;
+        const refundRate = totalGrossCharges > 0 ? (totalRefunds / totalGrossCharges) * 100 : 0;
+        refunds = {
+          total_refunded: Math.round(totalRefunds * 100) / 100,
+          net_after_refunds: Math.round(netAfterRefunds * 100) / 100,
+          refund_rate_pct: Math.round(refundRate * 100) / 100,
+        };
+      }
+    } catch {
+      // shiftos_charges table may not exist — gracefully skip
+    }
+
     const r = (n: number) => Math.round(n * 100) / 100;
 
     return NextResponse.json({
@@ -254,6 +290,8 @@ export async function GET(request: NextRequest) {
         net_profit: r(netProfit),
         margin_pct: r((netProfit / totalLifetimeRevenue) * 100),
       },
+      attribution,
+      ...(refunds ? { refunds } : {}),
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Unknown error';

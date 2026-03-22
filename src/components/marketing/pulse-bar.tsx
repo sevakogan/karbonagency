@@ -168,13 +168,13 @@ export function PulseBar({ analytics, loading, activeStatus, onStatusClick }: Pu
       {analytics?.refunds && (
         <PulseCard
           label="Refund Rate"
-          value={`${analytics.refunds.refund_rate_pct.toFixed(1)}%`}
+          value={`${(analytics.refunds.refund_rate_pct ?? 0).toFixed(1)}%`}
           icon={<RotateCcw size={12} />}
           accentColor={analytics.refunds.refund_rate_pct > 5 ? '#ef4444' : '#22c55e'}
           loading={loading}
           subtitle={
             <span className="text-[9px] font-medium" style={{ color: 'var(--text-tertiary)' }}>
-              ${analytics.refunds.total_refunded.toLocaleString()} refunded
+              ${(analytics.refunds.total_refunded ?? 0).toLocaleString()} refunded
             </span>
           }
         />

@@ -1162,7 +1162,7 @@ function ReviewsCard({ data }: { data: ReviewsData | null | undefined }) {
         <div className="flex flex-col gap-0.5">
           <StarRow rating={data.overall_rating} />
           <span className="text-[10px] font-medium" style={{ color: 'var(--text-tertiary)' }}>
-            {data.total_reviews.toLocaleString()} reviews
+            {(data.total_reviews ?? 0).toLocaleString()} reviews
             {delta !== 0 && (
               <span style={{ color: delta > 0 ? '#22c55e' : '#ef4444', marginLeft: 6 }}>
                 {delta > 0 ? '+' : ''}{delta.toFixed(2)} vs avg
@@ -1245,10 +1245,10 @@ function OrganicSearchCard({ data }: { data: OrganicData | null | undefined }) {
       {/* KPI row */}
       <div className="grid grid-cols-4 gap-2 mb-3">
         {[
-          { label: 'Clicks', value: data.clicks.toLocaleString(), color: '#34A853' },
-          { label: 'Impressions', value: data.impressions.toLocaleString(), color: 'var(--text-primary)' },
-          { label: 'Avg CTR', value: `${data.ctr.toFixed(1)}%`, color: '#34A853' },
-          { label: 'Avg Position', value: data.position.toFixed(1), color: 'var(--text-primary)' },
+          { label: 'Clicks', value: (data.clicks ?? 0).toLocaleString(), color: '#34A853' },
+          { label: 'Impressions', value: (data.impressions ?? 0).toLocaleString(), color: 'var(--text-primary)' },
+          { label: 'Avg CTR', value: `${(data.ctr ?? 0).toFixed(1)}%`, color: '#34A853' },
+          { label: 'Avg Position', value: (data.position ?? 0).toFixed(1), color: 'var(--text-primary)' },
         ].map((kpi) => (
           <div key={kpi.label} className="flex flex-col items-center rounded-lg py-1.5" style={{ background: 'var(--fill-quaternary)' }}>
             <span className="text-sm font-bold tabular-nums" style={{ color: kpi.color }}>{kpi.value}</span>
@@ -1398,9 +1398,9 @@ function CreativePerformanceCard({ data }: { data: CreativesData | null | undefi
                       {c.status}
                     </span>
                   </td>
-                  <td className="text-right tabular-nums" style={{ color: 'var(--text-primary)' }}>${c.spend.toLocaleString()}</td>
-                  <td className="text-right tabular-nums" style={{ color: 'var(--text-secondary)' }}>{c.impressions.toLocaleString()}</td>
-                  <td className="text-right tabular-nums" style={{ color: 'var(--text-secondary)' }}>{c.clicks.toLocaleString()}</td>
+                  <td className="text-right tabular-nums" style={{ color: 'var(--text-primary)' }}>${(c.spend ?? 0).toLocaleString()}</td>
+                  <td className="text-right tabular-nums" style={{ color: 'var(--text-secondary)' }}>{(c.impressions ?? 0).toLocaleString()}</td>
+                  <td className="text-right tabular-nums" style={{ color: 'var(--text-secondary)' }}>{(c.clicks ?? 0).toLocaleString()}</td>
                   <td className="text-right tabular-nums" style={{ color: 'var(--text-secondary)' }}>{c.ctr.toFixed(2)}%</td>
                   <td className="text-right tabular-nums" style={{ color: 'var(--text-secondary)' }}>${c.cpc.toFixed(2)}</td>
                   <td className="text-right tabular-nums" style={{ color: 'var(--text-primary)' }}>{c.conversions}</td>

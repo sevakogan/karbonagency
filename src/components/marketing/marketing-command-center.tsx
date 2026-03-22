@@ -77,6 +77,8 @@ export interface AnalyticsData {
     avg_lifetime_value: number;
   };
   scatter_data: ScatterPoint[];
+  revenue_lifetime: number;
+  merchant_fees: { stripe: number; square: number; total: number; net_revenue: number };
   revenue_trend: Array<{
     period: string;
     date?: string;
@@ -200,6 +202,8 @@ export function MarketingCommandCenter() {
           },
           scatter_data: (raw.scatter_data ?? []).filter((c: any) => c.total_bookings > 0),
           revenue_trend: raw.revenue_trend ?? [],
+          revenue_lifetime: raw.revenue_lifetime ?? 0,
+          merchant_fees: raw.merchant_fees ?? { stripe: 0, square: 0, total: 0, net_revenue: 0 },
           coupon_impact: (raw.coupon_analysis ?? []).map((c: any) => ({
             code: c.code,
             first_time: c.uses - Math.round(c.uses * (c.repeat_rate ?? 0)),

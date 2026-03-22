@@ -119,21 +119,30 @@ export async function GET(request: NextRequest) {
       };
     });
 
-    // Fetch ALL reservations (no period cutoff) for monthly revenue
-    const allReservations = (await fetchReservations(supabase, companyId, null))
-      .filter((r) => !EMPLOYEE_SHIFTOS_IDS.has(r.shiftos_user_id));
+    // Pull monthly revenue from daily_metrics (imported from CSV — real ShiftOS + Square data)
     const now2 = new Date();
-    const thisMonthStart = new Date(now2.getFullYear(), now2.getMonth(), 1);
-    const lastMonthStart = new Date(now2.getFullYear(), now2.getMonth() - 1, 1);
-    const revenueThisMonth = allReservations
-      .filter((r) => new Date(r.booking_time) >= thisMonthStart)
-      .reduce((s, r) => s + Number(r.revenue ?? 0), 0);
-    const revenueLastMonth = allReservations
-      .filter((r) => {
-        const d = new Date(r.booking_time);
-        return d >= lastMonthStart && d < thisMonthStart;
-      })
-      .reduce((s, r) => s + Number(r.revenue ?? 0), 0);
+    const thisMonthStr = `${now2.getFullYear()}-${String(now2.getMonth() + 1).padStart(2, '0')}`;
+    const lastMonth = new Date(now2.getFullYear(), now2.getMonth() - 1, 1);
+    const lastMonthStr = `${lastMonth.getFullYear()}-${String(lastMonth.getMonth() + 1).padStart(2, '0')}`;
+
+    const { data: thisMonthMetrics } = await supabase
+      .from('daily_metrics')
+      .select('cost_per_conversion')
+      .eq('client_id', companyId)
+      .eq('platform', 'shiftos')
+      .gte('date', `${thisMonthStr}-01`)
+      .lt('date', `${thisMonthStr}-32`);
+
+    const { data: lastMonthMetrics } = await supabase
+      .from('daily_metrics')
+      .select('cost_per_conversion')
+      .eq('client_id', companyId)
+      .eq('platform', 'shiftos')
+      .gte('date', `${lastMonthStr}-01`)
+      .lt('date', `${lastMonthStr}-32`);
+
+    const revenueThisMonth = (thisMonthMetrics ?? []).reduce((s, m) => s + Number(m.cost_per_conversion ?? 0), 0);
+    const revenueLastMonth = (lastMonthMetrics ?? []).reduce((s, m) => s + Number(m.cost_per_conversion ?? 0), 0);
 
     // Avg lifetime value from ALL customers with bookings
     const custWithBookings = customers.filter((c) => c.total_bookings > 0);
@@ -141,15 +150,55 @@ export async function GET(request: NextRequest) {
       ? Math.round(custWithBookings.reduce((s, c) => s + c.total_revenue, 0) / custWithBookings.length)
       : 0;
 
+    // Build revenue trend from daily_metrics CSV data (more accurate than reservation-based)
+    const { data: dailyRevMetrics } = await supabase
+      .from('daily_metrics')
+      .select('date, cost_per_conversion, impressions, reach, video_views, leads')
+      .eq('client_id', companyId)
+      .eq('platform', 'shiftos')
+      .order('date', { ascending: true });
+
+    const csvRevenueTrend = (dailyRevMetrics ?? []).map((m) => ({
+      period: m.date,
+      revenue: Number(m.cost_per_conversion ?? 0),
+      shiftos_revenue: Number(m.impressions ?? 0) / 100,
+      square_revenue: Number(m.reach ?? 0) / 100,
+      bookings: Number(m.video_views ?? 0) + Number(m.leads ?? 0),
+      coupon_revenue: 0,
+    }));
+
+    // Merchant fees estimate (Stripe ~2.9%+30c, Square ~2.6%+10c)
+    const STRIPE_RATE = 0.029;
+    const STRIPE_FIXED = 0.30;
+    const SQUARE_RATE = 0.026;
+    const SQUARE_FIXED = 0.10;
+
+    const totalLifetimeRevenue = (dailyRevMetrics ?? []).reduce((s, m) => s + Number(m.cost_per_conversion ?? 0), 0);
+    const totalShiftOSRev = (dailyRevMetrics ?? []).reduce((s, m) => s + Number(m.impressions ?? 0) / 100, 0);
+    const totalSquareRev = (dailyRevMetrics ?? []).reduce((s, m) => s + Number(m.reach ?? 0) / 100, 0);
+    const totalShiftosTxns = (dailyRevMetrics ?? []).reduce((s, m) => s + Number(m.video_views ?? 0), 0);
+    const totalSquareTxns = (dailyRevMetrics ?? []).reduce((s, m) => s + Number(m.leads ?? 0), 0);
+
+    const stripeFees = totalShiftOSRev * STRIPE_RATE + totalShiftosTxns * STRIPE_FIXED;
+    const squareFees = totalSquareRev * SQUARE_RATE + totalSquareTxns * SQUARE_FIXED;
+    const totalFees = stripeFees + squareFees;
+
     return NextResponse.json({
-      revenue_trend: revenueTrend,
+      revenue_trend: csvRevenueTrend.length > 0 ? csvRevenueTrend : revenueTrend,
       status_distribution: statusDist,
       spend_tiers: spendTiers,
       coupon_analysis: couponAnalysis,
       scatter_data: scatterData,
       revenue_this_month: revenueThisMonth,
       revenue_last_month: revenueLastMonth,
+      revenue_lifetime: totalLifetimeRevenue,
       avg_lifetime_value: avgLTV,
+      merchant_fees: {
+        stripe: Math.round(stripeFees * 100) / 100,
+        square: Math.round(squareFees * 100) / 100,
+        total: Math.round(totalFees * 100) / 100,
+        net_revenue: Math.round((totalLifetimeRevenue - totalFees) * 100) / 100,
+      },
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Unknown error';

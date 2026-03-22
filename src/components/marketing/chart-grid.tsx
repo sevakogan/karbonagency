@@ -286,7 +286,7 @@ function VipScatter({ customers, onStatusClick }: {
         }}
       >
         <p className="font-semibold">{d.name}</p>
-        <p style={{ color: 'var(--text-tertiary)' }}>Spend: ${d.y.toLocaleString()}</p>
+        <p style={{ color: 'var(--text-tertiary)' }}>Spend: ${(d.y ?? 0).toLocaleString()}</p>
         <p style={{ color: 'var(--text-tertiary)' }}>Bookings: {d.x}</p>
         <p style={{ color: 'var(--text-tertiary)' }}>Last visit: {d.days}d ago</p>
       </div>

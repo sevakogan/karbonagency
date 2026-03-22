@@ -75,8 +75,8 @@ export function CustomerExpanded({ customer }: CustomerExpandedProps) {
     >
       {/* Quick metrics */}
       <div className="grid grid-cols-5 gap-2 mb-4">
-        <MetricPill label="Lifetime" value={`$${customer.lifetime_spend.toLocaleString()}`} />
-        <MetricPill label="30d Spend" value={`$${customer.thirty_day_spend.toLocaleString()}`} />
+        <MetricPill label="Lifetime" value={`$${(customer.lifetime_spend ?? 0).toLocaleString()}`} />
+        <MetricPill label="30d Spend" value={`$${(customer.thirty_day_spend ?? 0).toLocaleString()}`} />
         <MetricPill label="Avg Gap" value={`${customer.avg_gap_days}d`} />
         <MetricPill
           label="Signup to 1st"

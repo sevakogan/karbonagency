@@ -117,7 +117,7 @@ function CustomerCard({
                 {customer.name}
               </span>
               <span className="ml-auto text-xs font-bold tabular-nums" style={{ color: 'var(--text-primary)' }}>
-                ${customer.lifetime_spend.toLocaleString()}
+                ${(customer.lifetime_spend ?? 0).toLocaleString()}
               </span>
               <span className="text-[10px] tabular-nums" style={{ color: 'var(--text-tertiary)' }}>
                 {customer.total_bookings} visits
@@ -207,13 +207,13 @@ function CompactTableRow({
         {customer.phone}
       </td>
       <td className="py-2 px-2 text-xs font-semibold tabular-nums" style={{ color: 'var(--text-primary)' }}>
-        ${customer.lifetime_spend.toLocaleString()}
+        ${(customer.lifetime_spend ?? 0).toLocaleString()}
       </td>
       <td className="py-2 px-2 text-xs tabular-nums" style={{ color: 'var(--text-tertiary)' }}>
         {customer.total_bookings}
       </td>
       <td className="py-2 px-2 text-xs tabular-nums" style={{ color: 'var(--text-tertiary)' }}>
-        ${customer.thirty_day_spend.toLocaleString()}
+        ${(customer.thirty_day_spend ?? 0).toLocaleString()}
       </td>
       <td className="py-2 px-2 text-xs tabular-nums" style={{ color: 'var(--text-tertiary)' }}>
         {daysAgoText(customer.days_since_last)}

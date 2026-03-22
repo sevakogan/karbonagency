@@ -143,7 +143,30 @@ export function MarketingCommandCenter() {
     params.set('period', filters.period);
     fetch(`/api/marketing/analytics?${params.toString()}`)
       .then((r) => (r.ok ? r.json() : null))
-      .then((data) => setAnalytics(data))
+      .then((raw) => {
+        if (!raw) { setAnalytics(null); return; }
+        // Map API response shape to AnalyticsData interface
+        const sd = raw.status_distribution ?? {};
+        const mapped: AnalyticsData = {
+          summary: {
+            total: (sd.active ?? 0) + (sd.at_risk ?? 0) + (sd.churned ?? 0),
+            active: sd.active ?? 0,
+            at_risk: sd.at_risk ?? 0,
+            churned: sd.churned ?? 0,
+            revenue_this_month: raw.revenue_trend?.reduce((s: number, r: any) => s + (r.revenue ?? 0), 0) ?? 0,
+            revenue_last_month: 0,
+            avg_lifetime_value: 0,
+          },
+          revenue_trend: raw.revenue_trend ?? [],
+          coupon_impact: (raw.coupon_analysis ?? []).map((c: any) => ({
+            code: c.code,
+            first_time: c.uses - Math.round(c.uses * (c.repeat_rate ?? 0)),
+            repeat: Math.round(c.uses * (c.repeat_rate ?? 0)),
+            repeat_rate: c.repeat_rate ?? 0,
+          })),
+        };
+        setAnalytics(mapped);
+      })
       .catch(() => setAnalytics(null))
       .finally(() => setAnalyticsLoading(false));
   }, [filters.period]);

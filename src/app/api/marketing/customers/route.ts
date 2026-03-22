@@ -81,9 +81,17 @@ export async function GET(request: NextRequest) {
     const spendMin = params.get('spend_min') ? Number(params.get('spend_min')) : null;
     const spendMax = params.get('spend_max') ? Number(params.get('spend_max')) : null;
     const hasFutureBooking = params.get('has_future_booking');
-    const companyId = params.get('companyId');
+    let companyId = params.get('companyId');
 
     const supabase = getAdminSupabase();
+
+    // Default to Shift Arcade Miami
+    if (!companyId) {
+      const { data: company } = await supabase
+        .from('clients').select('id').ilike('name', '%shift%arcade%').limit(1).single();
+      companyId = company?.id ?? null;
+    }
+
     const now = new Date();
     const nowIso = now.toISOString();
 

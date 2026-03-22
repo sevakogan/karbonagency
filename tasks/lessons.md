@@ -17,3 +17,8 @@
 - When doing a major redesign, do a `grep` for hardcoded color classes across ALL component files and fix them in the same PR
 - Platform/integration lists should be COMPACT ROWS (like iOS Settings), not big grid cards. Think list items, not marketing cards. One row per item with inline controls.
 - Dashboard UI density: if a card has only 3-4 pieces of info, it should be a single row — not a card with sections, headers, and a full-width button
+
+## 2026-03-21 — Don't ask Seva to run things
+**Mistake:** Asked user to run the bootstrap curl command manually
+**Correct approach:** Run it myself. Claude can execute any API call, curl, deployment trigger, or automation step. Only ask the user for things that physically require their input (passwords, OAuth flows in browser, hardware access).
+**Rule:** NEVER ask the user to do something Claude can do. Always execute it. Only escalate when physically impossible (browser OAuth, entering credentials on a website, hardware).

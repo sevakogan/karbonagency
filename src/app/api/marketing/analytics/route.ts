@@ -42,10 +42,21 @@ export async function GET(request: NextRequest) {
   try {
     const params = request.nextUrl.searchParams;
     const period = params.get('period') ?? '30d';
-    const companyId = params.get('companyId');
+    let companyId = params.get('companyId');
 
+    // Default to Shift Arcade Miami if no companyId provided
     if (!companyId) {
-      return NextResponse.json({ error: 'companyId required' }, { status: 400 });
+      const supabase = getAdminSupabase();
+      const { data: company } = await supabase
+        .from('clients')
+        .select('id')
+        .ilike('name', '%shift%arcade%')
+        .limit(1)
+        .single();
+      companyId = company?.id ?? null;
+      if (!companyId) {
+        return NextResponse.json({ error: 'No company found' }, { status: 400 });
+      }
     }
 
     const periodDays = PERIOD_DAYS[period] ?? 30;

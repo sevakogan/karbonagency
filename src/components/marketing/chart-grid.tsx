@@ -650,48 +650,153 @@ function CouponImpactChart({ data }: { data: AnalyticsData['coupon_impact'] }) {
   );
 }
 
-function PnlRow({ label, value, color, bold, indent }: { label: string; value: number; color?: string; bold?: boolean; indent?: boolean }) {
-  const isNeg = label.startsWith('-') || label.includes('Fee') || label.includes('franchise');
-  const displayVal = isNeg ? `-$${Math.abs(value).toLocaleString()}` : `$${value.toLocaleString()}`;
+function formatPnlShort(n: number): string {
+  const abs = Math.abs(n);
+  const formatted = abs >= 1000 ? `$${(abs / 1000).toFixed(1)}k` : `$${abs.toFixed(0)}`;
+  return n < 0 ? `-${formatted}` : formatted;
+}
+
+function PnlMiniCard({ value, label, color, pct }: {
+  value: number;
+  label: string;
+  color: string;
+  pct: number;
+}) {
   return (
-    <div className={`flex justify-between items-baseline ${indent ? 'pl-3' : ''}`}>
-      <span className={`text-[10px] ${bold ? 'font-bold' : 'font-medium'}`} style={{ color: color ?? 'var(--text-secondary)' }}>{label}</span>
-      <span className={`text-xs ${bold ? 'font-bold' : 'font-semibold'} tabular-nums`} style={{ color: color ?? 'var(--text-primary)' }}>{displayVal}</span>
+    <div className="group relative flex flex-col items-center gap-1 rounded-xl px-2 py-2.5 transition-colors" style={{ background: 'var(--fill-quaternary)' }}>
+      <span
+        className="text-base font-bold tabular-nums leading-tight"
+        style={{ color }}
+        title={`$${Math.abs(value).toLocaleString()}`}
+      >
+        {formatPnlShort(value)}
+      </span>
+      <span className="text-[8px] font-semibold uppercase tracking-wider text-center leading-tight" style={{ color: 'var(--text-tertiary)' }}>
+        {label}
+      </span>
+      {pct > 0 && (
+        <span className="text-[8px] font-medium tabular-nums" style={{ color: 'var(--text-tertiary)' }}>
+          {pct.toFixed(1)}%
+        </span>
+      )}
+      <div className="w-full h-1 rounded-full mt-0.5 overflow-hidden" style={{ background: 'rgba(255,255,255,0.06)' }}>
+        <div
+          className="h-full rounded-full transition-all"
+          style={{ width: `${Math.min(pct, 100)}%`, background: color }}
+        />
+      </div>
+    </div>
+  );
+}
+
+function PnlFlowArrow() {
+  return (
+    <div className="flex items-center justify-center self-center" style={{ color: 'var(--text-tertiary)' }}>
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+        <path d="M6 4l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    </div>
+  );
+}
+
+function PnlDetailRow({ label, value, color }: { label: string; value: number; color?: string }) {
+  const displayVal = value < 0 ? `-$${Math.abs(value).toLocaleString()}` : `$${value.toLocaleString()}`;
+  return (
+    <div className="flex justify-between items-baseline">
+      <span className="text-[10px] font-medium" style={{ color: color ?? 'var(--text-secondary)' }}>{label}</span>
+      <span className="text-[11px] font-semibold tabular-nums" style={{ color: color ?? 'var(--text-primary)' }}>{displayVal}</span>
     </div>
   );
 }
 
 function PnlCard({ analytics }: { analytics: AnalyticsData | null }) {
   const pnl = analytics?.pnl;
+  const [detailsOpen, setDetailsOpen] = useState(false);
+
   if (!pnl) return null;
+
+  const gross = pnl.gross_revenue;
+  const merchantPct = gross > 0 ? (Math.abs(pnl.total_merchant_fees) / gross) * 100 : 0;
+  const franchisePct = gross > 0 ? (Math.abs(pnl.total_franchise_fees) / gross) * 100 : 0;
+  const netPct = gross > 0 ? (pnl.net_profit / gross) * 100 : 0;
+
+  // Stacked bar segments (as percentages of gross)
+  const barSegments = [
+    { label: 'Net Profit', pct: netPct, color: '#06d6a0' },
+    { label: 'Merchant Fees', pct: merchantPct, color: '#ef476f' },
+    { label: 'Franchise Fees', pct: franchisePct, color: '#f97316' },
+  ];
 
   return (
     <ChartCard title="Profit & Loss">
-      <div className="space-y-1.5">
-        <PnlRow label="Gross Revenue" value={pnl.gross_revenue} bold />
-        <div className="h-px" style={{ background: 'var(--separator)' }} />
-        <PnlRow label="ShiftOS (Stripe)" value={pnl.shiftos_revenue} color="#818cf8" indent />
-        <PnlRow label="Square (iPad)" value={pnl.square_revenue} color="#06d6a0" indent />
-        <div className="h-px" style={{ background: 'var(--separator)' }} />
-        <PnlRow label="Stripe Fees (2.9%+30¢)" value={pnl.stripe_fees} color="#ef476f" indent />
-        <PnlRow label="Square Fees (2.6%+10¢)" value={pnl.square_fees} color="#ffd166" indent />
-        <PnlRow label="Total Merchant Fees" value={pnl.total_merchant_fees} color="#ef476f" />
-        <div className="h-px" style={{ background: 'var(--separator)' }} />
-        <PnlRow label="Franchise Royalty (7%)" value={pnl.franchise_royalty} color="#f97316" indent />
-        <PnlRow label="Franchise Marketing (1%)" value={pnl.franchise_marketing} color="#f97316" indent />
-        <PnlRow label="Total Franchise Fees" value={pnl.total_franchise_fees} color="#f97316" />
-        <div className="h-px" style={{ background: 'var(--separator)' }} />
-        <PnlRow label="Total Deductions" value={pnl.total_deductions} color="var(--system-red)" />
-        <div className="h-px my-1" style={{ background: 'var(--text-primary)', opacity: 0.2 }} />
-        <div className="flex justify-between items-baseline">
-          <span className="text-[11px] font-bold" style={{ color: '#06d6a0' }}>Net Profit</span>
-          <div className="text-right">
-            <span className="text-sm font-bold tabular-nums" style={{ color: '#06d6a0' }}>${pnl.net_profit.toLocaleString()}</span>
-            <span className="text-[9px] font-semibold ml-1.5" style={{ color: 'var(--text-secondary)' }}>({pnl.margin_pct}% margin)</span>
-          </div>
+      {/* Mini cards flow */}
+      <div className="grid grid-cols-[1fr_auto_1fr_auto_1fr_auto_1fr] items-stretch gap-1">
+        <PnlMiniCard value={gross} label="Gross Revenue" color="var(--text-primary)" pct={100} />
+        <PnlFlowArrow />
+        <PnlMiniCard value={-Math.abs(pnl.total_merchant_fees)} label="Merchant Fees" color="#ef476f" pct={merchantPct} />
+        <PnlFlowArrow />
+        <PnlMiniCard value={-Math.abs(pnl.total_franchise_fees)} label="Franchise Fees" color="#f97316" pct={franchisePct} />
+        <PnlFlowArrow />
+        <PnlMiniCard value={pnl.net_profit} label="Net Profit" color="#06d6a0" pct={netPct} />
+      </div>
+
+      {/* Stacked breakdown bar */}
+      <div className="mt-3 space-y-1.5">
+        <div className="flex w-full h-3 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.06)' }}>
+          {barSegments.map((seg) => (
+            <div
+              key={seg.label}
+              className="h-full first:rounded-l-full last:rounded-r-full transition-all"
+              style={{ width: `${seg.pct}%`, background: seg.color }}
+              title={`${seg.label}: ${seg.pct.toFixed(1)}%`}
+            />
+          ))}
+        </div>
+        <div className="flex justify-between">
+          {barSegments.map((seg) => (
+            <div key={seg.label} className="flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full" style={{ background: seg.color }} />
+              <span className="text-[8px] font-medium" style={{ color: 'var(--text-tertiary)' }}>
+                {seg.label} ({seg.pct.toFixed(1)}%)
+              </span>
+            </div>
+          ))}
         </div>
       </div>
-      <InsightBar text={`After merchant fees and franchise costs, you keep ${pnl.margin_pct}% of every dollar earned.`} />
+
+      {/* Expandable details */}
+      <button
+        type="button"
+        onClick={() => setDetailsOpen((prev) => !prev)}
+        className="mt-2 flex items-center gap-1 text-[10px] font-semibold transition-colors"
+        style={{ color: 'var(--text-tertiary)' }}
+      >
+        <span>Details</span>
+        <svg
+          width="10" height="10" viewBox="0 0 10 10" fill="none"
+          className={`transition-transform ${detailsOpen ? 'rotate-180' : ''}`}
+        >
+          <path d="M2.5 3.75L5 6.25L7.5 3.75" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </button>
+
+      {detailsOpen && (
+        <div className="mt-1.5 space-y-1 rounded-lg px-2.5 py-2" style={{ background: 'var(--fill-quaternary)' }}>
+          <p className="text-[8px] font-semibold uppercase tracking-wider mb-1" style={{ color: 'var(--text-tertiary)' }}>Revenue Sources</p>
+          <PnlDetailRow label="ShiftOS (Stripe)" value={pnl.shiftos_revenue} color="#818cf8" />
+          <PnlDetailRow label="Square (iPad)" value={pnl.square_revenue} color="#06d6a0" />
+          <div className="h-px my-1" style={{ background: 'var(--separator)' }} />
+          <p className="text-[8px] font-semibold uppercase tracking-wider mb-1" style={{ color: 'var(--text-tertiary)' }}>Merchant Fees</p>
+          <PnlDetailRow label="Stripe Fees (2.9%+30¢)" value={-Math.abs(pnl.stripe_fees)} color="#ef476f" />
+          <PnlDetailRow label="Square Fees (2.6%+10¢)" value={-Math.abs(pnl.square_fees)} color="#ef476f" />
+          <div className="h-px my-1" style={{ background: 'var(--separator)' }} />
+          <p className="text-[8px] font-semibold uppercase tracking-wider mb-1" style={{ color: 'var(--text-tertiary)' }}>Franchise Fees</p>
+          <PnlDetailRow label="Royalty (7%)" value={-Math.abs(pnl.franchise_royalty)} color="#f97316" />
+          <PnlDetailRow label="Marketing (1%)" value={-Math.abs(pnl.franchise_marketing)} color="#f97316" />
+        </div>
+      )}
+
+      <InsightBar text={`You keep ${pnl.margin_pct}% of every dollar earned`} />
     </ChartCard>
   );
 }

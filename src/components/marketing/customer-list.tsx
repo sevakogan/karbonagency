@@ -119,12 +119,12 @@ function CustomerCard({
               <span className="ml-auto text-xs font-bold tabular-nums" style={{ color: 'var(--text-primary)' }}>
                 ${(customer.lifetime_spend ?? 0).toLocaleString()}
               </span>
-              <span className="text-[10px] tabular-nums" style={{ color: 'var(--text-tertiary)' }}>
+              <span className="text-[10px] tabular-nums" style={{ color: 'var(--text-secondary)' }}>
                 {customer.total_bookings} visits
               </span>
             </div>
 
-            <div className="flex items-center gap-3 text-[10px]" style={{ color: 'var(--text-tertiary)' }}>
+            <div className="flex items-center gap-3 text-[10px]" style={{ color: 'var(--text-secondary)' }}>
               {customer.email && (
                 <span className="flex items-center gap-0.5 truncate">
                   <Mail size={9} /> {customer.email}
@@ -137,7 +137,7 @@ function CustomerCard({
               )}
             </div>
 
-            <div className="flex items-center gap-3 mt-1 text-[10px]" style={{ color: 'var(--text-tertiary)' }}>
+            <div className="flex items-center gap-3 mt-1 text-[10px]" style={{ color: 'var(--text-secondary)' }}>
               <span>Last visit: {daysAgoText(customer.days_since_last)}</span>
               {customer.next_predicted_date && (
                 <span>
@@ -200,25 +200,25 @@ function CompactTableRow({
       <td className="py-2 px-2 text-xs font-medium" style={{ color: 'var(--text-primary)' }}>
         {customer.name}
       </td>
-      <td className="py-2 px-2 text-xs" style={{ color: 'var(--text-tertiary)' }}>
+      <td className="py-2 px-2 text-xs" style={{ color: 'var(--text-secondary)' }}>
         {customer.email}
       </td>
-      <td className="py-2 px-2 text-xs" style={{ color: 'var(--text-tertiary)' }}>
+      <td className="py-2 px-2 text-xs" style={{ color: 'var(--text-secondary)' }}>
         {customer.phone}
       </td>
       <td className="py-2 px-2 text-xs font-semibold tabular-nums" style={{ color: 'var(--text-primary)' }}>
         ${(customer.lifetime_spend ?? 0).toLocaleString()}
       </td>
-      <td className="py-2 px-2 text-xs tabular-nums" style={{ color: 'var(--text-tertiary)' }}>
+      <td className="py-2 px-2 text-xs tabular-nums" style={{ color: 'var(--text-secondary)' }}>
         {customer.total_bookings}
       </td>
-      <td className="py-2 px-2 text-xs tabular-nums" style={{ color: 'var(--text-tertiary)' }}>
+      <td className="py-2 px-2 text-xs tabular-nums" style={{ color: 'var(--text-secondary)' }}>
         ${(customer.thirty_day_spend ?? 0).toLocaleString()}
       </td>
-      <td className="py-2 px-2 text-xs tabular-nums" style={{ color: 'var(--text-tertiary)' }}>
+      <td className="py-2 px-2 text-xs tabular-nums" style={{ color: 'var(--text-secondary)' }}>
         {daysAgoText(customer.days_since_last)}
       </td>
-      <td className="py-2 px-2 text-xs tabular-nums" style={{ color: 'var(--text-tertiary)' }}>
+      <td className="py-2 px-2 text-xs tabular-nums" style={{ color: 'var(--text-secondary)' }}>
         {customer.avg_gap_days}d
       </td>
       <td className="py-2 px-2">
@@ -300,7 +300,7 @@ export function CustomerList({ customers, loading, totalCount, filters, onFilter
             border: '1px solid var(--glass-border)',
           }}
         >
-          <Search size={13} style={{ color: 'var(--text-tertiary)' }} />
+          <Search size={13} style={{ color: 'var(--text-secondary)' }} />
           <input
             type="text"
             placeholder="Search customers..."
@@ -425,7 +425,7 @@ export function CustomerList({ customers, loading, totalCount, filters, onFilter
             border: '1px solid var(--glass-border)',
           }}
         >
-          <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>
+          <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
             No customers found matching your filters.
           </p>
         </div>
@@ -502,7 +502,7 @@ export function CustomerList({ customers, loading, totalCount, filters, onFilter
           >
             <ChevronLeft size={14} style={{ color: 'var(--text-secondary)' }} />
           </button>
-          <span className="text-[10px] font-medium tabular-nums" style={{ color: 'var(--text-tertiary)' }}>
+          <span className="text-[10px] font-medium tabular-nums" style={{ color: 'var(--text-secondary)' }}>
             Page {filters.page} of {totalPages}
           </span>
           <button

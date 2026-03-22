@@ -53,7 +53,7 @@ function ChartCard({ title, trailing, children }: {
       <div className="flex items-center justify-between mb-3">
         <p
           className="text-[9px] font-semibold uppercase tracking-wider"
-          style={{ color: 'var(--text-tertiary)' }}
+          style={{ color: 'var(--text-secondary)' }}
         >
           {title}
         </p>
@@ -110,7 +110,7 @@ function ChartTooltipContent({ active, payload, label }: any) {
       {payload.map((entry: { name: string; value: number; color: string }) => (
         <p key={entry.name} className="flex items-center gap-1.5">
           <span className="w-2 h-2 rounded-full" style={{ background: entry.color }} />
-          <span style={{ color: 'var(--text-tertiary)' }}>{entry.name}:</span>
+          <span style={{ color: 'var(--text-secondary)' }}>{entry.name}:</span>
           <span className="font-semibold">{typeof entry.value === 'number' ? entry.value.toLocaleString() : entry.value}</span>
         </p>
       ))}
@@ -246,7 +246,7 @@ function HealthRing({ analytics, onStatusClick }: {
           <p className="text-2xl font-bold tabular-nums" style={{ color: 'var(--text-primary)' }}>
             {total}
           </p>
-          <p className="text-[9px] font-medium" style={{ color: 'var(--text-tertiary)' }}>
+          <p className="text-[9px] font-medium" style={{ color: 'var(--text-secondary)' }}>
             customers
           </p>
         </div>
@@ -286,9 +286,9 @@ function VipScatter({ customers, onStatusClick }: {
         }}
       >
         <p className="font-semibold">{d.name}</p>
-        <p style={{ color: 'var(--text-tertiary)' }}>Spend: ${(d.y ?? 0).toLocaleString()}</p>
-        <p style={{ color: 'var(--text-tertiary)' }}>Bookings: {d.x}</p>
-        <p style={{ color: 'var(--text-tertiary)' }}>Last visit: {d.days}d ago</p>
+        <p style={{ color: 'var(--text-secondary)' }}>Spend: ${(d.y ?? 0).toLocaleString()}</p>
+        <p style={{ color: 'var(--text-secondary)' }}>Bookings: {d.x}</p>
+        <p style={{ color: 'var(--text-secondary)' }}>Last visit: {d.days}d ago</p>
       </div>
     );
   };
@@ -349,7 +349,7 @@ function CouponImpactChart({ data }: { data: AnalyticsData['coupon_impact'] }) {
       <div className="h-52">
         {chartData.length === 0 ? (
           <div className="h-full flex items-center justify-center">
-            <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
+            <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
               No coupon data yet
             </p>
           </div>
@@ -373,7 +373,7 @@ function CouponImpactChart({ data }: { data: AnalyticsData['coupon_impact'] }) {
               />
               <Tooltip content={<ChartTooltipContent />} />
               <Legend
-                wrapperStyle={{ fontSize: 9, color: 'var(--text-tertiary)' }}
+                wrapperStyle={{ fontSize: 9, color: 'var(--text-secondary)' }}
               />
               <Bar dataKey="first_time" name="First Time" fill="var(--system-blue)" radius={[4, 4, 0, 0]} />
               <Bar dataKey="repeat" name="Repeat" fill="var(--system-green)" radius={[4, 4, 0, 0]} />

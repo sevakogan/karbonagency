@@ -186,7 +186,11 @@ export function MarketingCommandCenter() {
             churned: sd.churned ?? 0,
             revenue_this_month: raw.revenue_trend?.reduce((s: number, r: any) => s + (r.revenue ?? 0), 0) ?? 0,
             revenue_last_month: 0,
-            avg_lifetime_value: 0,
+            avg_lifetime_value: (() => {
+              const total = (sd.active ?? 0) + (sd.at_risk ?? 0) + (sd.churned ?? 0);
+              const totalRev = raw.scatter_data?.reduce((s: number, c: any) => s + (c.lifetime_spend ?? 0), 0) ?? 0;
+              return total > 0 ? Math.round(totalRev / total) : 0;
+            })(),
           },
           revenue_trend: raw.revenue_trend ?? [],
           coupon_impact: (raw.coupon_analysis ?? []).map((c: any) => ({

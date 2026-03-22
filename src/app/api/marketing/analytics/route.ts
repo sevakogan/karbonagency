@@ -159,13 +159,23 @@ async function fetchCustomers(
   supabase: ReturnType<typeof getAdminSupabase>,
   companyId: string,
 ): Promise<CustomerRow[]> {
-  const { data, error } = await supabase
-    .from('shiftos_customers')
-    .select('id, first_name, last_name, total_bookings, total_revenue, last_booking_at')
-    .eq('company_id', companyId);
-
-  if (error) throw new Error(`Customers query failed: ${error.message}`);
-  return (data ?? []) as CustomerRow[];
+  // Paginate to get ALL customers (Supabase defaults to 1000 row limit)
+  const all: CustomerRow[] = [];
+  let from = 0;
+  const PAGE = 1000;
+  while (true) {
+    const { data, error } = await supabase
+      .from('shiftos_customers')
+      .select('id, first_name, last_name, total_bookings, total_revenue, last_booking_at')
+      .eq('company_id', companyId)
+      .range(from, from + PAGE - 1);
+    if (error) throw new Error(`Customers query failed: ${error.message}`);
+    if (!data?.length) break;
+    all.push(...(data as CustomerRow[]));
+    if (data.length < PAGE) break;
+    from += PAGE;
+  }
+  return all;
 }
 
 // ── Revenue trend ────────────────────────────────────

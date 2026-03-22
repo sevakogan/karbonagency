@@ -114,7 +114,7 @@ export function ActiveFilters({
     >
       <span
         className="text-[10px] font-medium shrink-0"
-        style={{ color: 'var(--text-tertiary)' }}
+        style={{ color: 'var(--text-secondary)' }}
       >
         Showing {filteredCount} of {totalCount}
       </span>

@@ -120,11 +120,54 @@ function ChartTooltipContent({ active, payload, label }: any) {
   );
 }
 
+function InsightBar({ text }: { text: string }) {
+  return (
+    <div className="mt-2 flex items-start gap-1.5 rounded-lg px-2.5 py-1.5" style={{ background: 'rgba(99, 102, 241, 0.08)' }}>
+      <span className="text-[10px] mt-px">💡</span>
+      <p className="text-[10px] font-medium leading-tight" style={{ color: 'var(--text-secondary)' }}>
+        {text}
+      </p>
+    </div>
+  );
+}
+
+function useRevenueInsight(data: AnalyticsData['revenue_trend'], period: string): string {
+  return useMemo(() => {
+    if (!data.length) return 'No revenue data available for the selected period';
+    const revenues = data.map((d) => d.revenue + d.coupon_revenue);
+    const avg = revenues.reduce((s, v) => s + v, 0) / revenues.length;
+    const latest = revenues[revenues.length - 1];
+    const periodLabel = PERIOD_OPTIONS.find((o) => o.value === period)?.label ?? period;
+
+    if (avg > 0) {
+      const pctDiff = Math.round(((latest - avg) / avg) * 100);
+      if (latest > avg * 1.2) {
+        return `Revenue is trending up — ${pctDiff}% above your ${periodLabel} average`;
+      }
+      if (latest < avg * 0.8) {
+        return `Revenue dipped ${Math.abs(pctDiff)}% below average — check ad spend or seasonal patterns`;
+      }
+    }
+
+    // Find peak day if we have date info
+    const peakEntry = data.reduce((best, cur) =>
+      (cur.revenue + cur.coupon_revenue) > (best.revenue + best.coupon_revenue) ? cur : best
+    , data[0]);
+    const peakTotal = peakEntry.revenue + peakEntry.coupon_revenue;
+    if (peakEntry.date || peakEntry.period) {
+      return `Revenue is steady — peak: ${peakEntry.date ?? peakEntry.period} with ${formatShort(peakTotal)}`;
+    }
+    return `Revenue is steady — consistent with your ${periodLabel} average`;
+  }, [data, period]);
+}
+
 function RevenueTrendChart({ data, period, onPeriodChange }: {
   data: AnalyticsData['revenue_trend'];
   period: string;
   onPeriodChange: (p: string) => void;
 }) {
+  const insight = useRevenueInsight(data, period);
+
   return (
     <ChartCard
       title="Revenue Trend"
@@ -198,8 +241,32 @@ function RevenueTrendChart({ data, period, onPeriodChange }: {
           </AreaChart>
         </ResponsiveContainer>
       </div>
+      <InsightBar text={insight} />
     </ChartCard>
   );
+}
+
+function useHealthInsight(summary: AnalyticsData['summary'] | undefined): string {
+  return useMemo(() => {
+    if (!summary) return 'Loading customer health data...';
+    const total = summary.total || (summary.active + summary.at_risk + summary.churned);
+    if (total === 0) return 'No customer data available yet';
+
+    const churnedPct = Math.round((summary.churned / total) * 100);
+    const atRiskPct = Math.round((summary.at_risk / total) * 100);
+    const activePct = Math.round((summary.active / total) * 100);
+
+    if (churnedPct > 80) {
+      return `\u26A0\uFE0F ${churnedPct}% of customers haven't returned in 60+ days. Consider a win-back campaign`;
+    }
+    if (atRiskPct > 20) {
+      return `${summary.at_risk} customers are slipping — they visited 30-60 days ago but have no future booking`;
+    }
+    if (activePct > 50) {
+      return `Strong retention — ${activePct}% of your customer base is active`;
+    }
+    return `${activePct}% active, ${atRiskPct}% at risk, ${churnedPct}% churned — monitor at-risk segment`;
+  }, [summary]);
 }
 
 function HealthRing({ analytics, onStatusClick }: {
@@ -214,6 +281,7 @@ function HealthRing({ analytics, onStatusClick }: {
   ], [summary]);
 
   const total = data.reduce((s, d) => s + d.value, 0);
+  const insight = useHealthInsight(summary);
 
   const handleClick = (_: unknown, index: number) => {
     const statusMap: Array<'active' | 'at_risk' | 'churned'> = ['active', 'at_risk', 'churned'];
@@ -253,6 +321,7 @@ function HealthRing({ analytics, onStatusClick }: {
           </p>
         </div>
       </div>
+      <InsightBar text={insight} />
     </ChartCard>
   );
 }
@@ -314,6 +383,26 @@ function VipScatter({ scatterData: rawData, onStatusClick }: {
   const activeData = useMemo(() => scatterData.filter((d) => d.status === 'active'), [scatterData]);
   const atRiskData = useMemo(() => scatterData.filter((d) => d.status === 'at_risk'), [scatterData]);
   const churnedData = useMemo(() => scatterData.filter((d) => d.status === 'churned'), [scatterData]);
+
+  const scatterInsight = useMemo(() => {
+    if (!rawData.length) return 'No customer value data available yet';
+    const total = rawData.length;
+    const vips = rawData.filter((c) => c.total_bookings >= 5 && c.lifetime_spend >= 500);
+    if (vips.length > 0) {
+      const vipRevenue = vips.reduce((s, c) => s + c.lifetime_spend, 0);
+      return `You have ${vips.length} VIP customers driving ${formatShort(vipRevenue)} in revenue`;
+    }
+    const oneTimers = rawData.filter((c) => c.total_bookings === 1);
+    if (oneTimers.length > 0) {
+      const pct = Math.round((oneTimers.length / total) * 100);
+      return `${oneTimers.length} customers only visited once — ${pct}% of your base`;
+    }
+    const atRiskHighSpenders = rawData.filter((c) => c.status === 'at_risk' && c.lifetime_spend >= 500);
+    if (atRiskHighSpenders.length > 0) {
+      return `\u26A0\uFE0F ${atRiskHighSpenders.length} high-value customers ($500+) are at risk of churning`;
+    }
+    return `${total} customers mapped — segment by visits and spend to find growth opportunities`;
+  }, [rawData]);
 
   return (
     <ChartCard title="Customer Value Map">
@@ -380,12 +469,24 @@ function VipScatter({ scatterData: rawData, onStatusClick }: {
           </ScatterChart>
         </ResponsiveContainer>
       </div>
+      <InsightBar text={scatterInsight} />
     </ChartCard>
   );
 }
 
+function useCouponInsight(data: AnalyticsData['coupon_impact']): string {
+  return useMemo(() => {
+    if (!data.length) return 'No coupon data available from ShiftOS. Connect voucher tracking for promo analytics';
+    const sorted = [...data].sort((a, b) => b.repeat_rate - a.repeat_rate);
+    const top = sorted[0];
+    const totalUses = top.first_time + top.repeat;
+    return `Top coupon: ${top.code} with ${Math.round(top.repeat_rate)}% repeat rate — ${totalUses} total uses`;
+  }, [data]);
+}
+
 function CouponImpactChart({ data }: { data: AnalyticsData['coupon_impact'] }) {
   const chartData = useMemo(() => data.slice(0, 8), [data]);
+  const insight = useCouponInsight(data);
 
   return (
     <ChartCard title="Coupon Impact">
@@ -424,6 +525,7 @@ function CouponImpactChart({ data }: { data: AnalyticsData['coupon_impact'] }) {
           </ResponsiveContainer>
         )}
       </div>
+      <InsightBar text={insight} />
     </ChartCard>
   );
 }

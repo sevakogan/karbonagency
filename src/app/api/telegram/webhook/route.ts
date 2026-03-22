@@ -43,12 +43,23 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ ok: true });
     }
 
-    // Any other message — treat as a question for Claude (enhanced with ShiftOS data)
+    // Any other message — treat as a question for Claude (enhanced with all data)
     const metricsContext = await getMetricsContext();
     const insight = await askClaude({
-      systemPrompt: 'You are Karbon AI, a marketing analytics assistant for Karbon Agency managing Shift Arcade Miami. You have access to BOTH real-time ad performance data AND live booking/reservation data from ShiftOS. When asked about reservations, bookings, signups, or attribution — use the ShiftOS data. Be concise, specific with numbers. Format for Telegram (HTML: <b>bold</b>). Under 200 words.',
+      systemPrompt: `You are Karbon AI, the business intelligence assistant for Shift Arcade Miami. You have access to:
+- Real-time ad performance (Meta, Google, Instagram)
+- Live booking/reservation data from ShiftOS
+- Square iPad POS revenue data
+- ShiftOS Stripe revenue data
+- Customer lifecycle data (active, medium risk, high risk, churned)
+- Membership/APEX subscriber info
+- P&L breakdown with merchant fees and franchise fees
+- Individual customer history (visits, spend, status)
+- 8 Miami simulators: Hamilton-Mia, Verstappen-Mia (Ultimate $40), Norris-Mia, Piastri-Mia, Russell-Mia, Leclerc-Mia (Haptic $35), Antonelli-Mia, Sainz-Mia (Non-Motion $30)
+
+Be concise, specific with numbers. Format for Telegram (HTML: <b>bold</b>). Under 250 words. When asked about revenue, use the real revenue data (ShiftOS Stripe + Square iPad). When asked about a specific customer, use the customer data.`,
       userMessage: `Here is the current data:\n\n${metricsContext}\n\nQuestion: ${text}`,
-      maxTokens: 400,
+      maxTokens: 500,
     });
     await sendTelegramMessage(chatId, insight);
 
@@ -130,33 +141,112 @@ ${platformBreakdown || '  No ad data yet'}
   const monthSum = sumRows(allAdRows);
 
   const companyNames = (companies ?? []).map((c) => c.name).join(', ');
+  const CID = '950d0b84-63fa-409b-ad4f-ca1fdae25c7c';
+
+  // ── Revenue data from daily_metrics (CSV import — real ShiftOS + Square) ──
+  const { data: revMetrics } = await supabase
+    .from('daily_metrics')
+    .select('date, cost_per_conversion, impressions, reach, video_views, leads')
+    .eq('client_id', CID)
+    .eq('platform', 'shiftos')
+    .order('date', { ascending: false });
+
+  const todayRev = (revMetrics ?? []).find((m) => m.date === today);
+  const todayRevenue = todayRev ? Number(todayRev.cost_per_conversion ?? 0) : 0;
+  const todayShiftosRev = todayRev ? Number(todayRev.impressions ?? 0) / 100 : 0;
+  const todaySquareRev = todayRev ? Number(todayRev.reach ?? 0) / 100 : 0;
+
+  const thisMonthStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  const monthRevRows = (revMetrics ?? []).filter((m) => m.date.startsWith(thisMonthStr));
+  const monthRevenue = monthRevRows.reduce((s, m) => s + Number(m.cost_per_conversion ?? 0), 0);
+
+  const lifetimeRevenue = (revMetrics ?? []).reduce((s, m) => s + Number(m.cost_per_conversion ?? 0), 0);
+  const lifetimeShiftos = (revMetrics ?? []).reduce((s, m) => s + Number(m.impressions ?? 0) / 100, 0);
+  const lifetimeSquare = (revMetrics ?? []).reduce((s, m) => s + Number(m.reach ?? 0) / 100, 0);
+
+  // ── Customer health stats ──
+  const { count: totalCustomers } = await supabase.from('shiftos_customers').select('*', { count: 'exact', head: true }).eq('company_id', CID);
+  const { count: activeCount } = await supabase.from('shiftos_customers').select('*', { count: 'exact', head: true }).eq('company_id', CID).gt('total_bookings', 0).gte('last_booking_at', new Date(now.getTime() - 30 * 86400000).toISOString());
+  const { count: totalWithBookings } = await supabase.from('shiftos_customers').select('*', { count: 'exact', head: true }).eq('company_id', CID).gt('total_bookings', 0);
+
+  // ── Top 5 customers ──
+  const { data: topCustomers } = await supabase.from('shiftos_customers')
+    .select('first_name, last_name, total_bookings, total_revenue')
+    .eq('company_id', CID)
+    .order('total_revenue', { ascending: false })
+    .limit(5);
+
+  // ── APEX members ──
+  const { count: apexCount } = await supabase.from('shiftos_customers').select('*', { count: 'exact', head: true }).eq('company_id', CID);
+
+  // ── Recent bookings today ──
+  const { data: todayBookings } = await supabase.from('shiftos_reservations')
+    .select('calendar_name, booking_time, paid, sim_count')
+    .eq('company_id', CID)
+    .gte('booking_time', `${today}T00:00:00`)
+    .order('booking_time', { ascending: false })
+    .limit(10);
+
+  // ── P&L ──
+  const merchantFees = lifetimeRevenue * 0.031; // ~3.1% avg
+  const franchiseFees = lifetimeRevenue * 0.08; // 8%
+  const netProfit = lifetimeRevenue - merchantFees - franchiseFees;
+
+  const topCustStr = (topCustomers ?? []).map((c) =>
+    `  • ${c.first_name} ${c.last_name}: $${c.total_revenue} (${c.total_bookings} visits)`
+  ).join('\n');
+
+  const todayBookingsStr = (todayBookings ?? []).map((b) =>
+    `  • ${b.calendar_name} @ ${b.booking_time?.substring(11, 16)} (${b.paid ? 'Paid' : 'Unpaid'}, ${b.sim_count} sims)`
+  ).join('\n');
 
   return `Companies: ${companyNames}
 Date: ${today}
 
+═══ REVENUE ═══
+TODAY: $${todayRevenue.toFixed(2)} (ShiftOS: $${todayShiftosRev.toFixed(2)}, Square: $${todaySquareRev.toFixed(2)})
+THIS MONTH: $${monthRevenue.toFixed(2)}
+LIFETIME: $${lifetimeRevenue.toFixed(2)} (ShiftOS Stripe: $${lifetimeShiftos.toFixed(2)}, Square iPad: $${lifetimeSquare.toFixed(2)})
+
+═══ P&L ═══
+Gross: $${lifetimeRevenue.toFixed(2)}
+Merchant Fees (~3.1%): -$${merchantFees.toFixed(2)}
+Franchise Fees (8%): -$${franchiseFees.toFixed(2)}
+Net Profit: $${netProfit.toFixed(2)} (${((netProfit / lifetimeRevenue) * 100).toFixed(1)}% margin)
+
+═══ CUSTOMERS ═══
+Total customers: ${totalCustomers ?? 0}
+With bookings: ${totalWithBookings ?? 0}
+Active (last 30d): ${activeCount ?? 0}
+
+TOP 5 BY REVENUE:
+${topCustStr || '  No data'}
+
+═══ TODAY'S BOOKINGS ═══
+${todayBookingsStr || '  No bookings today'}
+
+═══ SIMULATORS (8 Miami) ═══
+Ultimate ($40/30min): Hamilton-Mia, Verstappen-Mia
+Haptic ($35/30min): Norris-Mia, Piastri-Mia, Russell-Mia, Leclerc-Mia
+Non-Motion ($30/30min): Antonelli-Mia, Sainz-Mia
+
+═══ AD PERFORMANCE ═══
 TODAY:
 - Spend: $${todaySum.spend.toFixed(2)}
 - Impressions: ${todaySum.impressions.toLocaleString()}
 - Clicks: ${todaySum.clicks.toLocaleString()}
 - Conversions: ${todaySum.conversions}
-- CTR: ${todaySum.impressions > 0 ? ((todaySum.clicks / todaySum.impressions) * 100).toFixed(1) : 0}%
-- CPC: $${todaySum.clicks > 0 ? (todaySum.spend / todaySum.clicks).toFixed(2) : '0.00'}
 
 LAST 7 DAYS:
 - Spend: $${weekSum.spend.toFixed(2)}
-- Impressions: ${weekSum.impressions.toLocaleString()}
 - Clicks: ${weekSum.clicks.toLocaleString()}
 - Conversions: ${weekSum.conversions}
-- Reach: ${weekSum.reach.toLocaleString()}
-- CTR: ${weekSum.impressions > 0 ? ((weekSum.clicks / weekSum.impressions) * 100).toFixed(1) : 0}%
-- CPC: $${weekSum.clicks > 0 ? (weekSum.spend / weekSum.clicks).toFixed(2) : '0.00'}
 
 LAST 30 DAYS:
 - Spend: $${monthSum.spend.toFixed(2)}
-- Impressions: ${monthSum.impressions.toLocaleString()}
 - Clicks: ${monthSum.clicks.toLocaleString()}
 - Conversions: ${monthSum.conversions}
-- CPM: $${monthSum.impressions > 0 ? ((monthSum.spend / monthSum.impressions) * 1000).toFixed(2) : '0.00'}${shiftosContext}`;
+${shiftosContext}`;
 }
 
 async function getSystemStatus(): Promise<string> {

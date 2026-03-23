@@ -2445,19 +2445,17 @@ function LeadPipelineSection({ data }: { data: LeadsData | null | undefined }) {
 
 function RevenueSourcesCard({ analytics }: { analytics: any }) {
   const revenueThisMonth = n(analytics?.revenue_this_month);
-  const revenueLifetime = n(analytics?.revenue_lifetime);
-  const chargesRevenue = n(analytics?.charges_revenue);
+  const shiftosRevenue = n(analytics?.revenue_lifetime ?? analytics?.shiftosRevenue);
   const squareRevenue = n(analytics?.square_revenue ?? analytics?.squareRevenue);
+  const squareInStore = n(analytics?.square_non_sim);
 
-  // Extra = franchise total minus what charges API captured
-  // This represents subscriptions, booking fees, vouchers, kiosk charges
-  const directBookings = chargesRevenue > 0 ? chargesRevenue : revenueLifetime * 0.56; // fallback ratio
-  const otherShiftOS = revenueLifetime > directBookings ? revenueLifetime - directBookings : 0;
+  // Square sim revenue = total square minus in-store non-sim
+  const squareSim = squareRevenue > squareInStore ? squareRevenue - squareInStore : squareRevenue;
 
   const segments = [
-    { label: 'Direct Bookings', value: directBookings, color: '#30D158', desc: 'Online sim bookings via ShiftOS' },
-    { label: 'Subscriptions & Fees', value: otherShiftOS, color: '#FF9F0A', desc: 'Refills, booking fees, vouchers, kiosk' },
-    { label: 'Square (In-Store)', value: n(squareRevenue), color: '#0A84FF', desc: 'iPad POS — walk-in sim sessions' },
+    { label: 'ShiftOS Revenue', value: shiftosRevenue, color: '#30D158', desc: 'Online bookings, subscriptions, fees' },
+    { label: 'Square Revenue', value: squareSim, color: '#0A84FF', desc: 'iPad POS — sim sessions' },
+    { label: 'Square In-Store', value: squareInStore, color: '#5E5CE6', desc: 'Merch, snacks, drinks' },
   ].filter((s) => s.value > 0);
 
   const total = segments.reduce((s, seg) => s + seg.value, 0);
@@ -2503,9 +2501,9 @@ function RevenueSourcesCard({ analytics }: { analytics: any }) {
           </div>
           <InsightBar
             text={
-              otherShiftOS > 0
-                ? `$${Math.round(otherShiftOS).toLocaleString()} in subscriptions & fees — ${Math.round((otherShiftOS / total) * 100)}% of total revenue comes from recurring/ancillary charges`
-                : 'All revenue from direct sim bookings'
+              squareInStore > 0
+                ? `$${Math.round(squareInStore).toLocaleString()} in non-sim Square sales (merch, snacks) tracked separately`
+                : `${Math.round((shiftosRevenue / total) * 100)}% of revenue from ShiftOS, ${Math.round((squareSim / total) * 100)}% from Square POS`
             }
           />
         </ChartCard>
@@ -2528,11 +2526,25 @@ function RevenueSourcesCard({ analytics }: { analytics: any }) {
           </div>
           <div className="h-px" style={{ background: 'var(--separator)' }} />
           <div className="flex justify-between text-[10px]">
-            <span style={{ color: 'var(--text-tertiary)' }}>Avg/day</span>
-            <span className="font-bold tabular-nums" style={{ color: 'var(--text-primary)' }}>
-              ${Math.round(total / 288).toLocaleString()}
+            <span style={{ color: 'var(--text-tertiary)' }}>ShiftOS</span>
+            <span className="font-bold tabular-nums" style={{ color: '#30D158' }}>
+              ${n(shiftosRevenue).toLocaleString(undefined, { maximumFractionDigits: 0 })}
             </span>
           </div>
+          <div className="flex justify-between text-[10px]">
+            <span style={{ color: 'var(--text-tertiary)' }}>Square (Sim)</span>
+            <span className="font-bold tabular-nums" style={{ color: '#0A84FF' }}>
+              ${n(squareSim).toLocaleString(undefined, { maximumFractionDigits: 0 })}
+            </span>
+          </div>
+          {squareInStore > 0 && (
+            <div className="flex justify-between text-[10px]">
+              <span style={{ color: 'var(--text-tertiary)' }}>Square (In-Store)</span>
+              <span className="font-bold tabular-nums" style={{ color: '#5E5CE6' }}>
+                ${n(squareInStore).toLocaleString(undefined, { maximumFractionDigits: 0 })}
+              </span>
+            </div>
+          )}
         </div>
       </ChartCard>
     </div>

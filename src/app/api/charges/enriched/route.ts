@@ -21,22 +21,25 @@ export async function GET(request: NextRequest) {
 
   try {
     const params = request.nextUrl.searchParams;
-    const now = new Date();
-    const since = params.get('since') ?? new Date(now.getTime() - 6 * 60 * 1000).toISOString();
-    const until = params.get('until') ?? now.toISOString();
+    const since = params.get('since');
+    const until = params.get('until');
 
     const supabase = getAdminSupabase();
 
-    // Fetch recent charges not yet sent to CAPI
-    const { data: charges, error: chargesErr } = await supabase
+    // Fetch unsent charges — optionally filtered by time window
+    let query = supabase
       .from('shiftos_charges')
       .select('*')
       .eq('company_id', MIAMI_COMPANY_ID)
-      .gte('charge_created_at', since)
-      .lte('charge_created_at', until)
       .is('capi_sent_at', null)
       .gt('net_amount_cents', 0)
-      .order('charge_created_at', { ascending: false });
+      .order('charge_created_at', { ascending: false })
+      .limit(200);
+
+    if (since) query = query.gte('charge_created_at', since);
+    if (until) query = query.lte('charge_created_at', until);
+
+    const { data: charges, error: chargesErr } = await query;
 
     if (chargesErr) {
       return NextResponse.json({ error: chargesErr.message }, { status: 500 });

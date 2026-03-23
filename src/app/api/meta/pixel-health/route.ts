@@ -22,6 +22,21 @@ async function authenticateRequest(request: NextRequest) {
     return { error: NextResponse.json({ error: "Authorization required" }, { status: 401 }), client: null };
   }
   const token = authHeader.replace("Bearer ", "");
+
+  // CRON_SECRET shortcut — return env-based client config
+  const cronSecret = process.env.CRON_SECRET;
+  if (cronSecret && token === cronSecret) {
+    return {
+      error: null,
+      client: {
+        meta_ad_account_id: process.env.META_AD_ACCOUNT_ID ?? null,
+        meta_pixel_id: process.env.META_PIXEL_ID ?? process.env.META_CAPI_PIXEL_ID ?? null,
+        meta_access_token: process.env.META_ACCESS_TOKEN ?? process.env.META_CAPI_ACCESS_TOKEN ?? null,
+      },
+      token,
+    };
+  }
+
   const supabase = getAdminSupabase();
   const { data: { user }, error } = await supabase.auth.getUser(token);
   if (error || !user) {

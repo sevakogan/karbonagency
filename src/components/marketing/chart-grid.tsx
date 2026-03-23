@@ -1105,7 +1105,8 @@ function AcquisitionSourcesChart({ attribution }: { attribution: Record<string, 
       <InsightBar
         text={
           chartData.length > 0
-            ? `Top source: ${chartData.sort((a, b) => b.value - a.value)[0].name} with ${Math.round((chartData[0].value / total) * 100)}% of attributed customers`
+            ? (() => { const top = [...chartData].sort((a, b) => b.value - a.value)[0]; return `Top source: ${top.name} with ${Math.round((top.value / total) * 100)}% of attributed customers`; })()
+
             : 'No attribution data available yet'
         }
       />

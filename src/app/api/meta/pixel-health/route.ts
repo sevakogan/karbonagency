@@ -10,7 +10,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminSupabase } from "@/lib/supabase-admin";
 
-const META_GRAPH_URL = "https://graph.facebook.com/v25.0";
+const META_GRAPH_URL = "https://graph.facebook.com/v22.0";
 
 // ---------------------------------------------------------------------------
 // Auth helper (same pattern as other routes)
@@ -205,65 +205,37 @@ export async function GET(request: NextRequest) {
       diagError = (diagErrBody?.error as Record<string, unknown>)?.message as string ?? `HTTP ${diagRes.status}`;
     }
 
-    // Primary: fetch event stats with 180-day window, split by source (browser vs CAPI)
-    const statsUrl =
-      `${META_GRAPH_URL}/${pixelId}/stats` +
-      `?aggregation=event_source_url` +
-      `&start_time=${since}` +
-      `&end_time=${now}` +
-      `&access_token=${encodeURIComponent(accessToken)}`;
-
-    // Also try the event_name aggregation to get raw counts
-    const statsNameUrl =
-      `${META_GRAPH_URL}/${pixelId}/stats` +
-      `?aggregation=event_name` +
-      `&start_time=${since}` +
-      `&end_time=${now}` +
-      `&access_token=${encodeURIComponent(accessToken)}`;
-
-    const [statsRes, statsNameRes] = await Promise.all([
-      fetch(statsUrl),
-      fetch(statsNameUrl),
-    ]);
+    // Fetch pixel stats — default aggregation=event returns {value: "PageView", count: 185}
+    const statsUrl = `${META_GRAPH_URL}/${pixelId}/stats?access_token=${encodeURIComponent(accessToken)}`;
+    const statsRes = await fetch(statsUrl);
 
     const events: Record<string, { browser: number; server: number }> = {};
     let statsError: string | null = null;
-    let rawStatsData: unknown = null;
 
-    // Parse event_name aggregation (most reliable for counts)
-    if (statsNameRes.ok) {
-      const statsData = await statsNameRes.json() as {
+    if (statsRes.ok) {
+      const statsData = await statsRes.json() as {
         data?: Array<{
-          event_name: string;
-          count?: number;
-          browser_event_count?: number;
-          server_event_count?: number;
-          source?: string;
+          aggregation?: string;
+          data?: Array<{ value: string; count: number }>;
         }>;
       };
-      rawStatsData = statsData;
-      if (statsData.data) {
-        for (const item of statsData.data) {
-          if (!events[item.event_name]) events[item.event_name] = { browser: 0, server: 0 };
-          // Meta returns browser_event_count and server_event_count if dedup is set up
-          if (typeof item.browser_event_count === "number" || typeof item.server_event_count === "number") {
-            events[item.event_name].browser += item.browser_event_count ?? 0;
-            events[item.event_name].server += item.server_event_count ?? 0;
+      // The stats endpoint returns daily buckets, each with an array of {value, count}
+      for (const bucket of statsData.data ?? []) {
+        for (const item of bucket.data ?? []) {
+          const name = item.value;
+          if (!events[name]) events[name] = { browser: 0, server: 0 };
+          // Default stats don't split browser/server — count as browser
+          // Purchase events sent via CAPI are counted here too
+          if (name === "Purchase") {
+            events[name].server += item.count;
           } else {
-            // Fall back: assume browser-only unless source says otherwise
-            const src = (item.source ?? "browser").toLowerCase();
-            const count = item.count ?? 0;
-            if (src.includes("server") || src.includes("capi")) {
-              events[item.event_name].server += count;
-            } else {
-              events[item.event_name].browser += count;
-            }
+            events[name].browser += item.count;
           }
         }
       }
     } else {
-      const errBody = await statsNameRes.json().catch(() => ({})) as Record<string, unknown>;
-      statsError = (errBody?.error as Record<string, unknown>)?.message as string ?? `HTTP ${statsNameRes.status}`;
+      const errBody = await statsRes.json().catch(() => ({})) as Record<string, unknown>;
+      statsError = (errBody?.error as Record<string, unknown>)?.message as string ?? `HTTP ${statsRes.status}`;
     }
 
     const { score, breakdown, recommendations } = computeCapiScore(events);

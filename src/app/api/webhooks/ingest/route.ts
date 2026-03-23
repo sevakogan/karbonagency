@@ -18,10 +18,10 @@ interface IngestPayload {
   campaign_id?: string;
 }
 
-// Validate the ingest API key
+// Validate the ingest API key or CRON_SECRET
 function validateApiKey(req: NextRequest): boolean {
   const key = req.headers.get('x-api-key') || req.headers.get('authorization')?.replace('Bearer ', '');
-  return key === process.env.INGEST_API_KEY;
+  return key === process.env.INGEST_API_KEY || key === process.env.CRON_SECRET;
 }
 
 export async function POST(req: NextRequest) {
@@ -29,13 +29,19 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  let payload: IngestPayload;
+  let rawPayload: Record<string, unknown>;
   try {
-    payload = await req.json();
+    rawPayload = await req.json();
   } catch {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
   }
 
+  // Handle charge forwarder from Paul's n8n: { type: "shiftos_charges", data: { charges: [...] } }
+  if (rawPayload.type === 'shiftos_charges') {
+    return handleChargeForward(rawPayload, getAdminSupabase());
+  }
+
+  const payload = rawPayload as IngestPayload;
   const { source, company_id, date, records, campaign_id } = payload;
 
   if (!source || !company_id || !date || !Array.isArray(records)) {
@@ -290,4 +296,67 @@ async function ingestAdPlatform(
       results.inserted += 1;
     }
   }
+}
+
+// ── ShiftOS Charges (forwarded from Paul's n8n) ─────
+
+const MIAMI_COMPANY_ID = '950d0b84-63fa-409b-ad4f-ca1fdae25c7c';
+
+async function handleChargeForward(
+  payload: Record<string, unknown>,
+  supabase: ReturnType<typeof getAdminSupabase>,
+): Promise<NextResponse> {
+  const data = payload.data as Record<string, unknown> | undefined;
+  const charges = (data?.charges ?? []) as Array<Record<string, unknown>>;
+
+  if (charges.length === 0) {
+    return NextResponse.json({ ok: true, inserted: 0, message: 'No charges to process' });
+  }
+
+  let inserted = 0;
+  const errors: string[] = [];
+
+  for (const charge of charges) {
+    const chargeId = String(charge.id ?? '');
+    if (!chargeId) continue;
+
+    const amountCents = Number(charge.amount_cents ?? charge.amount ?? 0);
+    const amountCaptured = Number(charge.amount_captured ?? amountCents);
+    const amountRefunded = Number(charge.amount_refunded ?? 0);
+    const netCents = amountCaptured - amountRefunded;
+
+    const row = {
+      company_id: MIAMI_COMPANY_ID,
+      shiftos_charge_id: chargeId,
+      shiftos_user_id: Number(charge.user ?? 0),
+      location_id: String(charge.location ?? ''),
+      stripe_charge_id: charge.charge_id ? String(charge.charge_id) : null,
+      status: String(charge.status ?? 'SUCCEEDED'),
+      amount_cents: amountCents,
+      amount_captured: amountCaptured,
+      amount_refunded: amountRefunded,
+      net_amount_cents: netCents,
+      receipt_url: charge.receipt_url ? String(charge.receipt_url) : null,
+      notes: charge.notes ? String(charge.notes) : null,
+      charge_created_at: String(charge.created ?? new Date().toISOString()),
+    };
+
+    const { error } = await supabase
+      .from('shiftos_charges')
+      .upsert(row, { onConflict: 'shiftos_charge_id' });
+
+    if (error) {
+      errors.push(`charge ${chargeId}: ${error.message}`);
+    } else {
+      inserted++;
+    }
+  }
+
+  return NextResponse.json({
+    ok: errors.length === 0,
+    type: 'shiftos_charges',
+    inserted,
+    total: charges.length,
+    errors,
+  });
 }

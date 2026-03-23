@@ -249,7 +249,7 @@ function ChartCard({ title, trailing, children, className, widgetId, currentTab 
           <div ref={menuRef} className="relative">
             <button
               onClick={(e) => { e.stopPropagation(); setMenuOpen((p) => !p); setMoveSubmenu(false); }}
-              className="flex items-center justify-center w-5 h-5 rounded-md transition-opacity opacity-0 group-hover:opacity-60 hover:!opacity-100"
+              className="flex items-center justify-center w-5 h-5 rounded-md transition-opacity opacity-30 group-hover:opacity-60 hover:!opacity-100"
               style={{ color: 'var(--text-tertiary)' }}
             >
               <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor">

@@ -243,6 +243,10 @@ export async function GET(request: NextRequest) {
 
     const r = (n: number) => Math.round(n * 100) / 100;
 
+    // Total customers and bookings from daily_metrics (franchise CSV)
+    const totalCustomerBookings = totalShiftosTxns + totalSquareTxns;
+    const activeCustomers = customers.filter((c) => c.total_bookings > 0);
+
     return NextResponse.json({
       revenue_trend: csvRevenueTrend.length > 0 ? csvRevenueTrend : revenueTrend,
       status_distribution: statusDist,
@@ -250,10 +254,18 @@ export async function GET(request: NextRequest) {
       coupon_analysis: couponAnalysis,
       sim_utilization: simUtilization,
       scatter_data: scatterData,
-      revenue_this_month: revenueThisMonth,
-      revenue_last_month: revenueLastMonth,
-      revenue_lifetime: totalLifetimeRevenue,
-      avg_lifetime_value: avgLTV,
+      revenue_this_month: r(revenueThisMonth),
+      revenue_last_month: r(revenueLastMonth),
+      revenue_lifetime: r(totalLifetimeRevenue),
+      shiftosRevenue: r(totalShiftOSRev),
+      squareRevenue: r(totalSquareRev),
+      square_revenue: r(totalSquareRev),
+      shiftos_revenue: r(totalShiftOSRev),
+      total_customers: activeCustomers.length || customers.length,
+      total_bookings: totalCustomerBookings,
+      totalCustomerBookings,
+      avg_lifetime_value: avgLTV > 0 ? avgLTV : totalLifetimeRevenue > 0 && customers.length > 0 ? Math.round(totalLifetimeRevenue / customers.length) : 0,
+      refund_rate_pct: refunds?.refund_rate_pct ?? 0,
       merchant_fees: {
         stripe: r(stripeFees),
         square: r(squareFees),
@@ -277,7 +289,7 @@ export async function GET(request: NextRequest) {
         total_franchise_fees: r(totalFranchiseFees),
         total_deductions: r(totalDeductions),
         net_profit: r(netProfit),
-        margin_pct: r((netProfit / totalLifetimeRevenue) * 100),
+        margin_pct: totalLifetimeRevenue > 0 ? r((netProfit / totalLifetimeRevenue) * 100) : 0,
       },
       attribution,
       ...(refunds ? { refunds } : {}),
@@ -584,12 +596,23 @@ function computeSimUtilization(reservations: readonly ReservationRow[]): SimUtil
     }
   }
 
+  // Sim prices from ShiftOS calendars
+  const SIM_PRICES: Record<string, number> = {
+    'Hamilton-Mia': 35, 'Verstappen-Mia': 35,
+    'Norris-Mia': 30, 'Piastri-Mia': 30, 'Russell-Mia': 30, 'Leclerc-Mia': 30,
+    'Antonelli-Mia': 25, 'Sainz-Mia': 25,
+  };
+
   const bySim: SimUtilBySimEntry[] = ALL_SIM_NAMES.map((name) => {
     const bookings = simCounts.get(name) ?? 0;
+    const price = SIM_PRICES[name] ?? 30;
+    const revenue = bookings * price;
     return {
       name,
       tier: SIM_TIERS[name],
       bookings,
+      revenue,
+      avg_revenue: bookings > 0 ? price : 0,
       pct: totalBookings > 0 ? Math.round((bookings / totalBookings) * 100) : 0,
     };
   }).sort((a, b) => b.bookings - a.bookings);

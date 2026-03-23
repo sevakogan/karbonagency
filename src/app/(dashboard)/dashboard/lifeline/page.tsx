@@ -1,5 +1,5 @@
 import { createSupabaseServer } from '@/lib/supabase-server';
-import { LifelineView } from '@/components/lifeline/lifeline-view';
+import { LifelinePageClient } from '@/components/lifeline/lifeline-page-client';
 
 export const dynamic = 'force-dynamic';
 
@@ -27,5 +27,13 @@ export default async function LifelinePage() {
     );
   }
 
-  return <LifelineView />;
+  // Get Shift Arcade Miami company for the shared header
+  const { data: company } = await supabase
+    .from('clients')
+    .select('*')
+    .ilike('name', '%shift%arcade%')
+    .limit(1)
+    .single();
+
+  return <LifelinePageClient company={company} />;
 }

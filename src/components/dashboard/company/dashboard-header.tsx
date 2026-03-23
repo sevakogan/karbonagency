@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, RefreshCw, Settings, Plug, BarChart3, Megaphone } from 'lucide-react';
+import { ArrowLeft, RefreshCw, Settings, Plug, BarChart3, Megaphone, HeartPulse } from 'lucide-react';
 import type { Company } from '@/types';
 
 interface Props {
@@ -12,7 +12,7 @@ interface Props {
   refreshing: boolean;
   onRefresh: () => void;
   lastSyncedAt?: string | null;
-  activeTab?: 'dashboard' | 'marketing';
+  activeTab?: 'dashboard' | 'marketing' | 'lifeline';
 }
 
 export function DashboardHeader({
@@ -139,6 +139,18 @@ export function DashboardHeader({
       >
         <Megaphone size={13} />
         Marketing
+      </Link>
+      <Link
+        href="/dashboard/lifeline"
+        className="flex items-center gap-1.5 rounded-lg px-4 py-1.5 text-xs font-semibold transition-all"
+        style={{
+          background: activeTab === 'lifeline' ? 'var(--bg-primary)' : 'transparent',
+          color: activeTab === 'lifeline' ? 'var(--text-primary)' : 'var(--text-secondary)',
+          boxShadow: activeTab === 'lifeline' ? 'var(--shadow-card)' : 'none',
+        }}
+      >
+        <HeartPulse size={13} />
+        Lifeline
       </Link>
     </div>
     </>

@@ -128,36 +128,61 @@ const PERIOD_OPTIONS: Array<{ label: string; value: string }> = [
   { label: 'All', value: 'all' },
 ];
 
-function ChartCard({ title, trailing, children, className, widgetId }: {
+// ── Widget prefs helpers ──────────────────────────────────────────
+const WIDGET_PREFS_KEY = 'karbon-widget-prefs';
+
+function readWidgetPrefs(): Record<string, { collapsed?: boolean; wide?: boolean; hiddenOn?: string }> {
+  if (typeof window === 'undefined') return {};
+  try {
+    return JSON.parse(localStorage.getItem(WIDGET_PREFS_KEY) ?? '{}');
+  } catch { return {}; }
+}
+
+function writeWidgetPref(id: string, patch: Record<string, unknown>) {
+  if (typeof window === 'undefined') return;
+  try {
+    const prefs = readWidgetPrefs();
+    prefs[id] = { ...(prefs[id] ?? {}), ...patch } as any;
+    localStorage.setItem(WIDGET_PREFS_KEY, JSON.stringify(prefs));
+  } catch { /* ignore */ }
+}
+
+// Tabs that widgets can be moved to
+const WIDGET_TABS = ['Dashboard', 'Marketing', 'Lifeline'] as const;
+
+function ChartCard({ title, trailing, children, className, widgetId, currentTab = 'Marketing' }: {
   title: string;
   trailing?: React.ReactNode;
   children: React.ReactNode;
   className?: string;
   widgetId?: string;
+  currentTab?: string;
 }) {
   const [collapsed, setCollapsed] = useState(false);
+  const [wide, setWide] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [moveSubmenu, setMoveSubmenu] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   const resolvedId = widgetId ?? `widget-${title.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')}`;
 
-  // Load saved collapse state
+  // Load saved state
   useEffect(() => {
     if (!resolvedId) return;
-    try {
-      const raw = localStorage.getItem('karbon-widget-prefs');
-      if (raw) {
-        const prefs = JSON.parse(raw);
-        if (prefs[resolvedId]?.collapsed) setCollapsed(true);
-      }
-    } catch { /* ignore */ }
+    const prefs = readWidgetPrefs();
+    const saved = prefs[resolvedId];
+    if (saved?.collapsed) setCollapsed(true);
+    if (saved?.wide) setWide(true);
   }, [resolvedId]);
 
   // Close menu on outside click
   useEffect(() => {
     if (!menuOpen) return;
     const handler = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuOpen(false);
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false);
+        setMoveSubmenu(false);
+      }
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
@@ -167,17 +192,32 @@ function ChartCard({ title, trailing, children, className, widgetId }: {
     const next = !collapsed;
     setCollapsed(next);
     setMenuOpen(false);
-    try {
-      const raw = localStorage.getItem('karbon-widget-prefs');
-      const prefs = raw ? JSON.parse(raw) : {};
-      prefs[resolvedId] = { ...(prefs[resolvedId] ?? {}), collapsed: next };
-      localStorage.setItem('karbon-widget-prefs', JSON.stringify(prefs));
-    } catch { /* ignore */ }
+    writeWidgetPref(resolvedId, { collapsed: next });
   };
+
+  const toggleWide = () => {
+    const next = !wide;
+    setWide(next);
+    setMenuOpen(false);
+    writeWidgetPref(resolvedId, { wide: next });
+  };
+
+  const moveToTab = (tab: string) => {
+    setMenuOpen(false);
+    setMoveSubmenu(false);
+    writeWidgetPref(resolvedId, { hiddenOn: currentTab, movedTo: tab });
+    // Dispatch event so parent tabs can react
+    window.dispatchEvent(new CustomEvent('widget-moved', { detail: { widgetId: resolvedId, from: currentTab, to: tab } }));
+  };
+
+  // Check if this widget was moved away from this tab
+  const prefs = typeof window !== 'undefined' ? readWidgetPrefs() : {};
+  const movedAway = prefs[resolvedId]?.hiddenOn === currentTab;
+  if (movedAway) return null;
 
   return (
     <div
-      className={`group relative overflow-hidden rounded-2xl backdrop-blur-xl flex flex-col ${className ?? ''}`}
+      className={`group relative overflow-hidden rounded-2xl backdrop-blur-xl flex flex-col ${wide ? 'col-span-full' : ''} ${className ?? ''}`}
       style={{
         background: 'var(--glass-bg)',
         backdropFilter: 'blur(var(--glass-blur)) saturate(var(--glass-saturate))',
@@ -185,6 +225,7 @@ function ChartCard({ title, trailing, children, className, widgetId }: {
         border: '1px solid var(--glass-border)',
         boxShadow: 'var(--shadow-card)',
         padding: collapsed ? '0' : undefined,
+        transition: 'all 0.2s ease',
       }}
     >
       <div
@@ -204,10 +245,10 @@ function ChartCard({ title, trailing, children, className, widgetId }: {
         </p>
         <div className="flex items-center gap-1">
           {!collapsed && trailing}
-          {/* Widget menu dot */}
+          {/* Widget menu */}
           <div ref={menuRef} className="relative">
             <button
-              onClick={(e) => { e.stopPropagation(); setMenuOpen((p) => !p); }}
+              onClick={(e) => { e.stopPropagation(); setMenuOpen((p) => !p); setMoveSubmenu(false); }}
               className="flex items-center justify-center w-5 h-5 rounded-md transition-opacity opacity-0 group-hover:opacity-60 hover:!opacity-100"
               style={{ color: 'var(--text-tertiary)' }}
             >
@@ -219,16 +260,60 @@ function ChartCard({ title, trailing, children, className, widgetId }: {
             </button>
             {menuOpen && (
               <div
-                className="absolute right-0 mt-1 rounded-xl py-1 min-w-[120px] shadow-lg z-50"
+                className="absolute right-0 mt-1 rounded-xl py-1 min-w-[150px] shadow-lg z-50"
                 style={{ background: 'var(--bg-elevated)', border: '1px solid var(--separator)' }}
               >
+                {/* Minimize / Expand */}
                 <button
                   onClick={(e) => { e.stopPropagation(); toggleCollapse(); }}
                   className="flex items-center gap-2 w-full px-3 py-1.5 text-[11px] font-medium transition-colors hover:bg-[var(--fill-quaternary)]"
                   style={{ color: 'var(--text-secondary)' }}
                 >
-                  {collapsed ? 'Expand' : 'Minimize'}
+                  {collapsed ? '\u25BC Expand' : '\u25B2 Minimize'}
                 </button>
+
+                {/* Resize */}
+                {!collapsed && (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); toggleWide(); }}
+                    className="flex items-center gap-2 w-full px-3 py-1.5 text-[11px] font-medium transition-colors hover:bg-[var(--fill-quaternary)]"
+                    style={{ color: 'var(--text-secondary)' }}
+                  >
+                    {wide ? '\u2194 Normal Width' : '\u2922 Full Width'}
+                  </button>
+                )}
+
+                {/* Divider */}
+                <div className="h-px mx-2 my-1" style={{ background: 'var(--separator)' }} />
+
+                {/* Move to tab */}
+                <div className="relative">
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setMoveSubmenu((p) => !p); }}
+                    className="flex items-center justify-between gap-2 w-full px-3 py-1.5 text-[11px] font-medium transition-colors hover:bg-[var(--fill-quaternary)]"
+                    style={{ color: 'var(--text-secondary)' }}
+                  >
+                    <span>\u21C4 Move to...</span>
+                    <span style={{ fontSize: 8 }}>\u25B6</span>
+                  </button>
+                  {moveSubmenu && (
+                    <div
+                      className="absolute left-full top-0 ml-1 rounded-xl py-1 min-w-[110px] shadow-lg z-50"
+                      style={{ background: 'var(--bg-elevated)', border: '1px solid var(--separator)' }}
+                    >
+                      {WIDGET_TABS.filter((t) => t !== currentTab).map((tab) => (
+                        <button
+                          key={tab}
+                          onClick={(e) => { e.stopPropagation(); moveToTab(tab); }}
+                          className="flex items-center gap-2 w-full px-3 py-1.5 text-[11px] font-medium transition-colors hover:bg-[var(--fill-quaternary)]"
+                          style={{ color: 'var(--text-secondary)' }}
+                        >
+                          {tab}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             )}
           </div>

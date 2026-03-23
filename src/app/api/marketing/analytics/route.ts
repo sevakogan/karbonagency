@@ -305,6 +305,7 @@ export async function GET(request: NextRequest) {
 async function isAuthorized(req: NextRequest): Promise<boolean> {
   const apiKey = req.headers.get('x-api-key') || req.headers.get('authorization')?.replace('Bearer ', '');
   if (apiKey && apiKey === process.env.INGEST_API_KEY) return true;
+  if (apiKey && apiKey === process.env.CRON_SECRET) return true;
 
   try {
     const supabase = await createSupabaseServer();

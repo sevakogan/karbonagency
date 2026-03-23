@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
   if (error || !client) return error!;
 
   const metaClient = client as { meta_ad_account_id: string; meta_access_token?: string };
-  const accessToken = metaClient.meta_access_token || process.env.META_ACCESS_TOKEN || "";
+  const accessToken = metaClient.meta_access_token || (process.env.META_ACCESS_TOKEN ?? process.env.META_CAPI_ACCESS_TOKEN) || "";
   const accountId = metaClient.meta_ad_account_id.startsWith("act_")
     ? metaClient.meta_ad_account_id
     : `act_${metaClient.meta_ad_account_id}`;

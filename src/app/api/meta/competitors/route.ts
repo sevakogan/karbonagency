@@ -123,7 +123,7 @@ export async function GET(request: NextRequest) {
   if (!ok) return error!;
 
   // Get access token from env or client config
-  const accessToken = process.env.META_ACCESS_TOKEN || "";
+  const accessToken = (process.env.META_ACCESS_TOKEN ?? process.env.META_CAPI_ACCESS_TOKEN) || "";
 
   const results = await Promise.all(
     KNOWN_COMPETITORS.map(async (competitor) => {
@@ -179,7 +179,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "query is required" }, { status: 400 });
   }
 
-  const accessToken = process.env.META_ACCESS_TOKEN || "";
+  const accessToken = (process.env.META_ACCESS_TOKEN ?? process.env.META_CAPI_ACCESS_TOKEN) || "";
   const ads = accessToken
     ? await searchAdLibrary(body.query, accessToken, body.country || "US")
     : [];

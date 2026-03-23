@@ -72,8 +72,8 @@ async function authenticateRequest(request: NextRequest) {
   // Env-var fallback: META_PIXEL_ID / META_ACCESS_TOKEN covers the case where the
   // Supabase column either doesn't exist or the UPDATE WHERE clause didn't match
   // (common when meta_ad_account_id is stored with the "act_" prefix).
-  const pixelIdFallback = clientExtra?.meta_pixel_id ?? process.env.META_PIXEL_ID ?? null;
-  const accessTokenFallback = clientExtra?.meta_access_token ?? process.env.META_ACCESS_TOKEN ?? null;
+  const pixelIdFallback = clientExtra?.meta_pixel_id ?? process.env.META_PIXEL_ID ?? process.env.META_CAPI_PIXEL_ID ?? null;
+  const accessTokenFallback = clientExtra?.meta_access_token ?? process.env.META_ACCESS_TOKEN ?? process.env.META_CAPI_ACCESS_TOKEN ?? null;
 
   return {
     error: null,
@@ -151,7 +151,7 @@ export async function GET(request: NextRequest) {
   if (error || !client) return error!;
 
   const accessToken = (client as { meta_access_token?: string }).meta_access_token
-    || process.env.META_ACCESS_TOKEN || "";
+    || process.env.META_ACCESS_TOKEN || process.env.META_CAPI_ACCESS_TOKEN || "";
 
   const pixelId = (client as { meta_pixel_id?: string }).meta_pixel_id;
 

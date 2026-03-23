@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const accessToken = process.env.META_ACCESS_TOKEN;
+  const accessToken = process.env.META_ACCESS_TOKEN ?? process.env.META_CAPI_ACCESS_TOKEN;
   const adAccountId = process.env.META_AD_ACCOUNT_ID;
 
   if (!accessToken || !adAccountId) {

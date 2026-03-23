@@ -48,7 +48,7 @@ async function getAdAccountAndToken(request: NextRequest) {
   const { data: client } = await supabase.from("clients").select("meta_ad_account_id, meta_access_token").eq("id", clientId).single();
   if (!client?.meta_ad_account_id) return { error: NextResponse.json({ error: "No Meta Ad Account" }, { status: 404 }), adAccountId: null, accessToken: null };
 
-  const accessToken = client.meta_access_token ?? process.env.META_ACCESS_TOKEN ?? "";
+  const accessToken = client.meta_access_token ?? process.env.META_ACCESS_TOKEN ?? process.env.META_CAPI_ACCESS_TOKEN ?? "";
   return { error: null, adAccountId: client.meta_ad_account_id as string, accessToken };
 }
 

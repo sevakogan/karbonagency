@@ -28,13 +28,18 @@ interface TimelineEvent {
 }
 
 interface CustomerJourney {
-  customer: CustomerSearchResult & { signup_date: string };
+  customer: CustomerSearchResult & { signup_date: string; next_predicted_date?: string | null };
   timeline: TimelineEvent[];
   summary: {
     lifetime_spend: number;
     total_bookings: number;
     days_as_customer: number;
   };
+}
+
+interface ChurnStatus {
+  churn_score: number;
+  risk_level: 'safe' | 'watch' | 'at_risk' | 'critical';
 }
 
 interface OverviewStats {
@@ -74,8 +79,10 @@ export function LifelineView() {
   const [journey, setJourney] = useState<CustomerJourney | null>(null);
   const [overview, setOverview] = useState<OverviewStats | null>(null);
   const [patterns, setPatterns] = useState<PatternsData | null>(null);
+  const [churnStatus, setChurnStatus] = useState<ChurnStatus | null>(null);
   const [loading, setLoading] = useState(false);
   const [searchLoading, setSearchLoading] = useState(false);
+  const [actionToast, setActionToast] = useState<string | null>(null);
 
   // Fetch overview stats on mount
   useEffect(() => {
@@ -110,21 +117,66 @@ export function LifelineView() {
     return () => clearTimeout(timer);
   }, [search]);
 
-  // Fetch journey when customer selected
+  // Fetch journey + churn status when customer selected
   const selectCustomer = useCallback((id: string) => {
     setSelectedCustomer(id);
     setSearchResults([]);
     setSearch('');
     setLoading(true);
+    setChurnStatus(null);
+    setActionToast(null);
+
     fetch(`/api/lifeline/customer?customerId=${id}`)
       .then((r) => (r.ok ? r.json() : null))
-      .then((data) => setJourney(data))
+      .then((data) => {
+        setJourney(data);
+        // Fetch churn status for this customer
+        if (data?.customer?.email) {
+          fetch('/api/marketing/churn')
+            .then((r) => (r.ok ? r.json() : null))
+            .then((churnData) => {
+              const customers = churnData?.customers ?? [];
+              const match = customers.find(
+                (c: { customer_id?: string; email?: string }) =>
+                  c.customer_id === id || c.email === data.customer.email,
+              );
+              if (match) {
+                setChurnStatus({
+                  churn_score: match.churn_score ?? 0,
+                  risk_level: match.risk_level ?? 'safe',
+                });
+              }
+            })
+            .catch(() => setChurnStatus(null));
+        }
+      })
       .catch(() => setJourney(null))
       .finally(() => setLoading(false));
   }, []);
 
+  // Auto-dismiss toast
+  useEffect(() => {
+    if (!actionToast) return;
+    const t = setTimeout(() => setActionToast(null), 3000);
+    return () => clearTimeout(t);
+  }, [actionToast]);
+
+  const handleAction = (label: string) => {
+    setActionToast(`${label} — action triggered (placeholder)`);
+  };
+
   return (
     <div className="flex flex-col gap-6">
+      {/* Toast notification */}
+      {actionToast && (
+        <div
+          className="fixed top-4 right-4 z-[100] rounded-lg px-4 py-3 text-sm font-medium shadow-lg animate-in fade-in slide-in-from-top-2"
+          style={{ background: 'var(--accent)', color: '#fff' }}
+        >
+          {actionToast}
+        </div>
+      )}
+
       {/* Page header */}
       <div>
         <h1 className="text-xl font-bold tracking-tight" style={{ color: 'var(--text-primary)' }}>
@@ -183,8 +235,12 @@ export function LifelineView() {
           {/* Selected customer quick info */}
           {journey && !loading && (
             <div className="mt-3 pt-3" style={{ borderTop: '1px solid var(--border)' }}>
-              <div className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
-                {journey.customer.name}
+              <div className="flex items-center justify-between gap-2">
+                <div className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
+                  {journey.customer.name}
+                </div>
+                {/* Churn Risk Badge */}
+                {churnStatus && <ChurnBadge status={churnStatus} />}
               </div>
               <div className="text-xs mt-0.5" style={{ color: 'var(--text-tertiary)' }}>
                 {journey.customer.email}
@@ -192,6 +248,11 @@ export function LifelineView() {
               <div className="text-xs mt-0.5" style={{ color: 'var(--text-tertiary)' }}>
                 {journey.customer.phone}
               </div>
+
+              {/* Predicted Next Booking */}
+              {journey.customer.next_predicted_date && (
+                <PredictedBookingCard dateIso={journey.customer.next_predicted_date} />
+              )}
             </div>
           )}
         </div>
@@ -308,6 +369,30 @@ export function LifelineView() {
             <span>&middot;</span>
             <span>{journey.summary.days_as_customer} days as customer</span>
           </div>
+
+          {/* Customer Actions */}
+          <div
+            className="mt-3 pt-3 flex flex-wrap items-center gap-2"
+            style={{ borderTop: '1px solid var(--border)' }}
+          >
+            <span className="text-[10px] font-semibold uppercase tracking-wider mr-1" style={{ color: 'var(--text-tertiary)' }}>
+              Actions
+            </span>
+            {(['Send Re-engagement', 'Add to VIP List', 'Flag for Review'] as const).map((label) => (
+              <button
+                key={label}
+                onClick={() => handleAction(label)}
+                className="px-3 py-1.5 rounded-lg text-xs font-medium transition-opacity hover:opacity-80"
+                style={{
+                  background: 'var(--glass-bg)',
+                  border: '1px solid var(--border)',
+                  color: 'var(--text-secondary)',
+                }}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
         </div>
       )}
 
@@ -368,6 +453,69 @@ function QuickStat({ label, value, sub }: { label: string; value: string | numbe
       {sub && (
         <div className="text-[10px]" style={{ color: 'var(--text-tertiary)' }}>{sub}</div>
       )}
+    </div>
+  );
+}
+
+const CHURN_BADGE_CONFIG: Record<ChurnStatus['risk_level'], { label: string; color: string; bg: string }> = {
+  safe: { label: 'Safe', color: '#22c55e', bg: 'rgba(34,197,94,0.12)' },
+  watch: { label: 'Watch', color: '#eab308', bg: 'rgba(234,179,8,0.12)' },
+  at_risk: { label: 'At Risk', color: '#f97316', bg: 'rgba(249,115,22,0.12)' },
+  critical: { label: 'Critical', color: '#ef4444', bg: 'rgba(239,68,68,0.12)' },
+};
+
+function ChurnBadge({ status }: { status: ChurnStatus }) {
+  const config = CHURN_BADGE_CONFIG[status.risk_level] ?? CHURN_BADGE_CONFIG.safe;
+  return (
+    <span
+      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider"
+      style={{ background: config.bg, color: config.color }}
+      title={`Churn score: ${status.churn_score}/100`}
+    >
+      <span
+        className="w-1.5 h-1.5 rounded-full flex-shrink-0"
+        style={{ background: config.color }}
+      />
+      {config.label}
+    </span>
+  );
+}
+
+function PredictedBookingCard({ dateIso }: { dateIso: string }) {
+  const target = new Date(dateIso);
+  const now = new Date();
+  const diffMs = target.getTime() - now.getTime();
+  const diffDays = Math.max(0, Math.ceil(diffMs / 86400000));
+
+  const dateStr = target.toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
+
+  // Confidence: closer = higher
+  const confidence = diffDays <= 7 ? 'High' : diffDays <= 21 ? 'Medium' : 'Low';
+  const confidenceColor = diffDays <= 7 ? '#22c55e' : diffDays <= 21 ? '#eab308' : '#9ca3af';
+
+  return (
+    <div
+      className="mt-3 rounded-lg p-3"
+      style={{ background: 'var(--glass-bg)', border: '1px solid var(--border)' }}
+    >
+      <div className="text-[10px] font-semibold uppercase tracking-wider mb-1" style={{ color: 'var(--text-tertiary)' }}>
+        Predicted Next Visit
+      </div>
+      <div className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>
+        {dateStr}{' '}
+        <span className="text-xs font-normal" style={{ color: 'var(--text-tertiary)' }}>
+          (in {diffDays} {diffDays === 1 ? 'day' : 'days'})
+        </span>
+      </div>
+      <div className="flex items-center gap-1.5 mt-1">
+        <span
+          className="w-1.5 h-1.5 rounded-full"
+          style={{ background: confidenceColor }}
+        />
+        <span className="text-[10px] font-medium" style={{ color: confidenceColor }}>
+          {confidence} confidence
+        </span>
+      </div>
     </div>
   );
 }

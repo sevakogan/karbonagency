@@ -162,10 +162,29 @@ async function getCustomerJourney(supabase: any, customerId: string) {
     ? Math.round((new Date(lastDate).getTime() - new Date(firstDate).getTime()) / 86400000)
     : 0;
 
+  // Predict next booking date from average gap between bookings
+  const bookingDates = [...(reservations ?? [])]
+    .map((r) => new Date(r.booking_time).getTime())
+    .filter((t) => !Number.isNaN(t))
+    .sort((a, b) => a - b);
+
+  let next_predicted_date: string | null = null;
+  if (bookingDates.length >= 2) {
+    const gaps = bookingDates.slice(1).map((t, i) => t - bookingDates[i]);
+    const avgGapMs = gaps.reduce((sum, g) => sum + g, 0) / gaps.length;
+    const lastBookingMs = bookingDates[bookingDates.length - 1];
+    const predicted = new Date(lastBookingMs + avgGapMs);
+    // Only include if predicted date is in the future
+    if (predicted.getTime() > Date.now()) {
+      next_predicted_date = predicted.toISOString();
+    }
+  }
+
   return {
     customer: {
       ...customer,
       name: `${customer.first_name ?? ''} ${customer.last_name ?? ''}`.trim(),
+      next_predicted_date,
     },
     timeline,
     summary: {

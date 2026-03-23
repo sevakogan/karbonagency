@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState, useRef, useCallback } from 'react';
+import { useMemo, useState, useRef, useCallback, useEffect } from 'react';
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell,
@@ -64,6 +64,21 @@ export interface CreativesData {
   creatives: CreativeRecord[];
 }
 
+export interface LeadRecord {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  status: string;
+  source: string;
+  created_at: string;
+}
+
+export interface LeadsData {
+  leads: LeadRecord[];
+  total: number;
+}
+
 interface ChartGridProps {
   analytics: AnalyticsData | null;
   loading: boolean;
@@ -73,6 +88,7 @@ interface ChartGridProps {
   reviewsData?: ReviewsData | null;
   organicData?: OrganicData | null;
   creativesData?: CreativesData | null;
+  leadsData?: LeadsData | null;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   cohortData?: any;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -112,37 +128,118 @@ const PERIOD_OPTIONS: Array<{ label: string; value: string }> = [
   { label: 'All', value: 'all' },
 ];
 
-function ChartCard({ title, trailing, children, className }: {
+function ChartCard({ title, trailing, children, className, widgetId }: {
   title: string;
   trailing?: React.ReactNode;
   children: React.ReactNode;
   className?: string;
+  widgetId?: string;
 }) {
+  const [collapsed, setCollapsed] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  const resolvedId = widgetId ?? `widget-${title.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')}`;
+
+  // Load saved collapse state
+  useEffect(() => {
+    if (!resolvedId) return;
+    try {
+      const raw = localStorage.getItem('karbon-widget-prefs');
+      if (raw) {
+        const prefs = JSON.parse(raw);
+        if (prefs[resolvedId]?.collapsed) setCollapsed(true);
+      }
+    } catch { /* ignore */ }
+  }, [resolvedId]);
+
+  // Close menu on outside click
+  useEffect(() => {
+    if (!menuOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [menuOpen]);
+
+  const toggleCollapse = () => {
+    const next = !collapsed;
+    setCollapsed(next);
+    setMenuOpen(false);
+    try {
+      const raw = localStorage.getItem('karbon-widget-prefs');
+      const prefs = raw ? JSON.parse(raw) : {};
+      prefs[resolvedId] = { ...(prefs[resolvedId] ?? {}), collapsed: next };
+      localStorage.setItem('karbon-widget-prefs', JSON.stringify(prefs));
+    } catch { /* ignore */ }
+  };
+
   return (
     <div
-      className={`relative overflow-hidden rounded-2xl p-3.5 backdrop-blur-xl flex flex-col ${className ?? ''}`}
+      className={`group relative overflow-hidden rounded-2xl backdrop-blur-xl flex flex-col ${className ?? ''}`}
       style={{
         background: 'var(--glass-bg)',
         backdropFilter: 'blur(var(--glass-blur)) saturate(var(--glass-saturate))',
         WebkitBackdropFilter: 'blur(var(--glass-blur)) saturate(var(--glass-saturate))',
         border: '1px solid var(--glass-border)',
         boxShadow: 'var(--shadow-card)',
+        padding: collapsed ? '0' : undefined,
       }}
     >
       <div
         className="absolute top-0 left-[8%] right-[8%] h-px pointer-events-none"
         style={{ background: 'linear-gradient(90deg, transparent, var(--gloss-highlight-strong), transparent)' }}
       />
-      <div className="flex items-center justify-between mb-3">
+      {/* Header with widget menu */}
+      <div
+        className={`flex items-center justify-between ${collapsed ? 'px-3.5 py-2 cursor-pointer' : 'px-3.5 pt-3.5 mb-3'}`}
+        onClick={collapsed ? toggleCollapse : undefined}
+      >
         <p
           className="text-[9px] font-semibold uppercase tracking-wider"
           style={{ color: 'var(--text-secondary)' }}
         >
-          {title}
+          {collapsed ? `\u25B6 ${title}` : title}
         </p>
-        {trailing}
+        <div className="flex items-center gap-1">
+          {!collapsed && trailing}
+          {/* Widget menu dot */}
+          <div ref={menuRef} className="relative">
+            <button
+              onClick={(e) => { e.stopPropagation(); setMenuOpen((p) => !p); }}
+              className="flex items-center justify-center w-5 h-5 rounded-md transition-opacity opacity-0 group-hover:opacity-60 hover:!opacity-100"
+              style={{ color: 'var(--text-tertiary)' }}
+            >
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor">
+                <circle cx="2" cy="6" r="1.2" />
+                <circle cx="6" cy="6" r="1.2" />
+                <circle cx="10" cy="6" r="1.2" />
+              </svg>
+            </button>
+            {menuOpen && (
+              <div
+                className="absolute right-0 mt-1 rounded-xl py-1 min-w-[120px] shadow-lg z-50"
+                style={{ background: 'var(--bg-elevated)', border: '1px solid var(--separator)' }}
+              >
+                <button
+                  onClick={(e) => { e.stopPropagation(); toggleCollapse(); }}
+                  className="flex items-center gap-2 w-full px-3 py-1.5 text-[11px] font-medium transition-colors hover:bg-[var(--fill-quaternary)]"
+                  style={{ color: 'var(--text-secondary)' }}
+                >
+                  {collapsed ? 'Expand' : 'Minimize'}
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
-      {children}
+      {/* Content — hidden when collapsed */}
+      {!collapsed && (
+        <div className="px-3.5 pb-3.5">
+          {children}
+        </div>
+      )}
     </div>
   );
 }
@@ -1960,7 +2057,306 @@ function ChurnPredictionSection({ data }: { data: any }) {
   );
 }
 
-export function ChartGrid({ analytics, loading, period, onPeriodChange, onStatusClick, reviewsData, organicData, creativesData, cohortData, churnData, forecastData }: ChartGridProps) {
+/* ── Sim Utilization Heatmap ──────────────────────────────────── */
+
+const SIM_TIER_COLORS: Record<string, string> = {
+  pro: '#818cf8',
+  standard: '#06d6a0',
+  basic: '#fbbf24',
+};
+
+function SimUtilizationChart({ analytics }: { analytics: AnalyticsData | null }) {
+  const simData = analytics?.sim_utilization;
+  const bySim = simData?.by_sim ?? [];
+
+  const chartData = useMemo(() => {
+    if (!bySim.length) return [];
+    const maxBookings = Math.max(...bySim.map((s) => s.bookings), 1);
+    return [...bySim]
+      .sort((a, b) => b.bookings - a.bookings)
+      .map((s) => ({
+        name: s.name,
+        bookings: s.bookings,
+        pct: n(s.pct),
+        tier: s.tier ?? 'standard',
+        fill: SIM_TIER_COLORS[s.tier ?? 'standard'] ?? '#818cf8',
+        widthPct: Math.round((s.bookings / maxBookings) * 100),
+      }));
+  }, [bySim]);
+
+  const insight = useMemo(() => {
+    if (!chartData.length) return 'No sim utilization data available';
+    const top = chartData[0];
+    const bottom = chartData[chartData.length - 1];
+    if (top.bookings > bottom.bookings * 3) {
+      return `${top.name} is your busiest sim with ${top.bookings} bookings — ${bottom.name} is underutilized`;
+    }
+    const totalBookings = simData?.total_bookings ?? 0;
+    const avg = simData?.avg_per_sim_per_day ?? 0;
+    return `${totalBookings} total bookings across ${chartData.length} sims — avg ${n(avg).toFixed(1)}/sim/day`;
+  }, [chartData, simData]);
+
+  if (!bySim.length) return null;
+
+  return (
+    <ChartCard title="Sim Utilization">
+      <div className="flex flex-col gap-1.5">
+        {chartData.map((sim) => (
+          <div key={sim.name} className="flex items-center gap-2">
+            <span
+              className="text-[10px] font-medium truncate w-20 text-right"
+              style={{ color: 'var(--text-secondary)' }}
+            >
+              {sim.name}
+            </span>
+            <div className="flex-1 h-5 rounded-md overflow-hidden" style={{ background: 'var(--fill-quaternary)' }}>
+              <div
+                className="h-full rounded-md flex items-center px-1.5 transition-all duration-500"
+                style={{
+                  width: `${sim.widthPct}%`,
+                  background: sim.fill,
+                  minWidth: sim.bookings > 0 ? 24 : 0,
+                }}
+              >
+                <span className="text-[9px] font-bold text-white whitespace-nowrap">
+                  {sim.bookings}
+                </span>
+              </div>
+            </div>
+            <span
+              className="text-[9px] font-semibold tabular-nums w-10 text-right"
+              style={{ color: 'var(--text-tertiary)' }}
+            >
+              {n(sim.pct).toFixed(0)}%
+            </span>
+          </div>
+        ))}
+      </div>
+      {/* Legend */}
+      <div className="flex gap-3 mt-2 justify-end">
+        {Object.entries(SIM_TIER_COLORS).map(([tier, color]) => (
+          <span key={tier} className="flex items-center gap-1 text-[9px] font-semibold" style={{ color: 'var(--text-tertiary)' }}>
+            <span className="w-2 h-2 rounded-full" style={{ background: color }} />
+            {tier.charAt(0).toUpperCase() + tier.slice(1)}
+          </span>
+        ))}
+      </div>
+      <InsightBar text={insight} />
+    </ChartCard>
+  );
+}
+
+/* ── Refund Rate Card ────────────────────────────────────────── */
+
+function RefundRateCard({ analytics }: { analytics: AnalyticsData | null }) {
+  const refunds = analytics?.refunds;
+  const rate = n(refunds?.refund_rate_pct);
+  const totalRefunded = n(refunds?.total_refunded);
+  const netAfterRefunds = n(refunds?.net_after_refunds);
+
+  const gaugeColor = rate < 5 ? '#22c55e' : rate < 10 ? '#fbbf24' : '#ef4444';
+  const gaugeLabel = rate < 5 ? 'Healthy' : rate < 10 ? 'Watch' : 'High';
+
+  // Semicircle gauge
+  const radius = 42;
+  const cx = 50;
+  const cy = 55;
+  const totalLen = Math.PI * radius;
+  const filled = Math.min(rate / 20, 1) * totalLen; // scale to 20% max
+  const gap = totalLen - filled;
+
+  if (!refunds) return null;
+
+  return (
+    <ChartCard title="Refund Rate">
+      <div className="flex flex-col items-center py-2">
+        <svg viewBox="0 0 100 65" className="w-[120px]">
+          {/* Track */}
+          <path
+            d={`M ${cx - radius} ${cy} A ${radius} ${radius} 0 0 1 ${cx + radius} ${cy}`}
+            fill="none"
+            stroke={gaugeColor}
+            strokeWidth="8"
+            strokeLinecap="round"
+            opacity="0.15"
+          />
+          {/* Filled */}
+          <path
+            d={`M ${cx - radius} ${cy} A ${radius} ${radius} 0 0 1 ${cx + radius} ${cy}`}
+            fill="none"
+            stroke={gaugeColor}
+            strokeWidth="8"
+            strokeLinecap="round"
+            strokeDasharray={`${filled} ${gap}`}
+            opacity="0.9"
+          />
+          <text
+            x={cx}
+            y={cy - 6}
+            textAnchor="middle"
+            fill="var(--text-primary)"
+            fontSize="16"
+            fontWeight="700"
+            fontFamily="system-ui"
+          >
+            {rate.toFixed(1)}%
+          </text>
+        </svg>
+        <span
+          className="text-[10px] font-bold uppercase tracking-wider mt-1"
+          style={{ color: gaugeColor }}
+        >
+          {gaugeLabel}
+        </span>
+        <div className="flex gap-4 mt-3 text-[10px]" style={{ color: 'var(--text-secondary)' }}>
+          <div className="text-center">
+            <p className="font-bold tabular-nums" style={{ color: 'var(--text-primary)' }}>
+              ${totalRefunded.toLocaleString()}
+            </p>
+            <p>Refunded</p>
+          </div>
+          <div className="text-center">
+            <p className="font-bold tabular-nums" style={{ color: 'var(--text-primary)' }}>
+              ${netAfterRefunds.toLocaleString()}
+            </p>
+            <p>Net Revenue</p>
+          </div>
+        </div>
+      </div>
+      <InsightBar
+        text={
+          rate < 5
+            ? 'Refund rate is healthy — keep up the quality'
+            : rate < 10
+              ? `Refund rate is elevated at ${rate.toFixed(1)}% — investigate recent complaints`
+              : `High refund rate of ${rate.toFixed(1)}% — immediate action needed to identify root cause`
+        }
+      />
+    </ChartCard>
+  );
+}
+
+/* ── Lead Pipeline ───────────────────────────────────────────── */
+
+const LEAD_STATUS_COLORS: Record<string, string> = {
+  incoming: '#818cf8',
+  qualified: '#06d6a0',
+  followed_up: '#fbbf24',
+  won: '#22c55e',
+  lost: '#ef4444',
+  nurturing: '#a78bfa',
+};
+
+function LeadPipelineSection({ data }: { data: LeadsData | null | undefined }) {
+  const leads = data?.leads ?? [];
+  const total = data?.total ?? leads.length;
+
+  const recentLeads = useMemo(() => {
+    return [...leads].sort((a, b) =>
+      (b.created_at ?? '').localeCompare(a.created_at ?? '')
+    ).slice(0, 8);
+  }, [leads]);
+
+  const statusCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const lead of leads) {
+      const s = lead.status ?? 'incoming';
+      counts[s] = (counts[s] ?? 0) + 1;
+    }
+    return counts;
+  }, [leads]);
+
+  const insight = useMemo(() => {
+    if (!leads.length) return 'No leads in pipeline yet';
+    const won = statusCounts['won'] ?? 0;
+    const incoming = statusCounts['incoming'] ?? 0;
+    if (won > 0 && total > 0) {
+      const convPct = Math.round((won / total) * 100);
+      return `${won} converted out of ${total} leads — ${convPct}% conversion rate`;
+    }
+    if (incoming > 0) {
+      return `${incoming} new leads awaiting follow-up out of ${total} total`;
+    }
+    return `${total} leads in pipeline across ${Object.keys(statusCounts).length} stages`;
+  }, [leads, total, statusCounts]);
+
+  if (!leads.length) return null;
+
+  return (
+    <ChartCard title="Lead Pipeline">
+      {/* Status summary pills */}
+      <div className="flex flex-wrap gap-1.5 mb-3">
+        {Object.entries(statusCounts).map(([status, count]) => (
+          <span
+            key={status}
+            className="text-[9px] font-bold px-2 py-0.5 rounded-full"
+            style={{
+              background: `${LEAD_STATUS_COLORS[status] ?? '#6b7280'}22`,
+              color: LEAD_STATUS_COLORS[status] ?? '#6b7280',
+            }}
+          >
+            {status.replace(/_/g, ' ')} ({count})
+          </span>
+        ))}
+      </div>
+      {/* Mini table */}
+      <div className="overflow-x-auto -mx-1">
+        <table className="w-full text-[10px]" style={{ color: 'var(--text-primary)' }}>
+          <thead>
+            <tr
+              className="text-left"
+              style={{ color: 'var(--text-tertiary)', borderBottom: '1px solid var(--separator)' }}
+            >
+              <th className="px-1 py-1 font-semibold">Name</th>
+              <th className="px-1 py-1 font-semibold">Source</th>
+              <th className="px-1 py-1 font-semibold">Status</th>
+              <th className="px-1 py-1 font-semibold text-right">Date</th>
+            </tr>
+          </thead>
+          <tbody>
+            {recentLeads.map((lead) => {
+              const statusColor = LEAD_STATUS_COLORS[lead.status ?? 'incoming'] ?? '#6b7280';
+              const dateStr = lead.created_at
+                ? new Date(lead.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+                : '—';
+              return (
+                <tr
+                  key={lead.id}
+                  className="border-b last:border-b-0"
+                  style={{ borderColor: 'var(--separator)' }}
+                >
+                  <td className="px-1 py-1.5 font-medium truncate max-w-[120px]">
+                    {lead.name || 'Unknown'}
+                  </td>
+                  <td className="px-1 py-1.5" style={{ color: 'var(--text-secondary)' }}>
+                    {lead.source ?? '—'}
+                  </td>
+                  <td className="px-1 py-1.5">
+                    <span
+                      className="text-[9px] font-bold px-1.5 py-0.5 rounded-full"
+                      style={{
+                        background: `${statusColor}22`,
+                        color: statusColor,
+                      }}
+                    >
+                      {(lead.status ?? 'incoming').replace(/_/g, ' ')}
+                    </span>
+                  </td>
+                  <td className="px-1 py-1.5 text-right tabular-nums" style={{ color: 'var(--text-secondary)' }}>
+                    {dateStr}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+      <InsightBar text={insight} />
+    </ChartCard>
+  );
+}
+
+export function ChartGrid({ analytics, loading, period, onPeriodChange, onStatusClick, reviewsData, organicData, creativesData, leadsData, cohortData, churnData, forecastData }: ChartGridProps) {
   if (loading) {
     return (
       <div className="grid grid-cols-2 gap-2">
@@ -2017,6 +2413,15 @@ export function ChartGrid({ analytics, loading, period, onPeriodChange, onStatus
       <RevenueForecastSection data={forecastData} />
       {/* Row 10: Churn Prediction — full width */}
       <ChurnPredictionSection data={churnData} />
+      {/* Row 11: Sim Utilization + Refund Rate */}
+      <div className="grid grid-cols-3 gap-2">
+        <div className="col-span-2">
+          <SimUtilizationChart analytics={analytics} />
+        </div>
+        <RefundRateCard analytics={analytics} />
+      </div>
+      {/* Row 12: Lead Pipeline — full width */}
+      <LeadPipelineSection data={leadsData} />
     </div>
   );
 }

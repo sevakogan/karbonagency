@@ -3,7 +3,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createBrowserClient } from '@supabase/ssr';
-import { TrendingUp, TrendingDown, BarChart3, Filter, DollarSign, Route, Users, Receipt } from 'lucide-react';
+import { TrendingUp, TrendingDown, BarChart3, Filter, DollarSign, Route, Users, Receipt, Activity, Radio } from 'lucide-react';
 import type { Company, CompanyIntegration } from '@/types';
 import { useDashboardData, type DailyRow, type DateRange } from '@/lib/dashboard/use-dashboard-data';
 import { PLATFORM_COLORS, PLATFORM_ICONS, normSlug } from '@/lib/dashboard/platform-config';
@@ -141,6 +141,37 @@ export function CompanyDashboard({ company, integrations, dailyMetrics }: Props)
       }
     }).catch(() => {});
   }, [company.id]);
+
+  // --- Attribution data for Customer Attribution Summary ---
+  const [attributionData, setAttributionData] = useState<Record<string, number>>({});
+  useEffect(() => {
+    if (!company.id) return;
+    fetch(`/api/marketing/analytics?companyId=${company.id}&period=30d`)
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (data?.attribution) {
+          setAttributionData(data.attribution);
+        }
+      })
+      .catch(() => {});
+  }, [company.id]);
+
+  // --- Pixel health for CAPI monitor ---
+  const [pixelHealth, setPixelHealth] = useState<{
+    match_quality_score: number;
+    event_match_rate: number;
+    last_event_time: string;
+    events_last_24h: number;
+    capi_health: string;
+  } | null>(null);
+  useEffect(() => {
+    fetch('/api/meta/pixel-health')
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (data) setPixelHealth(data);
+      })
+      .catch(() => {});
+  }, []);
 
   const revenueData = {
     totalRevenue: marketingData.revenueThisMonth,
@@ -400,13 +431,137 @@ export function CompanyDashboard({ company, integrations, dailyMetrics }: Props)
           </div>
         </section>
 
-        {/* 8. SECTION: Customer Journey — empty until attribution tracking is connected */}
+        {/* 8a. SECTION: Customer Attribution Summary */}
         <section>
-          <SectionHeaderV2 icon={<Route size={16} />} title="Customer Journey" />
+          <SectionHeaderV2 icon={<Route size={16} />} title="Customer Attribution" />
           <BentoCard>
-            <p className="text-xs py-6 text-center" style={{ color: 'var(--text-tertiary)' }}>
-              Customer journey tracking will appear here once UTM attribution is connected.
-            </p>
+            {(() => {
+              const entries = Object.entries(attributionData ?? {});
+              const total = entries.reduce((sum, [, v]) => sum + (v ?? 0), 0);
+              if (entries.length === 0 || total === 0) {
+                return (
+                  <p className="text-xs py-6 text-center" style={{ color: 'var(--text-tertiary)' }}>
+                    No attribution data yet. Connect UTM tracking to see source breakdown.
+                  </p>
+                );
+              }
+              const sorted = [...entries].sort((a, b) => (b[1] ?? 0) - (a[1] ?? 0));
+              const SOURCE_LABELS: Record<string, string> = {
+                meta_ad: 'Meta Ads',
+                direct: 'Direct',
+                unknown: 'Unknown',
+                google_ad: 'Google Ads',
+                organic: 'Organic',
+                referral: 'Referral',
+                email: 'Email',
+              };
+              const SOURCE_COLORS: Record<string, string> = {
+                meta_ad: '#0A84FF',
+                direct: '#30D158',
+                unknown: '#636366',
+                google_ad: '#FF9F0A',
+                organic: '#BF5AF2',
+                referral: '#FF375F',
+                email: '#64D2FF',
+              };
+              return (
+                <div className="space-y-2">
+                  {sorted.map(([key, count]) => {
+                    const pct = total > 0 ? ((count ?? 0) / total) * 100 : 0;
+                    return (
+                      <div key={key} className="flex items-center gap-3">
+                        <span className="text-[11px] w-20 shrink-0 truncate" style={{ color: 'var(--text-secondary)' }}>
+                          {SOURCE_LABELS[key] ?? key}
+                        </span>
+                        <div className="flex-1 h-5 rounded-md overflow-hidden" style={{ background: 'var(--bg-tertiary)' }}>
+                          <div
+                            className="h-full rounded-md transition-all"
+                            style={{
+                              width: `${Math.max(pct, 2)}%`,
+                              background: SOURCE_COLORS[key] ?? '#8E8E93',
+                            }}
+                          />
+                        </div>
+                        <span className="text-[11px] w-14 text-right tabular-nums" style={{ color: 'var(--text-primary)' }}>
+                          {pct.toFixed(0)}% ({count ?? 0})
+                        </span>
+                      </div>
+                    );
+                  })}
+                  <p className="text-[10px] pt-1" style={{ color: 'var(--text-tertiary)' }}>
+                    {total} total conversions · last 30 days
+                  </p>
+                </div>
+              );
+            })()}
+          </BentoCard>
+        </section>
+
+        {/* 8b. SECTION: Pixel Health Monitor */}
+        <section>
+          <SectionHeaderV2 icon={<Radio size={16} />} title="Pixel Health Monitor" />
+          <BentoCard>
+            {pixelHealth == null ? (
+              <p className="text-xs py-6 text-center" style={{ color: 'var(--text-tertiary)' }}>
+                Loading pixel health data…
+              </p>
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                {/* CAPI Health */}
+                <div className="flex flex-col items-center gap-1.5 py-2">
+                  <Activity size={18} style={{
+                    color: (pixelHealth.capi_health ?? '').toLowerCase() === 'good' ? '#30D158'
+                      : (pixelHealth.capi_health ?? '').toLowerCase() === 'degraded' ? '#FF9F0A'
+                      : '#FF375F',
+                  }} />
+                  <span className="text-sm font-semibold capitalize" style={{ color: 'var(--text-primary)' }}>
+                    {pixelHealth.capi_health ?? 'Unknown'}
+                  </span>
+                  <span className="text-[10px]" style={{ color: 'var(--text-tertiary)' }}>CAPI Status</span>
+                </div>
+
+                {/* Match Quality Score */}
+                <div className="flex flex-col items-center gap-1.5 py-2">
+                  <div className="relative w-10 h-10">
+                    <svg viewBox="0 0 36 36" className="w-full h-full -rotate-90">
+                      <circle cx="18" cy="18" r="15" fill="none" stroke="var(--bg-tertiary)" strokeWidth="3" />
+                      <circle
+                        cx="18" cy="18" r="15" fill="none"
+                        stroke={(pixelHealth.match_quality_score ?? 0) >= 7 ? '#30D158' : (pixelHealth.match_quality_score ?? 0) >= 4 ? '#FF9F0A' : '#FF375F'}
+                        strokeWidth="3"
+                        strokeDasharray={`${((pixelHealth.match_quality_score ?? 0) / 10) * 94.25} 94.25`}
+                        strokeLinecap="round"
+                      />
+                    </svg>
+                    <span className="absolute inset-0 flex items-center justify-center text-[11px] font-bold" style={{ color: 'var(--text-primary)' }}>
+                      {(pixelHealth.match_quality_score ?? 0).toFixed(1)}
+                    </span>
+                  </div>
+                  <span className="text-[10px]" style={{ color: 'var(--text-tertiary)' }}>Match Quality</span>
+                </div>
+
+                {/* Event Match Rate */}
+                <div className="flex flex-col items-center gap-1.5 py-2">
+                  <span className="text-lg font-bold tabular-nums" style={{ color: 'var(--text-primary)' }}>
+                    {((pixelHealth.event_match_rate ?? 0) * 100).toFixed(0)}%
+                  </span>
+                  <span className="text-[10px]" style={{ color: 'var(--text-tertiary)' }}>Event Match Rate</span>
+                </div>
+
+                {/* Events Last 24h */}
+                <div className="flex flex-col items-center gap-1.5 py-2">
+                  <span className="text-lg font-bold tabular-nums" style={{ color: 'var(--text-primary)' }}>
+                    {(pixelHealth.events_last_24h ?? 0).toLocaleString()}
+                  </span>
+                  <span className="text-[10px]" style={{ color: 'var(--text-tertiary)' }}>Events (24h)</span>
+                </div>
+              </div>
+            )}
+            {pixelHealth?.last_event_time && (
+              <p className="text-[10px] pt-2 text-center" style={{ color: 'var(--text-tertiary)' }}>
+                Last event: {new Date(pixelHealth.last_event_time).toLocaleString()}
+              </p>
+            )}
           </BentoCard>
         </section>
 

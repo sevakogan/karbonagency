@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo, useRef, Component, type ReactNode } from 'react';
 import { PulseBar } from './pulse-bar';
-import { ChartGrid, type ReviewsData, type OrganicData, type CreativesData } from './chart-grid';
+import { ChartGrid, type ReviewsData, type OrganicData, type CreativesData, type LeadsData } from './chart-grid';
 import { ActiveFilters } from './active-filters';
 import { CustomerList } from './customer-list';
 import { formatTimeAgo } from '@/hooks/use-live-poll';
@@ -137,6 +137,7 @@ export function MarketingCommandCenter() {
   const [churnData, setChurnData] = useState<any>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [forecastData, setForecastData] = useState<any>(null);
+  const [leadsData, setLeadsData] = useState<LeadsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [analyticsLoading, setAnalyticsLoading] = useState(true);
   // Separate chart period from filters to avoid full page re-render
@@ -243,6 +244,7 @@ export function MarketingCommandCenter() {
             repeat_rate: c.repeat_rate ?? 0,
           })),
           attribution: raw.attribution ?? {},
+          sim_utilization: raw.sim_utilization ?? null,
           refunds: raw.refunds ?? null,
         };
         setAnalytics(mapped);
@@ -265,6 +267,16 @@ export function MarketingCommandCenter() {
     safeFetch('/api/marketing/cohorts', setCohortData);
     safeFetch('/api/marketing/churn', setChurnData);
     safeFetch('/api/marketing/forecast', setForecastData);
+    // Leads data — returns array directly, wrap in { leads, total }
+    fetch('/api/marketing/leads')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (!data || data.error) { setLeadsData(null); return; }
+        // API returns array of leads directly
+        const leads = Array.isArray(data) ? data : (data.leads ?? []);
+        setLeadsData({ leads, total: data.total ?? leads.length });
+      })
+      .catch(() => setLeadsData(null));
   }, []);
 
   // Live polling — refresh every 5 min with countdown
@@ -349,6 +361,7 @@ export function MarketingCommandCenter() {
         reviewsData={reviewsData}
         organicData={organicData}
         creativesData={creativesData}
+        leadsData={leadsData}
         cohortData={cohortData}
         churnData={churnData}
         forecastData={forecastData}
